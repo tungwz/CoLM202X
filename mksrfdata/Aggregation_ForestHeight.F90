@@ -1,6 +1,6 @@
 #include <define.h>
 
-SUBROUTINE Aggregation_ForestHeight ( &
+SUBROUTINE Aggregation_ForestHeight ( lc_year, &
       gland, dir_rawdata, dir_model_landdata)
 
    ! ----------------------------------------------------------------------
@@ -21,7 +21,7 @@ SUBROUTINE Aggregation_ForestHeight ( &
    use MOD_LandPatch
    use MOD_NetCDFVector
    use MOD_NetCDFBlock
-#ifdef CoLMDEBUG 
+#ifdef CoLMDEBUG
    use MOD_CoLMDebug
 #endif
    use MOD_AggregationRequestData
@@ -46,7 +46,8 @@ SUBROUTINE Aggregation_ForestHeight ( &
    IMPLICIT NONE
 
    ! arguments:
-   type(grid_type),  intent(in) :: gland
+   INTEGER         , intent(in) :: lc_year
+   type(grid_type) , intent(in) :: gland
    character(LEN=*), intent(in) :: dir_rawdata
    character(LEN=*), intent(in) :: dir_model_landdata
 
@@ -59,7 +60,7 @@ SUBROUTINE Aggregation_ForestHeight ( &
    real(r8), allocatable :: tree_height_patches(:), tree_height_one(:)
 
    ! for IGBP data
-   character(len=256) :: dir_5x5, suffix
+   character(len=256) :: dir_5x5, suffix, cyear
    type (block_data_real8_2d) :: htop
    type (block_data_real8_3d) :: pftPCT
    real(r8), allocatable :: htop_patches(:), htop_pfts(:), htop_pcs(:,:)
@@ -77,7 +78,8 @@ SUBROUTINE Aggregation_ForestHeight ( &
    INTEGER :: typpc   (N_land_classification+1)
 #endif
 
-   landdir = trim(dir_model_landdata) // '/htop/'
+   write(cyear,'(i4.4)') lc_year
+   landdir = trim(dir_model_landdata) // '/htop/' //trim(cyear)
 
 #ifdef USEMPI
    CALL mpi_barrier (p_comm_glb, p_err)
@@ -145,7 +147,7 @@ SUBROUTINE Aggregation_ForestHeight ( &
 
 #ifdef SrfdataDiag
    typpatch = (/(ityp, ityp = 0, N_land_classification)/)
-   lndname  = trim(dir_model_landdata) // '/diag/htop_patch.nc'
+   lndname  = trim(dir_model_landdata) // '/diag/htop_patch/' // trim(cyear) // '.nc'
    CALL srfdata_map_and_write (tree_height_patches, landpatch%settyp, typpatch, m_patch2diag, &
       -1.0e36_r8, lndname, 'htop', compress = 1, write_mode = 'one')
 #endif
@@ -167,7 +169,7 @@ SUBROUTINE Aggregation_ForestHeight ( &
 
    IF (p_is_io) THEN
       dir_5x5 = trim(dir_rawdata) // '/plant_15s_clim'
-      suffix  = 'MOD2005'
+      suffix  = 'MOD'//trim(cyear)
       CALL read_5x5_data (dir_5x5, suffix, gland, 'HTOP', htop)
 #ifdef USEMPI
       CALL aggregation_data_daemon (gland, data_r8_2d_in1 = htop)
@@ -209,7 +211,7 @@ SUBROUTINE Aggregation_ForestHeight ( &
 
 #ifdef SrfdataDiag
    typpatch = (/(ityp, ityp = 0, N_land_classification)/)
-   lndname  = trim(dir_model_landdata) // '/diag/htop_patch.nc'
+   lndname  = trim(dir_model_landdata) // '/diag/htop_patch' // trim(cyear) // '.nc'
    CALL srfdata_map_and_write (htop_patches, landpatch%settyp, typpatch, m_patch2diag, &
       -1.0e36_r8, lndname, 'htop', compress = 1, write_mode = 'one')
 #endif
@@ -232,7 +234,7 @@ SUBROUTINE Aggregation_ForestHeight ( &
    ENDIF
 
    dir_5x5 = trim(dir_rawdata) // '/plant_15s_clim'
-   suffix  = 'MOD2005'
+   suffix  = 'MOD'//trim(cyear)
 
    IF (p_is_io) THEN
       CALL read_5x5_data     (dir_5x5, suffix, gland, 'HTOP',    htop  )
@@ -312,7 +314,7 @@ SUBROUTINE Aggregation_ForestHeight ( &
 #else
    typpft  = (/(ityp, ityp = 0, N_PFT+N_CFT-1)/)
 #endif
-   lndname = trim(dir_model_landdata) // '/diag/htop_pft.nc'
+   lndname = trim(dir_model_landdata) // '/diag/htop_pft' // trim(cyear) // '.nc'
    CALL srfdata_map_and_write (htop_pfts, landpft%settyp, typpft, m_pft2diag, &
       -1.0e36_r8, lndname, 'htop', compress = 1, write_mode = 'one')
 #endif
@@ -338,7 +340,7 @@ SUBROUTINE Aggregation_ForestHeight ( &
    ENDIF
 
    dir_5x5 = trim(dir_rawdata) // '/plant_15s_clim'
-   suffix  = 'MOD2005'
+   suffix  = 'MOD'//trim(cyear)
 
    IF (p_is_io) THEN
       CALL read_5x5_data     (dir_5x5, suffix, gland, 'HTOP',    htop  )
@@ -397,7 +399,7 @@ SUBROUTINE Aggregation_ForestHeight ( &
 
 #ifdef SrfdataDiag
    typpatch = (/(ityp, ityp = 0, N_land_classification)/)
-   lndname  = trim(dir_model_landdata) // '/diag/htop_patch.nc'
+   lndname  = trim(dir_model_landdata) // '/diag/htop_patch' // trim(cyear) // '.nc'
    CALL srfdata_map_and_write (htop_patches, landpatch%settyp, typpatch, m_patch2diag, &
       -1.0e36_r8, lndname, 'htop', compress = 1, write_mode = 'one')
 #endif

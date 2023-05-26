@@ -18,7 +18,7 @@ MODULE MOD_SoilParametersReadin
 !-----------------------------------------------------------------------
 
 
-   SUBROUTINE soil_parameters_readin (dir_landdata)
+   SUBROUTINE soil_parameters_readin (lc_year, dir_landdata)
 
    !------------------------------------------------------------------------------------------
    ! DESCRIPTION:
@@ -49,7 +49,7 @@ MODULE MOD_SoilParametersReadin
       IMPLICIT NONE
 
       ! ----------------------------------------------------------------------
-
+      INTEGER         , intent(in) :: lc_year
       character(LEN=*), INTENT(in) :: dir_landdata
 
       ! Local Variables
@@ -84,13 +84,13 @@ MODULE MOD_SoilParametersReadin
 
       integer  :: ipatch, m, nsl  ! indices
 
-      character(len=256) :: c
+      character(len=256) :: c, cyear
       character(len=256) :: landdir, lndname
       LOGICAL :: is_singlepoint
 
       ! ...............................................................
-
-      landdir = trim(dir_landdata) // '/soil'
+      write(cyear,'(i4.4)') lc_year
+      landdir = trim(dir_landdata) // '/soil/' // trim(cyear)
 
       write(*,*) 'soil parameter readin',landdir
       if (p_is_worker) then

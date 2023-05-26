@@ -367,9 +367,9 @@ print*, numpatch
 #endif
 
 #ifdef BGC
-   call Aggregation_NDeposition            (gndep, dir_rawdata, dir_landdata)
+   call Aggregation_NDeposition     (gndep, dir_rawdata, dir_landdata)
 #if (defined CROP)
-   call Aggregation_CropParameters (gcrop, dir_rawdata, dir_landdata)
+   call Aggregation_CropParameters  (gcrop, dir_rawdata, dir_landdata)
 #endif
 #ifdef Fire
    call Aggregation_Fire            (gfire, dir_rawdata, dir_landdata)
@@ -379,13 +379,13 @@ print*, numpatch
 #endif
 #endif
 
-   CALL Aggregation_PercentagesPFT     (gpatch,  dir_rawdata, dir_landdata)
+   CALL Aggregation_PercentagesPFT (lc_year, gpatch,  dir_rawdata, dir_landdata)
 
-   CALL Aggregation_LakeDepth       (gpatch,  dir_rawdata, dir_landdata)
+   CALL Aggregation_LakeDepth      (lc_year, gpatch,  dir_rawdata, dir_landdata)
 
-   CALL Aggregation_SoilParameters (gpatch,  dir_rawdata, dir_landdata)
+   CALL Aggregation_SoilParameters (lc_year, gpatch,  dir_rawdata, dir_landdata)
 
-   CALL Aggregation_SoilBrightness (gpatch,  dir_rawdata, dir_landdata)
+   CALL Aggregation_SoilBrightness (lc_year, gpatch,  dir_rawdata, dir_landdata)
 
 #ifdef USE_DEPTH_TO_BEDROCK
    CALL Aggregation_DBedrock        (gpatch,  dir_rawdata, dir_landdata)
@@ -393,13 +393,13 @@ print*, numpatch
 
    CALL Aggregation_LAI             (gridlai, dir_rawdata, dir_landdata, lc_year)
 
-   CALL Aggregation_ForestHeight   (gpatch,  dir_rawdata, dir_landdata)
+   CALL Aggregation_ForestHeight    (lc_year, gpatch,  dir_rawdata, dir_landdata)
 
-   CALL Aggregation_Topography      (gtopo,   dir_rawdata, dir_landdata)
+   CALL Aggregation_Topography      (lc_year, gtopo,   dir_rawdata, dir_landdata)
 
 #ifdef URBAN_MODEL
    CALL Aggregation_urban (dir_rawdata, dir_landdata, lc_year, &
-                           grid_urban_5km,  grid_urban_500m)
+                           grid_urban_5km, grid_urban_500m)
 #endif
 
 

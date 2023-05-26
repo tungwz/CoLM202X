@@ -197,7 +197,7 @@ MODULE MOD_Initialize
       ENDIF
 
 #if (defined PFT_CLASSIFICATION || defined PC_CLASSIFICATION)
-      CALL pct_readin (dir_landdata)
+      CALL pct_readin (DEF_LC_YEAR, dir_landdata)
 #endif
 
       ! ------------------------------------------
@@ -215,13 +215,13 @@ MODULE MOD_Initialize
       ! ------------------------------------------
       ! 1.2 Lake depth and layers' thickness
       ! ------------------------------------------
-      CALL lakedepth_readin (dir_landdata)
+      CALL lakedepth_readin (DEF_LC_YEAR, dir_landdata)
 
       ! ...............................................................
       ! 1.3 Read in the soil parameters of the patches of the gridcells
       ! ...............................................................
 
-      CALL soil_parameters_readin (dir_landdata)
+      CALL soil_parameters_readin (DEF_LC_YEAR, dir_landdata)
 
 #ifdef vanGenuchten_Mualem_SOIL_MODEL
       IF (p_is_worker) THEN
@@ -245,7 +245,7 @@ MODULE MOD_Initialize
       ! ...............................................................
 
       ! read global tree top height from nc file
-      CALL HTOP_readin (dir_landdata)
+      CALL HTOP_readin (DEF_LC_YEAR, dir_landdata)
 #ifdef URBAN_MODEL
       CALL Urban_readin (DEF_LC_YEAR, dir_landdata)
 #endif

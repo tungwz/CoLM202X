@@ -18,7 +18,7 @@ MODULE MOD_HtopReadin
 !-----------------------------------------------------------------------
 
 
-   SUBROUTINE HTOP_readin (dir_landdata)
+   SUBROUTINE HTOP_readin (lc_year, dir_landdata)
 
 ! ===========================================================
 ! Read in the canopy tree top height
@@ -41,24 +41,26 @@ MODULE MOD_HtopReadin
          USE MOD_Vars_PCTimeInvars
          USE MOD_Vars_PCTimeVars
 #endif
-         USE MOD_NetCDFVector 
+         USE MOD_NetCDFVector
 #ifdef SinglePoint
          USE MOD_SingleSrfdata
 #endif
 
          IMPLICIT NONE
 
+         INTEGER           , INTENT(in) :: lc_year
          character(LEN=256), INTENT(in) :: dir_landdata
 
          ! Local Variables
-         character(LEN=256) :: c
+         character(LEN=256) :: c, cyear
          character(LEN=256) :: landdir, lndname
          integer :: i,j,t,p,ps,pe,m,n,npatch
 
          REAL(r8), allocatable :: htoplc  (:)
          REAL(r8), allocatable :: htoppft (:)
 
-         landdir = trim(dir_landdata) // '/htop'
+         write(cyear,'(i4.4)') lc_year
+         landdir = trim(dir_landdata) // '/htop/' // trim(cyear)
 
 
 #ifdef USGS_CLASSIFICATION
