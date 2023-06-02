@@ -257,7 +257,9 @@ SUBROUTINE Aggregation_Urban (dir_rawdata, dir_srfdata, lc_year, &
             area_one = 0
          END where
          ! area-weighted average
-         pop_den(iurban) = sum(pop_one * area_one) / sum(area_one)
+         IF (sum(area_one) > 0._r8) THEN
+            pop_den(iurban) = sum(pop_one * area_one) / sum(area_one)
+         ENDIF
       ENDDO
 
 #ifdef USEMPI

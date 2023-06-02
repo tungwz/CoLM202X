@@ -287,12 +287,12 @@ CONTAINS
       call ncio_read_vector (file_restart, 'vehc'       , landurban, vehc       ) !
       call ncio_read_vector (file_restart, 'meta'       , landurban, meta       ) !
       call ncio_read_vector (file_restart, 't_room '    , landurban, t_room     ) !
-      call ncio_read_vector (file_restart, 't_roof'     , landurban, t_roof     ) !
-      call ncio_read_vector (file_restart, 't_wall'     , landurban, t_wall     ) !
+      !call ncio_read_vector (file_restart, 't_roof'     , landurban, t_roof     ) !
+      !call ncio_read_vector (file_restart, 't_wall'     , landurban, t_wall     ) !
       call ncio_read_vector (file_restart, 'tafu'       , landurban, tafu       ) !
-      call ncio_read_vector (file_restart, 'urb_green'  , landurban, urb_green  ) !
-      call ncio_read_vector (file_restart, 'tree_lai'   , landurban, urb_lai    ) !
-      call ncio_read_vector (file_restart, 'tree_sai'   , landurban, urb_sai    ) !
+      !call ncio_read_vector (file_restart, 'urb_green'  , landurban, urb_green  ) !
+      !call ncio_read_vector (file_restart, 'tree_lai'   , landurban, urb_lai    ) !
+      !call ncio_read_vector (file_restart, 'tree_sai'   , landurban, urb_sai    ) !
 
    END SUBROUTINE READ_UrbanTimeVars
 

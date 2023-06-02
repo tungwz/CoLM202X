@@ -23,7 +23,7 @@ CONTAINS
 
   ! -----------------------------------------------------------------------
   SUBROUTINE LUCY( idate       , deltim  , patchlonr, fix_holiday, &
-                   week_holiday, hum_prof, wdh_prof , weh_prof   , popcell, &
+                   week_holiday, hum_prof, wdh_prof , weh_prof   , pop_den, &
                    vehicle     , Fahe    , vehc     , meta        )
 
   ! !DESCRIPTION:
@@ -58,7 +58,7 @@ CONTAINS
       hum_prof(24), &! Diurnal metabolic heat profile [W/person]
       wdh_prof(24), &! Diurnal traffic flow profile of weekday
       weh_prof(24), &! Diurnal traffic flow profile of weekend
-      popcell     , &! population density [person per square kilometer]
+      pop_den     , &! population density [person per square kilometer]
       vehicle(3)     ! vehicle numbers per thousand people
 
    REAL(r8) :: &
@@ -93,6 +93,11 @@ CONTAINS
          EC      , &! emission factor of car [J/m]
          EF      , &! emission factor of freight [J/m]
          EM         ! emission factor of motorbike [J/m]
+
+   ! initializition
+   meta = 0.
+   vehc = 0.
+   Fahe = 0.
 
    ! set vehicle distance traveled
    car_sp = 50
@@ -134,10 +139,10 @@ CONTAINS
    frescell = vehicle(3)
 
    ! heat release of metabolism [W/m2]
-   meta = popcell*meta_prof/1e6
+   meta = pop_den*meta_prof/1e6
    ! heat release of cars [W/m2]
    IF (carscell > 0) THEN
-      carflx = carscell*popcell/1000
+      carflx = carscell*pop_den/1000
       carflx = carflx*traf_frac &
                *EC*(car_sp*1000)/1e6
       carflx = carflx/3600
@@ -147,7 +152,7 @@ CONTAINS
 
    ! heat release of motorbikes [W/m2]
    IF (mbkscell > 0) THEN
-      motflx = mbkscell*popcell/1000
+      motflx = mbkscell*pop_den/1000
       motflx = motflx*traf_frac &
                *EM*(car_sp*1000)/1e6
       motflx = motflx/3600
@@ -157,7 +162,7 @@ CONTAINS
 
    ! heat release of freight [W/m2]
    IF (frescell > 0)THEN
-      freflx = frescell*popcell/1000
+      freflx = frescell*pop_den/1000
       freflx = freflx*traf_frac &
                *EF*(car_sp*1000)/1e6
       freflx = freflx/3600

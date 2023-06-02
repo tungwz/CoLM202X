@@ -27,7 +27,7 @@ CONTAINS
         par            ,Fhac           ,Fwst           ,Fach           ,&
         Fahe           ,Fhah           ,vehc           ,meta           ,&
         ! LUCY model input parameters
-        fix_holiday    ,week_holiday   ,hum_prof       ,popcell        ,&
+        fix_holiday    ,week_holiday   ,hum_prof       ,pop_den        ,&
         vehicle        ,weh_prof       ,wdh_prof       ,idate          ,&
         patchlonr                                                      ,&
         ! surface parameters
@@ -144,7 +144,7 @@ CONTAINS
         hum_prof(24)    , &! Diurnal metabolic heat profile
         weh_prof(24)    , &! Diurnal traffic flow profile of weekend
         wdh_prof(24)    , &! Diurnal traffic flow profile of weekday
-        popcell         , &! population density
+        pop_den         , &! population density
         vehicle(3)         ! vehicle numbers per thousand people
 
   REAL(r8), intent(in) :: &
@@ -324,6 +324,8 @@ CONTAINS
         troommax   ,&! maximum temperature of inner building
         troommin   ,&! minimum temperature of inner building
         tafu       ,&! temperature of outer building
+        vehc       ,&! flux from vehicle
+        meta       ,&! flux from metabolic
         Fahe       ,&! flux from metabolic and vehicle
         Fhah       ,&! flux from heating
         Fhac       ,&! flux from heat or cool AC
@@ -399,8 +401,8 @@ CONTAINS
         respc      ,&! respiration
         errore     ,&! energy balnce error [w/m2]
 
-        vehc       ,&! flux from vehicle
-        meta       ,&! flux from metabolic
+        !vehc       ,&! flux from vehicle
+        !meta       ,&! flux from metabolic
         ! additionalvariables required by coupling with WRF or RSM model
         emis       ,&! averaged bulk surface emissivity
         z0m        ,&! effective roughness [m]
@@ -561,6 +563,8 @@ CONTAINS
 !=======================================================================
 
       ! fluxes
+      taux  = 0.;  tauy  = 0.
+      fsena = 0.;  fevpa = 0.
       fsenl = 0.;  fevpl = 0.
       etr   = 0.;  rst   = 2.0e4
       assim = 0.;  respc = 0.
@@ -1341,7 +1345,7 @@ CONTAINS
 
       ! Anthropogenic heat flux for the rest (vehicle heat flux and metabolic heat flux)
       CALL LUCY(idate       , deltim  , patchlonr, fix_holiday, &
-                week_holiday, hum_prof, wdh_prof , weh_prof   ,popcell, &
+                week_holiday, hum_prof, wdh_prof , weh_prof   ,pop_den, &
                 vehicle     , Fahe    , vehc     , meta)
 
       deallocate ( fcover )

@@ -182,6 +182,7 @@ MODULE MOD_UrbanReadin
                fix_holiday  (:,u) = lfix_holiday  (lucy_id,:)
             ENDIF
          ELSE
+            pop_den      (:)   = 0.
             vehicle      (:,u) = 0.
             week_holiday (:,u) = 0.
             weh_prof     (:,u) = 0.
