@@ -51,27 +51,28 @@ CONTAINS
 
      USE MOD_Precision
      USE MOD_SPMD_Task
+     USE MOD_LandPatch
      USE MOD_LandUrban
      IMPLICIT NONE
 
      IF (p_is_worker) THEN
-        IF (numurban > 0) THEN
+        IF (numpatch > 0) THEN
           !allocate (sabroof        (numurban))
           !allocate (sabwsun        (numurban))
           !allocate (sabwsha        (numurban))
           !allocate (sabgimp        (numurban))
           !allocate (sabgper        (numurban))
-           allocate (fsen_roof      (numurban))
-           allocate (fsen_wsun      (numurban))
-           allocate (fsen_wsha      (numurban))
-           allocate (fsen_gimp      (numurban))
-           allocate (fsen_gper      (numurban))
-           allocate (fsen_urbl      (numurban))
+           allocate (fsen_roof      (numpatch))
+           allocate (fsen_wsun      (numpatch))
+           allocate (fsen_wsha      (numpatch))
+           allocate (fsen_gimp      (numpatch))
+           allocate (fsen_gper      (numpatch))
+           allocate (fsen_urbl      (numpatch))
 
-           allocate (lfevp_roof     (numurban))
-           allocate (lfevp_gimp     (numurban))
-           allocate (lfevp_gper     (numurban))
-           allocate (lfevp_urbl     (numurban))
+           allocate (lfevp_roof     (numpatch))
+           allocate (lfevp_gimp     (numpatch))
+           allocate (lfevp_gper     (numpatch))
+           allocate (lfevp_urbl     (numpatch))
          ENDIF
       ENDIF
 

@@ -6,6 +6,9 @@ module MOD_Hist
    use MOD_Grid
    use MOD_Mapping_Pset2Grid
    USE MOD_Namelist
+#ifdef URBAN_MODEL
+   USE MOD_LandUrban
+#endif
 #ifdef LULC_IGBP_PFT
    USE MOD_Vars_PFTimeInvars, only: pftclass
    USE MOD_LandPFT, only : patch_pft_s
@@ -128,6 +131,9 @@ contains
       use MOD_CoLMDebug
       use MOD_Vars_Global, only : spval
       USE MOD_Vars_TimeInvariants, only : patchtype, patchclass
+#ifdef URBAN_MODEL
+      USE MOD_LandUrban
+#endif
 #if(defined CaMa_Flood)
       use MOD_CaMa_Vars !defination of CaMa variables
 #endif
@@ -561,6 +567,132 @@ contains
          call flux_map_and_write_2d ( DEF_hist_vars%qref, &
             a_qref, f_qref, file_hist, 'f_qref', itime_in_file, sumwt, filter, &
             '2 m height air specific humidity','kg/kg')
+
+         ! ------------------------------------------------------------------------------------------
+         ! Mapping the urban variables at patch [numpatch] to grid
+         ! ------------------------------------------------------------------------------------------
+#ifdef URBAN_MODEL
+         if (p_is_worker) then
+            if (numpatch > 0) then
+               DO i = 1, numpatch
+                  IF (patchtype(i) == 1) THEN
+                     filter(i) = .true.
+                  ELSE
+                     filter(i) = .false.
+                  ENDIF
+                  vectmp (i) = 1.
+               ENDDO
+
+               IF (DEF_forcing%has_missing_value) THEN
+                  filter = filter .and. forcmask
+               ENDIF
+
+            end if
+         end if
+
+         call mp2g_hist%map (vectmp, sumwt, spv = spval, msk = filter)
+         !TODO: define flux vars with numpatch. done
+         ! sensible heat from building roof [W/m2]
+         call flux_map_and_write_2d ( DEF_hist_vars%fsen_roof, &
+            a_senroof, f_senroof, file_hist, 'f_fsenroof', itime_in_file, sumwt, filter, &
+            'sensible heat from urban roof [W/m2]','W/m2')
+
+         ! sensible heat from building sunlit wall [W/m2]
+         call flux_map_and_write_2d ( DEF_hist_vars%fsen_wsun, &
+            a_senwsun, f_senwsun, file_hist, 'f_fsenwsun', itime_in_file, sumwt, filter, &
+            'sensible heat from urban sunlit wall [W/m2]','W/m2')
+
+         ! sensible heat from building shaded wall [W/m2]
+         call flux_map_and_write_2d ( DEF_hist_vars%fsen_wsha, &
+            a_senwsha, f_senwsha, file_hist, 'f_fsenwsha', itime_in_file, sumwt, filter, &
+            'sensible heat from urban shaded wall [W/m2]','W/m2')
+
+         ! sensible heat from impervious ground [W/m2]
+         call flux_map_and_write_2d ( DEF_hist_vars%fsen_gimp, &
+            a_sengimp, f_sengimp, file_hist, 'f_fsengimp', itime_in_file, sumwt, filter, &
+            'sensible heat from urban impervious ground [W/m2]','W/m2')
+
+         ! sensible heat from pervious ground [W/m2]
+         call flux_map_and_write_2d ( DEF_hist_vars%fsen_gper, &
+            a_sengper, f_sengper, file_hist, 'f_fsengper', itime_in_file, sumwt, filter, &
+            'sensible heat from urban pervious ground [W/m2]','W/m2')
+
+         ! sensible heat from urban tree [W/m2]
+         call flux_map_and_write_2d ( DEF_hist_vars%fsen_urbl, &
+            a_senurbl, f_senurbl, file_hist, 'f_fsenurbl', itime_in_file, sumwt, filter, &
+            'sensible heat from urban tree [W/m2]','W/m2')
+
+         ! latent heat flux from building roof [W/m2]
+         call flux_map_and_write_2d ( DEF_hist_vars%lfevp_roof, &
+            a_lfevproof, f_lfevproof, file_hist, 'f_lfevproof', itime_in_file, sumwt, filter, &
+            'latent heat from urban roof [W/m2]','W/m2')
+
+         ! latent heat flux from impervious ground [W/m2]
+         call flux_map_and_write_2d ( DEF_hist_vars%lfevp_gimp, &
+            a_lfevpgimp, f_lfevpgimp, file_hist, 'f_lfevpgimp', itime_in_file, sumwt, filter, &
+            'latent heat from urban impervious ground [W/m2]','W/m2')
+
+         ! latent heat flux from pervious ground [W/m2]
+         call flux_map_and_write_2d ( DEF_hist_vars%lfevp_gper, &
+            a_lfevpgper, f_lfevpgper, file_hist, 'f_lfevpgper', itime_in_file, sumwt, filter, &
+            'latent heat from urban pervious ground [W/m2]','W/m2')
+
+         ! latent heat flux from urban tree [W/m2]
+         call flux_map_and_write_2d ( DEF_hist_vars%lfevp_urbl, &
+            a_lfevpurbl, f_lfevpurbl, file_hist, 'f_lfevpurbl', itime_in_file, sumwt, filter, &
+            'latent heat from urban tree [W/m2]','W/m2')
+
+         !TODO: define vars with numpatch. is it necessary????
+         ! ! sensible flux from heat or cool AC [W/m2]
+         ! call flux_map_and_write_2d ( DEF_hist_vars%fhac, &
+         !    a_fhac, f_fhac, file_hist, 'f_fhac', itime_in_file, sumwt, filter, &
+         !    'sensible flux from heat or cool AC [W/m2]','W/m2')
+
+         ! ! waste heat flux from heat or cool AC [W/m2]
+         ! call flux_map_and_write_2d ( DEF_hist_vars%fwst, &
+         !    a_fwst, f_fwst, file_hist, 'f_fwst', itime_in_file, sumwt, filter, &
+         !    'waste heat flux from heat or cool AC [W/m2]','W/m2')
+
+         ! ! flux from inner and outter air exchange [W/m2]
+         ! call flux_map_and_write_2d ( DEF_hist_vars%fach, &
+         !    a_fach, f_fach, file_hist, 'f_fach', itime_in_file, sumwt, filter, &
+         !    'flux from inner and outter air exchange [W/m2]','W/m2')
+
+         ! ! flux from total heating/cooling [W/m2]
+         ! call flux_map_and_write_2d ( DEF_hist_vars%fhah, &
+         !    a_fhah, f_fhah, file_hist, 'f_fhah', itime_in_file, sumwt, filter, &
+         !    'flux from heating/cooling [W/m2]','W/m2')
+
+         ! ! flux from metabolism [W/m2]
+         ! call flux_map_and_write_2d ( DEF_hist_vars%meta, &
+         !    a_meta, f_fmeta, file_hist, 'f_fmeta', itime_in_file, sumwt, filter, &
+         !    'flux from human metabolism [W/m2]','W/m2')
+
+         ! ! flux from vehicle [W/m2]
+         ! call flux_map_and_write_2d ( DEF_hist_vars%vehc, &
+         !    a_vehc, f_fvehc, file_hist, 'f_fvehc', itime_in_file, sumwt, filter, &
+         !    'flux from traffic [W/m2]','W/m2')
+
+         ! ! temperature of inner building [K]
+         ! call flux_map_and_write_2d ( DEF_hist_vars%t_room, &
+         !    a_t_room, f_t_room, file_hist, 'f_t_room', itime_in_file, sumwt, filter, &
+         !    'temperature of inner building [K]','kelvin')
+
+         ! ! temperature of outer building [K]
+         ! call flux_map_and_write_2d ( DEF_hist_vars%tafu, &
+         !    a_tafu, f_tafu, file_hist, 'f_tafu', itime_in_file, sumwt, filter, &
+         !    'temperature of outer building [K]','kelvin')
+
+         ! ! temperature of building roof [K]
+         ! call flux_map_and_write_2d ( DEF_hist_vars%t_roof, &
+         !    a_troof, f_troof, file_hist, 'f_t_roof', itime_in_file, sumwt, filter, &
+         !    'temperature of urban roof [K]','kelvin')
+
+         ! ! temperature of building wall [K]
+         ! call flux_map_and_write_2d ( DEF_hist_vars%t_wall, &
+         !    a_twall, f_twall, file_hist, 'f_t_wall', itime_in_file, sumwt, filter, &
+         !    'temperature of urban wall [K]','kelvin')
+#endif
 
 #ifdef WUEdiag
 #ifdef LULC_IGBP_PFT

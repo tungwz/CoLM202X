@@ -583,6 +583,10 @@ SUBROUTINE Aggregation_Urban (dir_rawdata, dir_srfdata, lc_year, &
                data_r8_2d_in2 = ulai   , data_r8_2d_out2 = ulai_one   , &
                data_r8_2d_in3 = usai   , data_r8_2d_out3 = slai_one   )
 
+            WHERE (gfcc_tc_one < 0)
+               area_one = 0
+            END WHERE
+
             !TODO: check below
             ! area-weight average
             IF (sum(gfcc_tc_one * area_one) > 0) THEN

@@ -80,6 +80,35 @@ module MOD_Vars_1DAccFluxes
    real(r8), allocatable :: a_rain (:)
    real(r8), allocatable :: a_snow (:)
 
+#ifdef URBAN_MODEL
+   !---------------------------------------------------------------------
+   REAL(r8), allocatable :: a_t_room (:)    !temperature of inner building [K]
+   REAL(r8), allocatable :: a_tafu   (:)    !temperature of outer building [K]
+   REAL(r8), allocatable :: a_fhac   (:)    !sensible flux from heat or cool AC [W/m2]
+   REAL(r8), allocatable :: a_fwst   (:)    !waste heat flux from heat or cool AC [W/m2]
+   REAL(r8), allocatable :: a_fach   (:)    !flux from inner and outter air exchange [W/m2]
+   REAL(r8), allocatable :: a_fahe   (:)    !flux from metabolic and vehicle [W/m2]
+   REAL(r8), allocatable :: a_fhah   (:)    !sensible flux from heating [W/m2]
+   REAL(r8), allocatable :: a_vehc   (:)    !flux from vehicle [W/m2]
+   REAL(r8), allocatable :: a_meta   (:)    !flux from metabolic [W/m2]
+
+   REAL(r8), allocatable :: a_senroof(:)    !sensible heat flux from roof [W/m2]
+   REAL(r8), allocatable :: a_senwsun(:)    !sensible heat flux from sunlit wall [W/m2]
+   REAL(r8), allocatable :: a_senwsha(:)    !sensible heat flux from shaded wall [W/m2]
+   REAL(r8), allocatable :: a_sengimp(:)    !sensible heat flux from impervious road [W/m2]
+   REAL(r8), allocatable :: a_sengper(:)    !sensible heat flux from pervious road [W/m2]
+   REAL(r8), allocatable :: a_senurbl(:)    !sensible heat flux from urban vegetation [W/m2]
+
+   REAL(r8), allocatable :: a_lfevproof(:)    !latent heat flux from roof [W/m2]
+   REAL(r8), allocatable :: a_lfevpgimp(:)    !latent heat flux from impervious road [W/m2]
+   REAL(r8), allocatable :: a_lfevpgper(:)    !latent heat flux from pervious road [W/m2]
+   REAL(r8), allocatable :: a_lfevpurbl(:)    !latent heat flux from urban vegetation [W/m2]
+
+   REAL(r8), allocatable :: a_troof    (:)    !temperature of roof [K]
+   REAL(r8), allocatable :: a_twall    (:)    !temperature of wall [K]
+   !---------------------------------------------------------------------
+#endif
+
 #ifdef BGC
    real(r8), allocatable :: a_leafc              (:)
    real(r8), allocatable :: a_leafc_storage      (:)
@@ -303,6 +332,7 @@ contains
 
       use MOD_SPMD_Task
       use MOD_LandPatch, only : numpatch
+      use MOD_LandUrban, only : numurban
       USE MOD_Vars_Global
       implicit none
 
@@ -404,6 +434,37 @@ contains
             allocate (a_qref      (numpatch))
             allocate (a_rain      (numpatch))
             allocate (a_snow      (numpatch))
+
+#ifdef URBAN_MODEL
+            ! IF (numurban > 0) THEN
+            !---------------------------------------------------------------------
+            allocate (a_t_room    (numpatch))
+            allocate (a_tafu      (numpatch))
+            allocate (a_fhac      (numpatch))
+            allocate (a_fwst      (numpatch))
+            allocate (a_fach      (numpatch))
+            allocate (a_fahe      (numpatch))
+            allocate (a_fhah      (numpatch))
+            allocate (a_vehc      (numpatch))
+            allocate (a_meta      (numpatch))
+
+            allocate (a_senroof   (numpatch))
+            allocate (a_senwsun   (numpatch))
+            allocate (a_senwsha   (numpatch))
+            allocate (a_sengimp   (numpatch))
+            allocate (a_sengper   (numpatch))
+            allocate (a_senurbl   (numpatch))
+
+            allocate (a_lfevproof (numpatch))
+            allocate (a_lfevpgimp (numpatch))
+            allocate (a_lfevpgper (numpatch))
+            allocate (a_lfevpurbl (numpatch))
+
+            allocate (a_troof     (numpatch))
+            allocate (a_twall     (numpatch))
+            !---------------------------------------------------------------------
+            ! ENDIF
+#endif
 
 #ifdef BGC
             allocate (a_leafc              (numpatch))
@@ -606,6 +667,7 @@ contains
 
       use MOD_SPMD_Task
       use MOD_LandPatch, only : numpatch
+      use MOD_LandUrban, only : numurban
       implicit none
 
       if (p_is_worker) then
@@ -684,6 +746,38 @@ contains
             deallocate (a_qref      )
             deallocate (a_rain      )
             deallocate (a_snow      )
+
+#ifdef URBAN_MODEL
+            ! IF (numurban > 0) THEN
+            !---------------------------------------------------------------------
+            deallocate (a_t_room    )
+            deallocate (a_tafu      )
+            deallocate (a_fhac      )
+            deallocate (a_fwst      )
+            deallocate (a_fach      )
+            deallocate (a_fahe      )
+            deallocate (a_fhah      )
+            deallocate (a_vehc      )
+            deallocate (a_meta      )
+
+            deallocate (a_senroof   )
+            deallocate (a_senwsun   )
+            deallocate (a_senwsha   )
+            deallocate (a_sengimp   )
+            deallocate (a_sengper   )
+            deallocate (a_senurbl   )
+
+            deallocate (a_lfevproof )
+            deallocate (a_lfevpgimp )
+            deallocate (a_lfevpgper )
+            deallocate (a_lfevpurbl )
+
+            deallocate (a_troof     )
+            deallocate (a_twall     )
+            !---------------------------------------------------------------------
+            ! ENDIF
+#endif
+
 #ifdef BGC
             deallocate (a_leafc              )
             deallocate (a_leafc_storage      )
@@ -907,6 +1001,7 @@ contains
 
       use MOD_SPMD_Task
       use MOD_LandPatch, only : numpatch
+      use MOD_LandUrban, only : numurban
       use MOD_Vars_Global,    only : spval
       implicit none
 
@@ -990,6 +1085,36 @@ contains
             a_qref      (:) = spval
             a_rain      (:) = spval
             a_snow      (:) = spval
+
+#ifdef URBAN_MODEL
+            ! IF (numurban > 0) THEN
+            a_t_room   (:) = spval
+            a_tafu     (:) = spval
+            a_fhac     (:) = spval
+            a_fwst     (:) = spval
+            a_fach     (:) = spval
+            a_fahe     (:) = spval
+            a_fhah     (:) = spval
+            a_vehc     (:) = spval
+            a_meta     (:) = spval
+
+            a_senroof  (:) = spval
+            a_senwsun  (:) = spval
+            a_senwsha  (:) = spval
+            a_sengimp  (:) = spval
+            a_sengper  (:) = spval
+            a_senurbl  (:) = spval
+
+            a_lfevproof(:) = spval
+            a_lfevpgimp(:) = spval
+            a_lfevpgper(:) = spval
+            a_lfevpurbl(:) = spval
+
+            a_troof    (:) = spval
+            a_twall    (:) = spval
+            ! ENDIF
+#endif
+
 #ifdef BGC
             a_leafc              (:) = spval
             a_leafc_storage      (:) = spval
@@ -1218,6 +1343,7 @@ contains
       use MOD_Precision
       use MOD_SPMD_Task
       use MOD_LandPatch,     only : numpatch
+      use MOD_LandUrban,     only : numurban
       use MOD_Const_Physical, only : vonkar, stefnc, cpair, rgas, grav
       use MOD_Vars_TimeInvariants
       use MOD_Vars_TimeVariables
@@ -1279,8 +1405,8 @@ contains
             call acc1d (forc_solsd, a_solarin)
             call acc1d (forc_solld, a_solarin)
 			if (DEF_USE_CBL_HEIGHT) then
-              call acc1d (forc_hpbl , a_hpbl )
-		    endif
+            call acc1d (forc_hpbl , a_hpbl )
+         endif
 
             call acc1d (taux    , a_taux   )
             call acc1d (tauy    , a_tauy   )
@@ -1355,6 +1481,35 @@ contains
 
             call acc1d (forc_rain, a_rain )
             call acc1d (forc_snow, a_snow )
+
+#ifdef URBAN_MODEL
+            ! IF (numurban > 0) THEN
+            CALL acc1d(t_room, a_t_room   )
+            CALL acc1d(tafu  , a_tafu     )
+            CALL acc1d(fhac  , a_fhac     )
+            CALL acc1d(fwst  , a_fwst     )
+            CALL acc1d(fach  , a_fach     )
+            CALL acc1d(fahe  , a_fahe     )
+            CALL acc1d(fhah  , a_fhah     )
+            CALL acc1d(vehc  , a_vehc     )
+            CALL acc1d(meta  , a_meta     )
+
+            CALL acc1d(fsen_roof, a_senroof  )
+            CALL acc1d(fsen_wsun, a_senwsun  )
+            CALL acc1d(fsen_wsha, a_senwsha  )
+            CALL acc1d(fsen_gimp, a_sengimp  )
+            CALL acc1d(fsen_gper, a_sengper  )
+            CALL acc1d(fsen_urbl, a_senurbl  )
+
+            CALL acc1d(lfevp_roof, a_lfevproof)
+            CALL acc1d(lfevp_gimp, a_lfevpgimp)
+            CALL acc1d(lfevp_gper, a_lfevpgper)
+            CALL acc1d(lfevp_urbl, a_lfevpurbl)
+
+            CALL acc1d(t_roof, a_troof    )
+            CALL acc1d(t_wall, a_twall    )
+            ! ENDIF
+#endif
 
 #ifdef BGC
             call acc1d (leafc              , a_leafc               )
@@ -1776,6 +1931,36 @@ contains
       end do
 
    END SUBROUTINE acc1d
+
+   !------
+   SUBROUTINE acc1d_urb (var, s)
+
+      use MOD_Precision
+      use MOD_LandPatch
+      use MOD_LandUrban
+      use MOD_Vars_Global, only: spval, URBAN
+
+      IMPLICIT NONE
+
+      real(r8), intent(in)    :: var(:)
+      real(r8), intent(inout) :: s  (:)
+      ! Local variables
+      integer :: i, u
+
+      do i = lbound(s,1), ubound(s,1)
+         IF (landpatch%settyp(i) == URBAN) THEN
+            u = patch2urban(i)
+            if (var(u) /= spval) then
+               if (s(i) /= spval) then
+                  s(i) = s(i) + var(u)
+               else
+                  s(i) = var(u)
+               end if
+            end if
+         ENDIF
+      end do
+
+   END SUBROUTINE acc1d_urb
 
    !------
    SUBROUTINE acc2d (var, s)

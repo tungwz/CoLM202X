@@ -289,9 +289,9 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
         taux(i)         ,tauy(i)         ,fsena(i)        ,fevpa(i)        ,&
         lfevpa(i)       ,fsenl(i)        ,fevpl(i)        ,etr(i)          ,&
         fseng(i)        ,fevpg(i)        ,olrg(i)         ,fgrnd(i)        ,&
-        fsen_roof(u)    ,fsen_wsun(u)    ,fsen_wsha(u)    ,fsen_gimp(u)    ,&
-        fsen_gper(u)    ,fsen_urbl(u)    ,t_roof(u)       ,t_wall(u)       ,&
-        lfevp_roof(u)   ,lfevp_gimp(u)   ,lfevp_gper(u)   ,lfevp_urbl(u)   ,&
+        fsen_roof(i)    ,fsen_wsun(i)    ,fsen_wsha(i)    ,fsen_gimp(i)    ,&
+        fsen_gper(i)    ,fsen_urbl(i)    ,t_roof(u)       ,t_wall(u)       ,&
+        lfevp_roof(i)   ,lfevp_gimp(i)   ,lfevp_gper(i)   ,lfevp_urbl(i)   ,&
         trad(i)         ,tref(i)         ,&!tmax(i)       ,tmin(i)         ,&
         qref(i)         ,rsur(i)         ,rnof(i)         ,qintr(i)        ,&
         qinfl(i)        ,qdrip(i)        ,rst(i)          ,assim(i)        ,&
