@@ -140,7 +140,7 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
              ! End ozone stress variables
              ! WUE stomata model parameter
                lambda(m),                                                          &
-             ! End WUE model parameter 
+             ! End WUE model parameter
                zwt(i),          wdsrf(i),        wa(i),           wetwat(i),       &
                t_lake(1:,i),    lake_icefrac(1:,i),               savedtke1(i),    &
 
@@ -172,7 +172,7 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
 
              ! TUNABLE modle constants
                zlnd,            zsno,            csoilc,          dewmx,           &
-               ! 'wtfact' is updated to gridded 'fsatmax' data. 
+               ! 'wtfact' is updated to gridded 'fsatmax' data.
                capr,            cnfac,           ssi,             &
                wimp,            pondmx,          smpmax,          smpmin,          &
                trsmx0,          tcrit,                                             &
@@ -272,7 +272,7 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
 
             lai(i)          ,sai(i)          ,fveg(i)         ,sigf(i)         ,&
             green(i)        ,tleaf(i)        ,ldew(i)         ,ldew_rain(i)    ,&
-            ldew_snow(i)    ,fwet_snow(i)    ,t_grnd(i)                        ,&
+            ldew_snow(i)    ,fwet_snow(i)    ,t_grnd(i)       ,t_grndln(u)     ,&
 
             sag_roof(u)     ,sag_gimp(u)     ,sag_gper(u)     ,sag_lake(u)     ,&
             scv_roof(u)     ,scv_gimp(u)     ,scv_gper(u)     ,scv_lake(u)     ,&
@@ -309,8 +309,9 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
             fseng(i)        ,fevpg(i)        ,olrg(i)         ,fgrnd(i)        ,&
             fsen_roof(u)    ,fsen_wsun(u)    ,fsen_wsha(u)    ,fsen_gimp(u)    ,&
             fsen_gper(u)    ,fsen_urbl(u)    ,t_roof(u)       ,t_wall(u)       ,&
+            t_wsun(u)       ,t_wsha(u)       ,t_gper(u)       ,t_gimp(u)       ,&
             lfevp_roof(u)   ,lfevp_gimp(u)   ,lfevp_gper(u)   ,lfevp_urbl(u)   ,&
-            trad(i)         ,tref(i)         ,&
+            trad(i)         ,tref(i)         ,tmax(u)         ,tmin(u)         ,&
             qref(i)         ,rsur(i)         ,rnof(i)         ,qintr(i)        ,&
             qinfl(i)        ,qdrip(i)        ,rst(i)          ,assim(i)        ,&
             respc(i)        ,sabvsun(i)      ,sabvsha(i)      ,sabg(i)         ,&
@@ -322,7 +323,7 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
 
           ! TUNABLE modle constants
             zlnd            ,zsno            ,csoilc          ,dewmx           ,&
-            ! 'wtfact' is updated to gridded 'fsatmax' data. 
+            ! 'wtfact' is updated to gridded 'fsatmax' data.
             capr            ,cnfac           ,ssi             ,&
             wimp            ,pondmx          ,smpmax          ,smpmin          ,&
             trsmx0          ,tcrit                                             ,&

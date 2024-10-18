@@ -73,7 +73,8 @@ CONTAINS
         dfwsun         ,lai            ,sai            ,htop           ,&
         hbot           ,fveg           ,sigf           ,extkd          ,&
         lwsun          ,lwsha          ,lgimp          ,lgper          ,&
-        t_grnd         ,t_roofsno      ,t_wallsun      ,t_wallsha      ,&
+        t_grnd         ,t_grndln                                       ,&
+        t_roofsno      ,t_wallsun      ,t_wallsha      ,&
         t_gimpsno      ,t_gpersno      ,t_lakesno      ,wliq_roofsno   ,&
         wliq_gimpsno   ,wliq_gpersno   ,wliq_lakesno   ,wice_roofsno   ,&
         wice_gimpsno   ,wice_gpersno   ,wice_lakesno   ,t_lake         ,&
@@ -92,6 +93,7 @@ CONTAINS
         fseng          ,fevpg          ,olrg           ,fgrnd          ,&
         fsen_roof      ,fsen_wsun      ,fsen_wsha      ,fsen_gimp      ,&
         fsen_gper      ,fsen_urbl      ,troof          ,twall          ,&
+        twsun          ,twsha          ,tgper          ,tgimp          ,&
         lfevp_roof     ,lfevp_gimp     ,lfevp_gper     ,lfevp_urbl     ,&
         qseva_roof     ,qseva_gimp     ,qseva_gper     ,qseva_lake     ,&
         qsdew_roof     ,qsdew_gimp     ,qsdew_gper     ,qsdew_lake     ,&
@@ -110,6 +112,7 @@ CONTAINS
    USE MOD_Precision
    USE MOD_SPMD_Task
    USE MOD_Vars_Global
+   USE MOD_TimeManager, only: isgreenwich
    USE MOD_Const_Physical, only: denh2o,roverg,hvap,hsub,rgas,cpair,&
                                  stefnc,denice,tfrz,vonkar,grav
    USE MOD_Urban_Shortwave
@@ -298,6 +301,7 @@ CONTAINS
         lgimp                          ,&! net longwave radiation of impervious road
         lgper                          ,&! net longwave radiation of pervious road
         t_grnd                         ,&! ground temperature
+        t_grndln                       ,&
         t_roofsno   (     lbr:nl_wall) ,&! temperatures of roof layers
         t_wallsun   (         nl_wall) ,&! temperatures of roof layers
         t_wallsha   (         nl_wall) ,&! temperatures of roof layers
@@ -574,6 +578,8 @@ CONTAINS
    real(r8), allocatable :: UrbVF(:)  ! View factor from sky to wall, ground and veg
    real(r8), allocatable :: fcover(:) ! fractional cover of roof, wall, ground and veg
 
+   integer  :: local_secs
+   real(r8) :: radpsec
 
 !=======================================================================
 ! [1] Initial set and propositional variables
@@ -1229,10 +1235,40 @@ CONTAINS
       t_grnd = troof*froof &
              + twsun*fg*UrbVF(1) + twsha*fg*UrbVF(2) &
              + tgimp*fg*UrbVF(3) + tgper*fg*UrbVF(4)
+      ! t_grnd = twsun*fg*UrbVF(1) + twsha*fg*UrbVF(2) &
+      !        + tgimp*fg*UrbVF(3) + tgper*fg*UrbVF(4)
 
       IF ( doveg ) THEN
-         t_grnd = t_grnd + tleaf*fg*UrbVF(5)
+         t_grnd = (t_grnd + tleaf*fg*UrbVF(5)) ! / sum(UrbVF(1:5))
+      ! ELSE
+         ! t_grnd = t_grnd / sum(UrbVF(1:4))
       ENDIF
+
+      ! t_grnd = t_grnd + troof*froof
+
+      ! calculate the local secs
+      radpsec = pi/12./3600.
+      IF ( isgreenwich ) THEN
+         local_secs = idate(3) + nint((patchlonr/radpsec)/deltim)*deltim
+         local_secs = mod(local_secs,86400)
+      ELSE
+         local_secs = idate(3)
+      ENDIF
+
+      IF (deltim == 1800) THEN
+         IF (local_secs == 86400/2 + 1800*2) THEN
+            t_grndln = t_grnd
+         ELSE
+            t_grndln = spval
+         ENDIF
+      ELSE
+         IF (local_secs == 86400/2 + 1800*1) THEN
+            t_grndln = t_grnd
+         ELSE
+            t_grndln = spval
+         ENDIF
+      ENDIF
+
 
       !==============================================
       qseva_roof = 0.

@@ -58,7 +58,7 @@ MODULE MOD_Namelist
 ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
    character(len=256) :: SITE_fsrfdata   = 'null'
-   
+
    real(r8) :: SITE_lon_location = 113.5897
    real(r8) :: SITE_lat_location = 22.3507
 
@@ -315,7 +315,7 @@ MODULE MOD_Namelist
    logical            :: DEF_USE_MEDLYNST        = .false.
 
    !WUE stomata model
-   logical            :: DEF_USE_WUEST           = .true.
+   logical            :: DEF_USE_WUEST           = .false.
 
    !Semi-Analytic-Spin-Up
    logical            :: DEF_USE_SASU            = .false.
@@ -524,6 +524,13 @@ MODULE MOD_Namelist
       logical :: tafu                             = .true.
       logical :: t_roof                           = .true.
       logical :: t_wall                           = .true.
+      logical :: t_wsun                           = .true.
+      logical :: t_wsha                           = .true.
+      logical :: t_gper                           = .true.
+      logical :: t_gimp                           = .true.
+      logical :: tmax                             = .true.
+      logical :: tmin                             = .true.
+      logical :: t_grndln                         = .true.
 
       logical :: assimsun                         = .true.
       logical :: assimsha                         = .true.
@@ -1545,6 +1552,13 @@ CONTAINS
       CALL sync_hist_vars_one (DEF_hist_vars%tafu        , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%t_roof      , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%t_wall      , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%t_wsun      , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%t_wsha      , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%t_gper      , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%t_gimp      , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%tmax        , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%tmin        , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%t_grndln    , set_defaults)
 #endif
       CALL sync_hist_vars_one (DEF_hist_vars%assimsun    , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%assimsha    , set_defaults)

@@ -115,7 +115,7 @@
 
            lai          ,sai          ,fveg         ,sigf         ,&
            green        ,tleaf        ,ldew         ,ldew_rain    ,&
-           ldew_snow    ,fwet_snow    ,t_grnd                     ,&
+           ldew_snow    ,fwet_snow    ,t_grnd       ,t_grndln     ,&
 
            sag_roof     ,sag_gimp     ,sag_gper     ,sag_lake     ,&
            scv_roof     ,scv_gimp     ,scv_gper     ,scv_lake     ,&
@@ -152,8 +152,9 @@
            fseng        ,fevpg        ,olrg         ,fgrnd        ,&
            fsen_roof    ,fsen_wsun    ,fsen_wsha    ,fsen_gimp    ,&
            fsen_gper    ,fsen_urbl    ,troof        ,twall        ,&
+           twsun        ,twsha        ,tgper        ,tgimp        ,&
            lfevp_roof   ,lfevp_gimp   ,lfevp_gper   ,lfevp_urbl   ,&
-           trad         ,tref         ,&!tmax       ,tmin         ,&
+           trad         ,tref         ,tmax         ,tmin         ,&
            qref         ,rsur         ,rnof         ,qintr        ,&
            qinfl        ,qdrip        ,rst          ,assim        ,&
            respc        ,sabvsun      ,sabvsha      ,sabg         ,&
@@ -256,8 +257,8 @@
         psi0        (nl_soil) ,&! minimum soil suction [mm]
         bsw         (nl_soil) ,&! clapp and hornbereger "b" parameter [-]
         theta_r     (nl_soil) ,&! residual water content (cm3/cm3)
-        fsatmax               ,&! maximum saturated area fraction [-] 
-        fsatdcf               ,&! decay factor in calucation of saturated area fraction [1/m] 
+        fsatmax               ,&! maximum saturated area fraction [-]
+        fsatdcf               ,&! decay factor in calucation of saturated area fraction [1/m]
 
 #ifdef vanGenuchten_Mualem_SOIL_MODEL
         alpha_vgm (1:nl_soil) ,&! the parameter corresponding approximately to the inverse of the air-entry value
@@ -399,9 +400,10 @@
         BVIC                  ,&! b parameter in Fraction of saturated soil in a grid calculated by VIC
 
         t_grnd                ,&! ground surface temperature [k]
+        t_grndln              ,&
         tleaf                 ,&! sunlit leaf temperature [K]
-        !tmax                 ,&! Diurnal Max 2 m height air temperature [kelvin]
-        !tmin                 ,&! Diurnal Min 2 m height air temperature [kelvin]
+        tmax                 ,&! Diurnal Max 2 m height air temperature [kelvin]
+        tmin                 ,&! Diurnal Min 2 m height air temperature [kelvin]
         ldew                  ,&! depth of water on foliage [kg/m2/s]
         ldew_rain             ,&! depth of rain on foliage[kg/m2/s]
         ldew_snow             ,&! depth of snow on foliage[kg/m2/s]
@@ -536,6 +538,8 @@
 
         troof                 ,&! temperature of roof [K]
         twall                 ,&! temperature of wall [K]
+        twsun                 ,&
+        twsha                 ,&
 
         sabvsun               ,&! solar absorbed by sunlit vegetation [W/m2]
         sabvsha               ,&! solar absorbed by shaded vegetation [W/m2]
@@ -1002,7 +1006,8 @@
          dfwsun             ,lai                ,sai                ,htop               ,&
          hbot               ,fveg               ,sigf               ,extkd              ,&
          lwsun              ,lwsha              ,lgimp              ,lgper              ,&
-         t_grnd             ,t_roofsno(lbr:)    ,t_wallsun(:)       ,t_wallsha(:)       ,&
+         t_grnd             ,t_grndln                                                   ,&
+         t_roofsno(lbr:)    ,t_wallsun(:)       ,t_wallsha(:)       ,&
          t_gimpsno(lbi:)    ,t_gpersno(lbp:)    ,t_lakesno(:)       ,wliq_roofsno(lbr:) ,&
          wliq_gimpsno(lbi:) ,wliq_gpersno(lbp:) ,wliq_lakesno(:)    ,wice_roofsno(lbr:) ,&
          wice_gimpsno(lbi:) ,wice_gpersno(lbp:) ,wice_lakesno(:)    ,t_lake(:)          ,&
@@ -1021,6 +1026,7 @@
          fseng              ,fevpg              ,olrg               ,fgrnd              ,&
          fsen_roof          ,fsen_wsun          ,fsen_wsha          ,fsen_gimp          ,&
          fsen_gper          ,fsen_urbl          ,troof              ,twall              ,&
+         twsun              ,twsha              ,tgper              ,tgimp              ,&
          lfevp_roof         ,lfevp_gimp         ,lfevp_gper         ,lfevp_urbl         ,&
          qseva_roof         ,qseva_gimp         ,qseva_gper         ,qseva_lake         ,&
          qsdew_roof         ,qsdew_gimp         ,qsdew_gper         ,qsdew_lake         ,&
@@ -1333,8 +1339,9 @@
       dz_sno(:) = dz_sno(:)*(1-flake) + dz_sno_lake(:)*flake
 
 ! diagnostic diurnal temperature
-      !IF (tref > tmax) tmax = tref
-      !IF (tref < tmin) tmin = tref
+      IF (tmin <=0   ) tmin = tref
+      IF (tref > tmax) tmax = tref
+      IF (tref < tmin) tmin = tref
 
 ! 06/05/2022, yuan: RH for output to compare
       CALL qsadv(tref,forc_psrf,ei,deiDT,qsatl,qsatlDT)

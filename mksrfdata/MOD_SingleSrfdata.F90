@@ -161,7 +161,7 @@ CONTAINS
          ENDIF
          SITE_lon_location = lon_in
       ENDIF
-      
+
       CALL normalize_longitude (SITE_lon_location)
 
       IF (USE_SITE_landtype) THEN
@@ -173,7 +173,7 @@ CONTAINS
 #endif
          ENDIF
       ENDIF
-         
+
       IF (SITE_landtype < 0) THEN
          write(*,*) 'Error! Please set namelist SITE_landtype first!'
          CALL CoLM_stop()
@@ -338,7 +338,7 @@ CONTAINS
          ENDIF
          SITE_lon_location = lon_in
       ENDIF
-      
+
       CALL normalize_longitude (SITE_lon_location)
 
       IF (trim(fsrfdata) /= 'null') THEN
@@ -465,11 +465,11 @@ CONTAINS
       IF ((.not. mksrfdata) .or. USE_SITE_topography) THEN
          ! otherwise, retrieve from database by Aggregation_Topography.F90
          CALL ncio_read_serial (fsrfdata, 'elevation', SITE_topography)
-         CALL ncio_read_serial (fsrfdata, 'elvstd   ', SITE_topostd   )
 
          IF (DEF_USE_Forcing_Downscaling) THEN
-            CALL ncio_read_serial (fsrfdata, 'SITE_svf', SITE_svf             )
-            CALL ncio_read_serial (fsrfdata, 'SITE_cur', SITE_cur             )
+            CALL ncio_read_serial (fsrfdata, 'elvstd   '     , SITE_topostd   )
+            CALL ncio_read_serial (fsrfdata, 'SITE_svf'      , SITE_svf       )
+            CALL ncio_read_serial (fsrfdata, 'SITE_cur'      , SITE_cur       )
             CALL ncio_read_serial (fsrfdata, 'SITE_slp_type' , SITE_slp_type  )
             CALL ncio_read_serial (fsrfdata, 'SITE_asp_type' , SITE_asp_type  )
             CALL ncio_read_serial (fsrfdata, 'SITE_area_type', SITE_area_type )
@@ -645,7 +645,7 @@ CONTAINS
       CALL ncio_put_attr     (fsrfdata, 'elvstd', 'source', datasource(USE_SITE_topostd))
 
       ! used for downscaling
-      IF (DEF_USE_Forcing_Downscaling) THEN   
+      IF (DEF_USE_Forcing_Downscaling) THEN
          CALL ncio_write_serial (fsrfdata, 'SITE_svf', SITE_svf)
          CALL ncio_write_serial (fsrfdata, 'SITE_cur', SITE_cur)
          CALL ncio_write_serial (fsrfdata, 'SITE_sf_lut'   , SITE_sf_lut, 'azi', 'zen')
@@ -850,7 +850,7 @@ CONTAINS
       ENDIF
 
       ! used for downscaling
-      IF (DEF_USE_Forcing_Downscaling) THEN   
+      IF (DEF_USE_Forcing_Downscaling) THEN
          CALL ncio_write_serial (fsrfdata, 'SITE_svf', SITE_svf)
          CALL ncio_write_serial (fsrfdata, 'SITE_cur', SITE_cur)
          CALL ncio_write_serial (fsrfdata, 'SITE_sf_lut', SITE_sf_lut, 'azi', 'zen')
@@ -929,7 +929,7 @@ CONTAINS
 #endif
       IF (allocated(SITE_soil_BA_alpha         )) deallocate(SITE_soil_BA_alpha         )
       IF (allocated(SITE_soil_BA_beta          )) deallocate(SITE_soil_BA_beta          )
-      
+
       IF (allocated(SITE_sf_lut                )) deallocate(SITE_sf_lut                )
       IF (allocated(SITE_slp_type              )) deallocate(SITE_slp_type              )
       IF (allocated(SITE_asp_type              )) deallocate(SITE_asp_type              )
