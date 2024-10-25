@@ -95,6 +95,11 @@ CONTAINS
          sgper(2,2),    &! pervious ground absorption for solar radiation,
          slake(2,2)      ! lake absorption for solar radiation,
 
+   real(r8)  :: &
+         alb_can(2,2),  &
+         alb_lake(2,2), &
+         alb_roof_(2,2)
+
    !-----------------------------------------------------------------------
    real(r8) :: hveg      ! height of crown central hight
 
@@ -124,7 +129,8 @@ CONTAINS
                      fsno_roof,fsno_gimp,fsno_gper,fsno_lake,&
                      scv_roof,scv_gimp,scv_gper,scv_lake,&
                      sag_roof,sag_gimp,sag_gper,sag_lake,&
-                     dfwsun,extkd,alb,ssun,ssha,sroof,swsun,swsha,sgimp,sgper,slake)
+                     dfwsun,extkd,alb,ssun,ssha,sroof,swsun,swsha,sgimp,sgper,slake,&
+                     alb_can, alb_lake, alb_roof_)
 
    END SUBROUTINE UrbanIniTimeVar
 

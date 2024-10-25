@@ -28,6 +28,10 @@ MODULE MOD_Urban_Vars_TimeVariables
    real(r8), allocatable :: sgper      (:,:,:) !pervious absorptioin [-]
    real(r8), allocatable :: slake      (:,:,:) !urban lake absorptioin [-]
 
+   real(r8), allocatable :: alb_can    (:,:,:)
+   real(r8), allocatable :: alb_roof_  (:,:,:)
+   real(r8), allocatable :: alb_lake   (:,:,:)
+
    ! net longwave radiation for last time temperature change
    real(r8), allocatable :: lwsun          (:) !net longwave of sunlit wall [W/m2]
    real(r8), allocatable :: lwsha          (:) !net longwave of shaded wall [W/m2]
@@ -146,6 +150,10 @@ CONTAINS
             allocate (sgimp                     (2,2,numurban))
             allocate (sgper                     (2,2,numurban))
             allocate (slake                     (2,2,numurban))
+
+            allocate (alb_can                   (2,2,numurban))
+            allocate (alb_lake                  (2,2,numurban))
+            allocate (alb_roof_                 (2,2,numurban))
 
             allocate (lwsun                         (numurban))
             allocate (lwsha                         (numurban))
@@ -440,6 +448,10 @@ CONTAINS
             deallocate (sgimp        )
             deallocate (sgper        )
             deallocate (slake        )
+
+            deallocate (alb_can      )
+            deallocate (alb_lake     )
+            deallocate (alb_roof_    )
 
             deallocate (lwsun        )
             deallocate (lwsha        )

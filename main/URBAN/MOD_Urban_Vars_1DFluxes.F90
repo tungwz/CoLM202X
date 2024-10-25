@@ -23,6 +23,13 @@ MODULE MOD_Urban_Vars_1DFluxes
   !real(r8), allocatable :: sabwsha     (:) !solar absorption of shaded wall [W/m2]
   !real(r8), allocatable :: sabgimp     (:) !solar absorption of impervious [W/m2]
   !real(r8), allocatable :: sabgper     (:) !solar absorption of pervious [W/m2]
+   real(r8), allocatable :: sr_can      (:)
+   real(r8), allocatable :: sr_lake     (:)
+   real(r8), allocatable :: sr_roof     (:)
+
+   real(r8), allocatable :: sr_canln    (:)
+   real(r8), allocatable :: sr_lakeln   (:)
+   real(r8), allocatable :: sr_roofln   (:)
 
    real(r8), allocatable :: fsen_roof   (:) !sensible heat flux from roof [W/m2]
    real(r8), allocatable :: fsen_wsun   (:) !sensible heat flux from sunlit wall [W/m2]
@@ -67,6 +74,13 @@ CONTAINS
            !allocate (sabwsha        (numurban))
            !allocate (sabgimp        (numurban))
            !allocate (sabgper        (numurban))
+            allocate (sr_roof        (numurban)) ; sr_roof        (:) = spval
+            allocate (sr_can         (numurban)) ; sr_can         (:) = spval
+            allocate (sr_lake        (numurban)) ; sr_lake        (:) = spval
+            allocate (sr_roofln      (numurban)) ; sr_roofln      (:) = spval
+            allocate (sr_canln       (numurban)) ; sr_canln       (:) = spval
+            allocate (sr_lakeln      (numurban)) ; sr_lakeln      (:) = spval
+
             allocate (fsen_roof      (numurban)) ; fsen_roof      (:) = spval
             allocate (fsen_wsun      (numurban)) ; fsen_wsun      (:) = spval
             allocate (fsen_wsha      (numurban)) ; fsen_wsha      (:) = spval
@@ -98,6 +112,13 @@ CONTAINS
            !deallocate (sabwsha      )
            !deallocate (sabgimp      )
            !deallocate (sabgper      )
+            deallocate (sr_can       )
+            deallocate (sr_roof      )
+            deallocate (sr_lake      )
+            deallocate (sr_canln     )
+            deallocate (sr_roofln    )
+            deallocate (sr_lakeln    )
+
             deallocate (fsen_roof    )
             deallocate (fsen_wsun    )
             deallocate (fsen_wsha    )
@@ -134,6 +155,13 @@ CONTAINS
            !sabwsha        (:) = Values
            !sabgimp        (:) = Values
            !sabgper        (:) = Values
+            sr_can         (:) = Values
+            sr_roof        (:) = Values
+            sr_lake        (:) = Values
+            sr_canln       (:) = Values
+            sr_roofln      (:) = Values
+            sr_lakeln      (:) = Values
+
             fsen_roof      (:) = Values
             fsen_wsun      (:) = Values
             fsen_wsha      (:) = Values

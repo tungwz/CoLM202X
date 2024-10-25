@@ -331,7 +331,10 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
           ! additional variables required by coupling with WRF model
             emis(i)         ,z0m(i)          ,zol(i)          ,rib(i)          ,&
             ustar(i)        ,qstar(i)        ,tstar(i)        ,fm(i)           ,&
-            fh(i)           ,fq(i)           ,forc_hpbl(i)                      )
+            fh(i)           ,fq(i)           ,forc_hpbl(i)                     ,&
+            alb_can(1:,1:,u),alb_lake(1:,1:,u),alb_roof_(1:,1:,u)              ,&
+            sr_can(u)       ,sr_lake(u)       ,sr_roof(u)                      ,&
+            sr_canln(u)     ,sr_lakeln(u)     ,sr_roofln(u)                     )
          ENDIF
 
 #endif

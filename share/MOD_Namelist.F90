@@ -504,6 +504,12 @@ MODULE MOD_Namelist
       logical :: tref                             = .true.
       logical :: qref                             = .true.
 
+      logical :: fsr_roofln                       = .true.
+      logical :: fsr_lakeln                       = .true.
+      logical :: fsr_canln                        = .true.
+      logical :: fsr_roof                         = .true.
+      logical :: fsr_lake                         = .true.
+      logical :: fsr_can                          = .true.
       logical :: fsen_roof                        = .true.
       logical :: fsen_wsun                        = .true.
       logical :: fsen_wsha                        = .true.
@@ -1532,6 +1538,13 @@ CONTAINS
       CALL sync_hist_vars_one (DEF_hist_vars%tref        , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%qref        , set_defaults)
 #ifdef URBAN_MODEL
+      CALL sync_hist_vars_one (DEF_hist_vars%fsr_roofln  , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%fsr_lakeln  , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%fsr_canln   , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%fsr_roof    , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%fsr_lake    , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%fsr_can     , set_defaults)
+
       CALL sync_hist_vars_one (DEF_hist_vars%fsen_roof   , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%fsen_wsun   , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%fsen_wsha   , set_defaults)

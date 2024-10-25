@@ -672,7 +672,7 @@ CONTAINS
       ENDIF
 
       ! convert AHE to urban area, i.e. (1-flake)
-      IF ( 1-flake > 0. ) THEN
+      IF ( 1-flake > 0 ) THEN
          Fhac = Fhac / (1-flake)
          Fwst = Fwst / (1-flake)
          Fach = Fach / (1-flake)
@@ -1372,6 +1372,16 @@ CONTAINS
       IF (olrg < 0) THEN
          write(6,*) 'Urban_THERMAL.F90: Urban out-going longwave radiation < 0!'
          write(6,*) ipatch,olrg,lout,dlout,rout,olrg_lake,fg,froof,flake
+         write(6,*) doveg, fcover(5)
+         write(6,*) 'dX:'
+         write(6,*) dX
+         write(6,*) 'SkyVF:'
+         write(6,*) SkyVF
+         write(6,*) 'dBdT:'
+         write(6,*) dBdT
+         write(6,*) 'dT'
+         write(6,*) dT
+         write(6,*) patchlatr*180/PI, patchlonr*180/PI, sabwsun
          CALL CoLM_stop()
       ENDIF
 

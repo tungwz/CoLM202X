@@ -684,6 +684,18 @@ CONTAINS
             CALL mp2g_hist_urb%get_sumarea (sumarea_urb, filter_urb)
          ENDIF
 
+         CALL write_history_variable_urb_2d ( DEF_hist_vars%fsr_roof, &
+            a_srroof, file_hist, 'f_srroof', itime_in_file, sumarea_urb, filter_urb, &
+            'reflected solar radiation at urban roof [W/m2]','W/m2')
+
+         CALL write_history_variable_urb_2d ( DEF_hist_vars%fsr_can, &
+            a_srcan, file_hist, 'f_srcanyon', itime_in_file, sumarea_urb, filter_urb, &
+            'reflected solar radiation at urban canyon  [W/m2]','W/m2')
+
+         CALL write_history_variable_urb_2d ( DEF_hist_vars%fsr_lake, &
+            a_srlake, file_hist, 'f_srlake', itime_in_file, sumarea_urb, filter_urb, &
+            'reflected solar radiation at urban lake [W/m2]','W/m2')
+
          ! sensible heat from building roof [W/m2]
          CALL write_history_variable_urb_2d ( DEF_hist_vars%fsen_roof, &
             a_senroof, file_hist, 'f_fsenroof', itime_in_file, sumarea_urb, filter_urb, &
@@ -853,6 +865,35 @@ CONTAINS
          CALL write_history_variable_tg ( DEF_hist_vars%t_grndln, &
             a_tgrndln, file_hist, 'f_t_grndln', itime_in_file, sumarea, filter_urb, &
             'tg at local noon [k]','kelvin')
+
+         IF (p_is_worker) THEN
+            IF (numpatch > 0) THEN
+               DO i = 1, numpatch
+                  IF (patchtype(i) == 1) THEN
+                     u = patch2urban(i)
+
+                     filter_urb(u) = nac_lnurb(u) > 0
+
+                     IF (DEF_forcing%has_missing_value) THEN
+                        filter_urb(u) = filter_urb(u) .and. forcmask_pch(i)
+                     ENDIF
+                  ENDIF
+               ENDDO
+            ENDIF
+         ENDIF
+
+         CALL write_history_variable_lnurb ( DEF_hist_vars%fsr_roofln, &
+            a_srroofln, file_hist, 'f_srroofln', itime_in_file, sumarea_urb, filter_urb, &
+            'reflected solar radiation at urban roof(ln) [W/m2]','W/m2')
+
+         CALL write_history_variable_lnurb ( DEF_hist_vars%fsr_canln, &
+            a_srcanln, file_hist, 'f_srcanyonln', itime_in_file, sumarea_urb, filter_urb, &
+            'reflected solar radiation at urban canyon(ln)  [W/m2]','W/m2')
+
+         CALL write_history_variable_lnurb ( DEF_hist_vars%fsr_lakeln, &
+            a_srlakeln, file_hist, 'f_srlakeln', itime_in_file, sumarea_urb, filter_urb, &
+            'reflected solar radiation at urban lake(ln) [W/m2]','W/m2')
+
 #endif
 
          ! ------------------------------------------------------------------------------------------
@@ -3965,6 +4006,44 @@ CONTAINS
       END select
 
    END SUBROUTINE write_history_variable_tg
+
+   ! -------
+   SUBROUTINE write_history_variable_lnurb ( is_hist, &
+         acc_vec, file_hist, varname, itime_in_file, sumarea, filter, &
+         longname, units)
+
+      IMPLICIT NONE
+
+      logical, intent(in) :: is_hist
+
+      real(r8), intent(inout) :: acc_vec(:)
+      character(len=*), intent(in) :: file_hist
+      character(len=*), intent(in) :: varname
+      integer, intent(in) :: itime_in_file
+
+      type(block_data_real8_2d), intent(in) :: sumarea
+      logical,  intent(in) :: filter(:)
+      character (len=*), intent(in), optional :: longname
+      character (len=*), intent(in), optional :: units
+
+      IF (.not. is_hist) RETURN
+
+      select CASE (HistForm)
+      CASE ('Gridded')
+         CALL flux_map_and_write_lnurb ( &
+            acc_vec, file_hist, varname, itime_in_file, sumarea, filter, longname, units)
+#if (defined UNSTRUCTURED || defined CATCHMENT)
+      CASE ('Vector')
+         CALL aggregate_to_vector_and_write_ln ( &
+            acc_vec, file_hist, varname, itime_in_file, filter, longname, units)
+#endif
+#ifdef SinglePoint
+      CASE ('Single')
+         CALL single_write_ln (acc_vec, file_hist, varname, itime_in_file, longname, units)
+#endif
+      END select
+
+   END SUBROUTINE write_history_variable_lnurb
 
    !------------------------------
    SUBROUTINE hist_write_time (filename, dataname, time, itime)

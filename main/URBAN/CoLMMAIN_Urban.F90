@@ -173,7 +173,10 @@
          ! additional variables required by coupling with WRF model
            emis         ,z0m          ,zol          ,rib          ,&
            ustar        ,qstar        ,tstar        ,fm           ,&
-           fh           ,fq           ,hpbl                        )
+           fh           ,fq           ,hpbl                       ,&
+           alb_can      ,alb_lake     ,alb_roof_                  ,&
+           sr_can       ,sr_lake      ,sr_roof                    ,&
+           sr_canln     ,sr_lakeln    ,sr_roofln                   )
 
    USE MOD_Precision
    USE MOD_Vars_Global
@@ -483,6 +486,19 @@
         sgper(2,2)            ,&! shaded canopy absorption for solar radiation
         slake(2,2)              ! shaded canopy absorption for solar radiation
 
+   real(r8), intent(inout) :: &
+        alb_lake(2,2), &
+        alb_can(2,2),  &
+        alb_roof_(2,2)
+
+   real(r8), intent(inout) :: &
+         sr_can,   &
+         sr_lake,  &
+         sr_roof,  &
+         sr_canln, &
+         sr_lakeln,&
+         sr_roofln
+
 ! additional diagnostic variables for output
    real(r8), intent(out) :: &
         laisun                ,&! sunlit leaf area index
@@ -718,7 +734,9 @@
                            swsha(:,:),sgimp(:,:),sgper(:,:),slake(:,:),&
                            sr,sabv,par,sabroof,sabwsun,sabwsha,sabgimp,sabgper,sablake,&
                            solvd,solvi,solnd,solni,srvd,srvi,srnd,srni,&
-                           solvdln,solviln,solndln,solniln,srvdln,srviln,srndln,srniln)
+                           solvdln,solviln,solndln,solniln,srvdln,srviln,srndln,srniln,&
+                           alb_can, alb_lake, alb_roof_, sr_can, sr_lake, sr_roof, &
+                           sr_canln, sr_lakeln, sr_roofln)
 
       CALL rain_snow_temp (patchtype,forc_t,forc_q,forc_psrf,forc_prc,forc_prl,forc_us,forc_vs,tcrit,&
                            prc_rain,prc_snow,prl_rain,prl_snow,t_precip,bifall)
@@ -1307,7 +1325,8 @@
                      fsno_roof,fsno_gimp,fsno_gper,fsno_lake,&
                      scv_roof,scv_gimp,scv_gper,scv_lake,&
                      sag_roof,sag_gimp,sag_gper,sag_lake,&
-                     dfwsun,extkd,alb,ssun,ssha,sroof,swsun,swsha,sgimp,sgper,slake)
+                     dfwsun,extkd,alb,ssun,ssha,sroof,swsun,swsha,sgimp,sgper,slake,&
+                     alb_can, alb_lake, alb_roof_)
 
       ! zero-filling set for glacier/ice-sheet/land water bodies/ocean components
       laisun = lai

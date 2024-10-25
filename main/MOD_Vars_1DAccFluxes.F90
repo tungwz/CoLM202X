@@ -8,6 +8,7 @@ MODULE MOD_Vars_1DAccFluxes
    real(r8), allocatable :: nac_ln      (:)
    real(r8), allocatable :: nac_tg      (:)
    real(r8), allocatable :: nac_24      (:)
+   real(r8), allocatable :: nac_lnurb   (:)
 
    real(r8), allocatable :: a_us        (:)
    real(r8), allocatable :: a_vs        (:)
@@ -104,6 +105,14 @@ MODULE MOD_Vars_1DAccFluxes
    real(r8), allocatable :: a_fhah      (:) !sensible flux from heating [W/m2]
    real(r8), allocatable :: a_vehc      (:) !flux from vehicle [W/m2]
    real(r8), allocatable :: a_meta      (:) !flux from metabolic [W/m2]
+
+   real(r8), allocatable :: a_srroof   (:)
+   real(r8), allocatable :: a_srlake   (:)
+   real(r8), allocatable :: a_srcan    (:)
+
+   real(r8), allocatable :: a_srroofln (:)
+   real(r8), allocatable :: a_srlakeln (:)
+   real(r8), allocatable :: a_srcanln  (:)
 
    real(r8), allocatable :: a_senroof   (:) !sensible heat flux from roof [W/m2]
    real(r8), allocatable :: a_senwsun   (:) !sensible heat flux from sunlit wall [W/m2]
@@ -451,6 +460,14 @@ CONTAINS
                allocate (a_vehc      (numurban))
                allocate (a_meta      (numurban))
 
+               allocate (a_srroof   (numurban))
+               allocate (a_srcan    (numurban))
+               allocate (a_srlake   (numurban))
+
+               allocate (a_srroofln (numurban))
+               allocate (a_srcanln  (numurban))
+               allocate (a_srlakeln (numurban))
+
                allocate (a_senroof   (numurban))
                allocate (a_senwsun   (numurban))
                allocate (a_senwsha   (numurban))
@@ -476,6 +493,7 @@ CONTAINS
 
                allocate (nac_tg      (numurban))
                allocate (nac_24      (numurban))
+               allocate (nac_lnurb   (numurban))
             ENDIF
 #endif
 #ifdef BGC
@@ -801,6 +819,14 @@ CONTAINS
                deallocate (a_vehc      )
                deallocate (a_meta      )
 
+               deallocate (a_srroof   )
+               deallocate (a_srlake   )
+               deallocate (a_srcan    )
+
+               deallocate (a_srroofln )
+               deallocate (a_srlakeln )
+               deallocate (a_srcanln  )
+
                deallocate (a_senroof   )
                deallocate (a_senwsun   )
                deallocate (a_senwsha   )
@@ -826,6 +852,7 @@ CONTAINS
 
                deallocate (nac_tg     )
                deallocate (nac_24     )
+               deallocate (nac_lnurb  )
             ENDIF
 #endif
 
@@ -1154,6 +1181,14 @@ CONTAINS
                a_vehc     (:) = spval
                a_meta     (:) = spval
 
+               a_srroof  (:) = spval
+               a_srlake  (:) = spval
+               a_srcan   (:) = spval
+
+               a_srroofln(:) = spval
+               a_srlakeln(:) = spval
+               a_srcanln (:) = spval
+
                a_senroof  (:) = spval
                a_senwsun  (:) = spval
                a_senwsha  (:) = spval
@@ -1179,6 +1214,7 @@ CONTAINS
 
                nac_tg     (:) = 0
                nac_24     (:) = 0
+               nac_lnurb  (:) = 0
             ENDIF
 #endif
 
@@ -1619,6 +1655,14 @@ CONTAINS
 
                CALL acc1d(t_grndln  , a_tgrndln   )
 
+               CALL acc1d(sr_roof   , a_srroof    )
+               CALL acc1d(sr_can    , a_srcan     )
+               CALL acc1d(sr_lake   , a_srlake    )
+
+               CALL acc1d(sr_roofln , a_srroofln  )
+               CALL acc1d(sr_canln  , a_srcanln   )
+               CALL acc1d(sr_lakeln , a_srlakeln  )
+
 
                IF (idate(3) == 86400) THEN
                   CALL acc1d(tmax, a_tmax)
@@ -1630,6 +1674,11 @@ CONTAINS
                ENDIF
 
                DO i = 1, numurban
+                  np = urban2patch(i)
+
+                  IF (solvdln(np) /= spval) THEN
+                     nac_lnurb(i) = nac_lnurb(i) + 1
+                  ENDIF
 
                   ! IF (idate(3) == 86400) THEN
                   !    CALL acc1d(tmax, a_tmax)
@@ -2074,6 +2123,7 @@ CONTAINS
             deallocate (r_vs10m )
             deallocate (r_fm10m )
 
+            WHERE((forc_sols+forc_solsd+forc_soll+forc_solld).eq.sr) sr=0
             CALL acc1d (sr     , a_sr     )
             CALL acc1d (solvd  , a_solvd  )
             CALL acc1d (solvi  , a_solvi  )
