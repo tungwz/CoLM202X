@@ -211,7 +211,7 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
             patchlonr(i)    ,patchlatr(i)    ,patchclass(i)   ,patchtype(i)    ,&
 
           ! URBAN PARAMETERS
-            froof(u)        ,flake(u)        ,hroof(u)        ,hwr(u)          ,&
+            froof(u)        ,flake(u)        ,hroof(u)        ,hlr(u)          ,&
             fgper(u)        ,em_roof(u)      ,em_wall(u)      ,em_gimp(u)      ,&
             em_gper(u)      ,cv_roof(:,u)    ,cv_wall(:,u)    ,cv_gimp(:,u)    ,&
             tk_roof(:,u)    ,tk_wall(:,u)    ,tk_gimp(:,u)    ,z_roof(:,u)     ,&

@@ -22,9 +22,9 @@ MODULE MOD_Urban_Shortwave
 
 CONTAINS
 
-
-   SUBROUTINE UrbanOnlyShortwave ( theta, HW, fb, fgper, H, &
+   SUBROUTINE UrbanOnlyShortwave ( theta, HL, fb, fgper, H, &
         aroof, awall, agimp, agper, fwsun, sroof, swsun, swsha, sgimp, sgper, albu, albc)
+
 
 !-----------------------------------------------------------------------
 !                Sun
@@ -60,7 +60,7 @@ CONTAINS
 
    real(r8), intent(in) :: &
         theta,      &! Sun zenith angle [radian]
-        HW,         &! Ratio of building height to ground width [-]
+        HL,         &! Ratio of building height to their side length [-]
         fb,         &! Fraction of building area [-]
         fgper,      &! Fraction of impervious ground [-]
         H            ! Building average height [m]
@@ -88,7 +88,7 @@ CONTAINS
    real(r8) ::    &
         W,          &! Urban ground average width [m]
         L,          &! Urban building average length [m]
-        HL,         &! Ratio of H to L, H/L [-]
+        HW,         &! Ratio of H to W, H/W [-]
         fg,         &! Fraction of ground [-]
         fgimp,      &! Weight of pervious ground [-]
 
@@ -118,9 +118,9 @@ CONTAINS
 
       ! Claculate urban structure parameters
       !-------------------------------------------------
-      W  = H/HW
-      L  = W*sqrt(fb)/(1-sqrt(fb))
-      HL = H/L !NOTE: Same as: HL = HW*(1-sqrt(fb))/sqrt(fb)
+      !W  = H/HW
+      !L  = W*sqrt(fb)/(1-sqrt(fb))
+      !HL = H/L !NOTE: Same as: HL = HW*(1-sqrt(fb))/sqrt(fb)
       fg = 1. - fb
 
       fgimp = 1. - fgper
@@ -259,7 +259,7 @@ CONTAINS
    END SUBROUTINE UrbanOnlyShortwave
 
 
-   SUBROUTINE UrbanVegShortwave ( theta, HW, fb, fgper, H, &
+   SUBROUTINE UrbanVegShortwave ( theta, HL, fb, fgper, H, &
          aroof, awall, agimp, agper, lai, sai, fv, hv, rho, tau, &
          fwsun, sroof, swsun, swsha, sgimp, sgper, sveg, albu, albc)
 
@@ -299,7 +299,7 @@ CONTAINS
 
    real(r8), intent(in) :: &
         theta,      &! Sun zenith angle [radian]
-        HW,         &! Ratio of building height to ground width [-]
+        HL,         &! Ratio of building height to their side length [-]
         fb,         &! Fraction of building area [-]
         fgper,      &! Fraction of impervious ground [-]
         H            ! Building average height [m]
@@ -338,7 +338,7 @@ CONTAINS
    real(r8) :: &
         W,          &! Urban ground average width
         L,          &! Urban building average length
-        HL,         &! Ratio of H to L, H/L [-]
+        HW,         &! Ratio of H to W, H/W [-]
         fg,         &! Fraction of ground [-]
         fgimp,      &! Weight of pervious ground [-]
 
@@ -405,9 +405,10 @@ CONTAINS
 
       ! Claculate urban structure parameters
       !-------------------------------------------------
-      W  = H/HW
-      L  = W*sqrt(fb)/(1-sqrt(fb))
-      HL = H/L !NOTE: Same as: HL = HW*(1-sqrt(fb))/sqrt(fb)
+      !W  = H/HW
+      !L  = W*sqrt(fb)/(1-sqrt(fb))
+      !HL = H/L !NOTE: Same as: HL = HW*(1-sqrt(fb))/sqrt(fb)
+      L  = H/HL
       fg = 1. - fb
 
       fgimp = 1. - fgper

@@ -39,7 +39,7 @@ CONTAINS
         vehicle        ,weh_prof       ,wdh_prof       ,idate          ,&
         patchlonr                                                      ,&
         ! surface parameters
-        froof          ,flake          ,hroof          ,hwr            ,&
+        froof          ,flake          ,hroof          ,hlr            ,&
         fgper          ,pondmx         ,eroof          ,ewall          ,&
         egimp          ,egper          ,trsmx0         ,zlnd           ,&
         zsno           ,capr           ,cnfac          ,vf_quartz      ,&
@@ -190,7 +190,7 @@ CONTAINS
         froof                          ,&! roof fractional cover [-]
         flake                          ,&! urban lake fractional cover [-]
         hroof                          ,&! average building height [m]
-        hwr                            ,&! average building height to their distance [-]
+        hlr                            ,&! average building height to their side length [-]
         fgper                          ,&! impervious road fractional cover [-]
         pondmx                         ,&! maximum ponding for soil [mm]
         eroof                          ,&! emissivity of roof
@@ -764,7 +764,7 @@ CONTAINS
 
          ! call longwave function (vegetation)
          CALL UrbanVegLongwave ( &
-                                theta, hwr, froof, fgper, hroof, forc_frl, &
+                                theta, hlr, froof, fgper, hroof, forc_frl, &
                                 twsun, twsha, tgimp, tgper, ewall, egimp, &
                                 egper, lai, sai, fveg, (htop+hbot)/2., &
                                 ev, Ainv, B, B1, dBdT, SkyVF, VegVF, UrbVF, fcover)
@@ -783,7 +783,7 @@ CONTAINS
 
          ! call longwave function, calculate Ainv, B, B1, dBdT
          CALL UrbanOnlyLongwave ( &
-                                 theta, hwr, froof, fgper, hroof, forc_frl, &
+                                 theta, hlr, froof, fgper, hroof, forc_frl, &
                                  twsun, twsha, tgimp, tgper, ewall, egimp, egper, &
                                  Ainv, B, B1, dBdT, SkyVF, UrbVF, fcover)
 
@@ -876,7 +876,7 @@ CONTAINS
             rstfac         ,Fhac           ,Fwst           ,Fach           ,&
             vehc           ,meta                                           ,&
             ! urban and vegetation parameters
-            hroof          ,hwr            ,nurb           ,fcover         ,&
+            hroof          ,hlr            ,nurb           ,fcover         ,&
             ewall          ,egimp          ,egper          ,ev             ,&
             htop           ,hbot           ,lai            ,sai            ,&
             sqrtdi         ,effcon         ,vmax25         ,slti           ,&
@@ -923,7 +923,7 @@ CONTAINS
             forc_q         ,forc_psrf      ,forc_rhoair    ,Fhac           ,&
             Fwst           ,Fach           ,vehc           ,meta           ,&
             ! surface parameters
-            hroof          ,hwr            ,nurb           ,fcover         ,&
+            hroof          ,hlr            ,nurb           ,fcover         ,&
             ! surface status
             z0h_g          ,obu_g          ,ustar_g        ,zlnd           ,&
             zsno           ,fsno_roof      ,fsno_gimp      ,fsno_gper      ,&

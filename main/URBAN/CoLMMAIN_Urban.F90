@@ -62,7 +62,7 @@
            patchlonr    ,patchlatr    ,patchclass   ,patchtype    ,&
 
          ! urban and lake depth
-           froof        ,flake        ,hroof        ,hwr          ,&
+           froof        ,flake        ,hroof        ,hlr          ,&
            fgper        ,em_roof      ,em_wall      ,em_gimp      ,&
            em_gper      ,cv_roof      ,cv_wall      ,cv_gimp      ,&
            tk_roof      ,tk_wall      ,tk_gimp      ,z_roof       ,&
@@ -234,7 +234,7 @@
         fgper                 ,&! impervious fraction to ground area [-]
         flake                 ,&! lake fraction to ground area [-]
         hroof                 ,&! average building height [m]
-        hwr                   ,&! average building height to their distance [-]
+        hlr                   ,&! average building height to their side length [-]
         em_roof               ,&! emissivity of roof [-]
         em_wall               ,&! emissivity of walls [-]
         em_gimp               ,&! emissivity of impervious [-]
@@ -949,7 +949,7 @@
                     wliq_gpersno(:0),wice_gpersno(:0),fioldp(:0),&
                     snlp,sag_gper,scv_gper,snowdp_gper,fsno_gper)
 
-      CALL newsnow_lake ( &
+      CALL newsnow_lake ( DEF_USE_Dynamic_Lake, &
            ! "in" arguments
            ! ---------------
            maxsnl        ,nl_lake       ,deltim          ,dz_lake         ,&
@@ -991,7 +991,7 @@
          vehicle            ,weh_prof           ,wdh_prof           ,idate              ,&
          patchlonr                                                                      ,&
          ! GROUND PARAMETERS
-         froof              ,flake              ,hroof              ,hwr                ,&
+         froof              ,flake              ,hroof              ,hlr                ,&
          fgper              ,pondmx             ,em_roof            ,em_wall            ,&
          em_gimp            ,em_gper            ,trsmx0             ,zlnd               ,&
          zsno               ,capr               ,cnfac              ,vf_quartz          ,&
@@ -1319,7 +1319,7 @@
       ! we supposed call it every time-step, because
       ! other vegeation related parameters are needed to create
 
-      CALL alburban (ipatch,froof,fgper,flake,hwr,hroof,&
+      CALL alburban (ipatch,froof,fgper,flake,hlr,hroof,&
                      alb_roof,alb_wall,alb_gimp,alb_gper,&
                      rho,tau,fveg,(htop+hbot)/2.,lai,sai,fwet_snow,coszen,fwsun,tlake,&
                      fsno_roof,fsno_gimp,fsno_gper,fsno_lake,&
