@@ -73,7 +73,8 @@ CONTAINS
         dfwsun         ,lai            ,sai            ,htop           ,&
         hbot           ,fveg           ,sigf           ,extkd          ,&
         lwsun          ,lwsha          ,lgimp          ,lgper          ,&
-        t_grnd         ,t_roofsno      ,t_wallsun      ,t_wallsha      ,&
+        t_grnd         ,t_grndln                                       ,&
+        t_roofsno      ,t_wallsun      ,t_wallsha      ,&
         t_gimpsno      ,t_gpersno      ,t_lakesno      ,wliq_roofsno   ,&
         wliq_gimpsno   ,wliq_gpersno   ,wliq_lakesno   ,wice_roofsno   ,&
         wice_gimpsno   ,wice_gpersno   ,wice_lakesno   ,t_lake         ,&
@@ -92,6 +93,7 @@ CONTAINS
         fseng          ,fevpg          ,olrg           ,fgrnd          ,&
         fsen_roof      ,fsen_wsun      ,fsen_wsha      ,fsen_gimp      ,&
         fsen_gper      ,fsen_urbl      ,troof          ,twall          ,&
+        twsun          ,twsha          ,tgper          ,tgimp          ,&
         lfevp_roof     ,lfevp_gimp     ,lfevp_gper     ,lfevp_urbl     ,&
         qseva_roof     ,qseva_gimp     ,qseva_gper     ,qseva_lake     ,&
         qsdew_roof     ,qsdew_gimp     ,qsdew_gper     ,qsdew_lake     ,&
@@ -110,6 +112,7 @@ CONTAINS
    USE MOD_Precision
    USE MOD_SPMD_Task
    USE MOD_Vars_Global
+   USE MOD_TimeManager, only: isgreenwich
    USE MOD_Const_Physical, only: denh2o,roverg,hvap,hsub,rgas,cpair,&
                                  stefnc,denice,tfrz,vonkar,grav
    USE MOD_Urban_Shortwave
@@ -298,6 +301,7 @@ CONTAINS
         lgimp                          ,&! net longwave radiation of impervious road
         lgper                          ,&! net longwave radiation of pervious road
         t_grnd                         ,&! ground temperature
+        t_grndln                       ,&
         t_roofsno   (     lbr:nl_wall) ,&! temperatures of roof layers
         t_wallsun   (         nl_wall) ,&! temperatures of roof layers
         t_wallsha   (         nl_wall) ,&! temperatures of roof layers
@@ -571,8 +575,11 @@ CONTAINS
    real(r8), allocatable :: dT(:)     ! Vectors of incident radition on each surface
    real(r8), allocatable :: SkyVF(:)  ! View factor to sky
    real(r8), allocatable :: VegVF(:)  ! View factor to vegetation
+   real(r8), allocatable :: UrbVF(:)  ! View factor from sky to wall, ground and veg
    real(r8), allocatable :: fcover(:) ! fractional cover of roof, wall, ground and veg
 
+   integer  :: local_secs
+   real(r8) :: radpsec
 
 !=======================================================================
 ! [1] Initial set and propositional variables
@@ -665,7 +672,7 @@ CONTAINS
       ENDIF
 
       ! convert AHE to urban area, i.e. (1-flake)
-      IF ( 1-flake > 0. ) THEN
+      IF ( 1-flake > 0 ) THEN
          Fhac = Fhac / (1-flake)
          Fwst = Fwst / (1-flake)
          Fach = Fach / (1-flake)
@@ -751,6 +758,7 @@ CONTAINS
          allocate ( dBdT(5)     )
          allocate ( SkyVF(5)    )
          allocate ( VegVF(5)    )
+         allocate ( UrbVF(5)    )
          allocate ( fcover(0:5) )
          allocate ( dT(0:5)     )
 
@@ -759,7 +767,7 @@ CONTAINS
                                 theta, hlr, froof, fgper, hroof, forc_frl, &
                                 twsun, twsha, tgimp, tgper, ewall, egimp, &
                                 egper, lai, sai, fveg, (htop+hbot)/2., &
-                                ev, Ainv, B, B1, dBdT, SkyVF, VegVF, fcover)
+                                ev, Ainv, B, B1, dBdT, SkyVF, VegVF, UrbVF, fcover)
       ELSE
 
          allocate ( Ainv(4,4)   )
@@ -769,6 +777,7 @@ CONTAINS
          allocate ( B1(4)       )
          allocate ( dBdT(4)     )
          allocate ( SkyVF(4)    )
+         allocate ( UrbVF(4)    )
          allocate ( fcover(0:4) )
          allocate ( dT(0:4)     )
 
@@ -776,7 +785,7 @@ CONTAINS
          CALL UrbanOnlyLongwave ( &
                                  theta, hlr, froof, fgper, hroof, forc_frl, &
                                  twsun, twsha, tgimp, tgper, ewall, egimp, egper, &
-                                 Ainv, B, B1, dBdT, SkyVF, fcover)
+                                 Ainv, B, B1, dBdT, SkyVF, UrbVF, fcover)
 
          ! calculate longwave radiation abs, for UrbanOnlyLongwave
          !-------------------------------------------
@@ -1213,6 +1222,54 @@ CONTAINS
       !t_grnd = troof*fcover(0) + twsun*fcover(1) + twsha*fcover(2) + &
       t_grnd = tgper*fgper + tgimp*(1-fgper)
 
+      ! 09/13/2024, yuan: diagnostic LST
+      !t_grnd = troof*fcover(0) &
+      !       + twsun*fcover(1)*SkyVF(1) + twsha*fcover(2)*SkyVF(2) &
+      !       + tgimp*fcover(3)*SkyVF(3) + tgper*fcover(4)*SkyVF(4)
+      !
+      !IF ( doveg ) THEN
+      !   t_grnd = t_grnd + tleaf*fcover(5)*SkyVF(5)
+      !ENDIF
+
+      ! 09/20/2024, yuan: diagnostic LST
+      t_grnd = troof*froof &
+             + twsun*fg*UrbVF(1) + twsha*fg*UrbVF(2) &
+             + tgimp*fg*UrbVF(3) + tgper*fg*UrbVF(4)
+      ! t_grnd = twsun*fg*UrbVF(1) + twsha*fg*UrbVF(2) &
+      !        + tgimp*fg*UrbVF(3) + tgper*fg*UrbVF(4)
+
+      IF ( doveg ) THEN
+         t_grnd = (t_grnd + tleaf*fg*UrbVF(5)) ! / sum(UrbVF(1:5))
+      ! ELSE
+         ! t_grnd = t_grnd / sum(UrbVF(1:4))
+      ENDIF
+
+      ! t_grnd = t_grnd + troof*froof
+
+      ! calculate the local secs
+      radpsec = pi/12./3600.
+      IF ( isgreenwich ) THEN
+         local_secs = idate(3) + nint((patchlonr/radpsec)/deltim)*deltim
+         local_secs = mod(local_secs,86400)
+      ELSE
+         local_secs = idate(3)
+      ENDIF
+
+      IF (deltim == 1800) THEN
+         IF (local_secs == 86400/2 + 1800*2) THEN
+            t_grndln = t_grnd
+         ELSE
+            t_grndln = spval
+         ENDIF
+      ELSE
+         IF (local_secs == 86400/2 + 1800*1) THEN
+            t_grndln = t_grnd
+         ELSE
+            t_grndln = spval
+         ENDIF
+      ENDIF
+
+
       !==============================================
       qseva_roof = 0.
       qsubl_roof = 0.
@@ -1315,6 +1372,16 @@ CONTAINS
       IF (olrg < 0) THEN
          write(6,*) 'Urban_THERMAL.F90: Urban out-going longwave radiation < 0!'
          write(6,*) ipatch,olrg,lout,dlout,rout,olrg_lake,fg,froof,flake
+         write(6,*) doveg, fcover(5)
+         write(6,*) 'dX:'
+         write(6,*) dX
+         write(6,*) 'SkyVF:'
+         write(6,*) SkyVF
+         write(6,*) 'dBdT:'
+         write(6,*) dBdT
+         write(6,*) 'dT'
+         write(6,*) dT
+         write(6,*) patchlatr*180/PI, patchlonr*180/PI, sabwsun
          CALL CoLM_stop()
       ENDIF
 
@@ -1381,6 +1448,7 @@ CONTAINS
       deallocate ( B1     )
       deallocate ( dBdT   )
       deallocate ( SkyVF  )
+      deallocate ( UrbVF  )
       deallocate ( dT     )
 
       IF ( doveg ) THEN

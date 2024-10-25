@@ -6,6 +6,9 @@ MODULE MOD_Vars_1DAccFluxes
 
    real(r8) :: nac ! number of accumulation
    real(r8), allocatable :: nac_ln      (:)
+   real(r8), allocatable :: nac_tg      (:)
+   real(r8), allocatable :: nac_24      (:)
+   real(r8), allocatable :: nac_lnurb   (:)
 
    real(r8), allocatable :: a_us        (:)
    real(r8), allocatable :: a_vs        (:)
@@ -103,6 +106,14 @@ MODULE MOD_Vars_1DAccFluxes
    real(r8), allocatable :: a_vehc      (:) !flux from vehicle [W/m2]
    real(r8), allocatable :: a_meta      (:) !flux from metabolic [W/m2]
 
+   real(r8), allocatable :: a_srroof   (:)
+   real(r8), allocatable :: a_srlake   (:)
+   real(r8), allocatable :: a_srcan    (:)
+
+   real(r8), allocatable :: a_srroofln (:)
+   real(r8), allocatable :: a_srlakeln (:)
+   real(r8), allocatable :: a_srcanln  (:)
+
    real(r8), allocatable :: a_senroof   (:) !sensible heat flux from roof [W/m2]
    real(r8), allocatable :: a_senwsun   (:) !sensible heat flux from sunlit wall [W/m2]
    real(r8), allocatable :: a_senwsha   (:) !sensible heat flux from shaded wall [W/m2]
@@ -117,6 +128,13 @@ MODULE MOD_Vars_1DAccFluxes
 
    real(r8), allocatable :: a_troof     (:) !temperature of roof [K]
    real(r8), allocatable :: a_twall     (:) !temperature of wall [K]
+   real(r8), allocatable :: a_twsun     (:)
+   real(r8), allocatable :: a_twsha     (:)
+   real(r8), allocatable :: a_tgper     (:)
+   real(r8), allocatable :: a_tgimp     (:)
+   real(r8), allocatable :: a_tmax      (:)
+   real(r8), allocatable :: a_tmin      (:)
+   real(r8), allocatable :: a_tgrndln   (:)
 #endif
 
 
@@ -446,6 +464,14 @@ CONTAINS
                allocate (a_vehc      (numurban))
                allocate (a_meta      (numurban))
 
+               allocate (a_srroof   (numurban))
+               allocate (a_srcan    (numurban))
+               allocate (a_srlake   (numurban))
+
+               allocate (a_srroofln (numurban))
+               allocate (a_srcanln  (numurban))
+               allocate (a_srlakeln (numurban))
+
                allocate (a_senroof   (numurban))
                allocate (a_senwsun   (numurban))
                allocate (a_senwsha   (numurban))
@@ -460,6 +486,18 @@ CONTAINS
 
                allocate (a_troof     (numurban))
                allocate (a_twall     (numurban))
+               allocate (a_twsun     (numurban))
+               allocate (a_twsha     (numurban))
+               allocate (a_tgper     (numurban))
+               allocate (a_tgimp     (numurban))
+
+               allocate (a_tmax      (numurban))
+               allocate (a_tmin      (numurban))
+               allocate (a_tgrndln   (numurban))
+
+               allocate (nac_tg      (numurban))
+               allocate (nac_24      (numurban))
+               allocate (nac_lnurb   (numurban))
             ENDIF
 #endif
 #ifdef BGC
@@ -788,6 +826,14 @@ CONTAINS
                deallocate (a_vehc      )
                deallocate (a_meta      )
 
+               deallocate (a_srroof   )
+               deallocate (a_srlake   )
+               deallocate (a_srcan    )
+
+               deallocate (a_srroofln )
+               deallocate (a_srlakeln )
+               deallocate (a_srcanln  )
+
                deallocate (a_senroof   )
                deallocate (a_senwsun   )
                deallocate (a_senwsha   )
@@ -802,6 +848,18 @@ CONTAINS
 
                deallocate (a_troof     )
                deallocate (a_twall     )
+               deallocate (a_twsun     )
+               deallocate (a_twsha     )
+               deallocate (a_tgper     )
+               deallocate (a_tgimp     )
+
+               deallocate (a_tmax     )
+               deallocate (a_tmin     )
+               deallocate (a_tgrndln  )
+
+               deallocate (nac_tg     )
+               deallocate (nac_24     )
+               deallocate (nac_lnurb  )
             ENDIF
 #endif
 
@@ -1133,6 +1191,14 @@ CONTAINS
                a_vehc     (:) = spval
                a_meta     (:) = spval
 
+               a_srroof  (:) = spval
+               a_srlake  (:) = spval
+               a_srcan   (:) = spval
+
+               a_srroofln(:) = spval
+               a_srlakeln(:) = spval
+               a_srcanln (:) = spval
+
                a_senroof  (:) = spval
                a_senwsun  (:) = spval
                a_senwsha  (:) = spval
@@ -1147,6 +1213,18 @@ CONTAINS
 
                a_troof    (:) = spval
                a_twall    (:) = spval
+               a_twsun    (:) = spval
+               a_twsha    (:) = spval
+               a_tgper    (:) = spval
+               a_tgimp    (:) = spval
+
+               a_tmax     (:) = spval
+               a_tmin     (:) = spval
+               a_tgrndln  (:) = spval
+
+               nac_tg     (:) = 0
+               nac_24     (:) = 0
+               nac_lnurb  (:) = 0
             ENDIF
 #endif
 
@@ -1359,7 +1437,7 @@ CONTAINS
 
    END SUBROUTINE FLUSH_acc_fluxes
 
-   SUBROUTINE accumulate_fluxes
+   SUBROUTINE accumulate_fluxes(idate)
    ! ----------------------------------------------------------------------
    ! perfrom the grid average mapping: average a subgrid input 1d vector
    ! of length numpatch to a output 2d array of length [ghist%xcnt,ghist%ycnt]
@@ -1373,14 +1451,14 @@ CONTAINS
    USE MOD_Mesh,    only: numelm
    USE MOD_LandElm
    USE MOD_LandPatch,      only: numpatch, elm_patch
-   USE MOD_LandUrban,      only: numurban
+   USE MOD_LandUrban,      only: numurban, urban2patch
    USE MOD_Const_Physical, only: vonkar, stefnc, cpair, rgas, grav
    USE MOD_Vars_TimeInvariants
    USE MOD_Vars_TimeVariables
    USE MOD_Vars_1DForcing
    USE MOD_Vars_1DFluxes
    USE MOD_FrictionVelocity
-   USE MOD_Namelist, only: DEF_USE_CBL_HEIGHT, DEF_USE_OZONESTRESS, DEF_USE_PLANTHYDRAULICS, DEF_USE_NITRIF
+   USE MOD_Namelist, only: DEF_USE_CBL_HEIGHT, DEF_USE_OZONESTRESS, DEF_USE_PLANTHYDRAULICS, DEF_USE_NITRIF, DEF_simulation_time
    USE MOD_TurbulenceLEddy
    USE MOD_Vars_Global
 #ifdef CatchLateralFlow
@@ -1390,8 +1468,9 @@ CONTAINS
 
    IMPLICIT NONE
 
-   ! Local Variables
+   integer,  intent(in) :: idate(3)
 
+   ! Local Variables
    real(r8), allocatable :: r_trad  (:)
    real(r8), allocatable :: r_ustar (:)
    real(r8), allocatable :: r_ustar2(:) !define a temporary for estimating us10m only, output should be r_ustar. Shaofeng, 2023.05.20
@@ -1410,8 +1489,9 @@ CONTAINS
    logical,  allocatable :: filter  (:)
 
    !---------------------------------------------------------------------
-   integer  ib, jb, i, j, ielm, istt, iend
-   real(r8) sumwt
+   integer  local_secs
+   integer  ib, jb, i, j, ielm, istt, iend, daystep, np
+   real(r8) sumwt, deltim
    real(r8) rhoair,thm,th,thv,ur,displa_av,zldis,hgt_u,hgt_t,hgt_q
    real(r8) hpbl ! atmospheric boundary layer height [m]
    real(r8) z0m_av,z0h_av,z0q_av,us,vs,tm,qm,psrf,taux_e,tauy_e,fsena_e,fevpa_e
@@ -1419,6 +1499,10 @@ CONTAINS
    real(r8) r_fm_e, r_fh_e, r_fq_e, r_rib_e, r_us10m_e, r_vs10m_e
    real(r8) obu,fh2m,fq2m
    real(r8) um,thvstar,beta,zii,wc,wc2
+   real(r8) radpsec
+
+      deltim  = DEF_simulation_time%timestep
+      daystep = int(86400/deltim)
 
       IF (p_is_worker) THEN
          IF (numpatch > 0) THEN
@@ -1577,6 +1661,70 @@ CONTAINS
 
                CALL acc1d(t_roof    , a_troof     )
                CALL acc1d(t_wall    , a_twall     )
+               CALL acc1d(t_wsun    , a_twsun     )
+               CALL acc1d(t_wsha    , a_twsha     )
+               CALL acc1d(t_gper    , a_tgper     )
+               CALL acc1d(t_gimp    , a_tgimp     )
+
+               CALL acc1d(t_grndln  , a_tgrndln   )
+
+               CALL acc1d(sr_roof   , a_srroof    )
+               CALL acc1d(sr_can    , a_srcan     )
+               CALL acc1d(sr_lake   , a_srlake    )
+
+               CALL acc1d(sr_roofln , a_srroofln  )
+               CALL acc1d(sr_canln  , a_srcanln   )
+               CALL acc1d(sr_lakeln , a_srlakeln  )
+
+
+               IF (idate(3) == 86400) THEN
+                  CALL acc1d(tmax, a_tmax)
+                  CALL acc1d(tmin, a_tmin)
+
+                  nac_24(:) = nac_24(:) + 1
+                  tmax(:)   = 0
+                  tmin(:)   = 330
+               ENDIF
+
+               DO i = 1, numurban
+                  np = urban2patch(i)
+
+                  IF (solvdln(np) /= spval) THEN
+                     nac_lnurb(i) = nac_lnurb(i) + 1
+                  ENDIF
+
+                  ! IF (idate(3) == 86400) THEN
+                  !    CALL acc1d(tmax, a_tmax)
+                  !    CALL acc1d(tmin, a_tmin)
+
+                  !    nac_24(i) = nac_24(i) + 1
+                  !    tmax(i)   = 0
+                  !    tmin(i)   = 330
+                  ! ENDIF
+                  ! calculate the local secs
+                  ! radpsec = pi/12./3600.
+                  ! np      = urban2patch(i)
+                  ! IF ( isgreenwich ) THEN
+                  !    local_secs = idate(3) + nint((patchlonr(np)/radpsec)/deltim)*deltim
+                  !    local_secs = mod(local_secs,86400)
+                  ! ELSE
+                  !    local_secs = idate(3)
+                  ! ENDIF
+
+                  ! IF (mod(local_secs,daystep) == 0) THEN
+                  !    CALL acc1d(tmax, a_tmax)
+                  !    CALL acc1d(tmin, a_tmin)
+
+                  !    nac_24(i) = nac_24(i) + 1
+                  !    tmax(i)   = 0
+                  !    tmin(i)   = 330
+                  ! ENDIF
+
+                  IF (t_grndln(i) /= spval) THEN
+                     nac_tg(i) = nac_tg(i) + 1
+                  ENDIF
+               ENDDO
+
             ENDIF
 #endif
 
@@ -1991,6 +2139,7 @@ CONTAINS
             deallocate (r_vs10m )
             deallocate (r_fm10m )
 
+            WHERE((forc_sols+forc_solsd+forc_soll+forc_solld).eq.sr) sr=0
             CALL acc1d (sr     , a_sr     )
             CALL acc1d (solvd  , a_solvd  )
             CALL acc1d (solvi  , a_solvi  )

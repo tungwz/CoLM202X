@@ -22,9 +22,9 @@ MODULE MOD_Urban_Shortwave
 
 CONTAINS
 
-
    SUBROUTINE UrbanOnlyShortwave ( theta, HL, fb, fgper, H, &
-        aroof, awall, agimp, agper, fwsun, sroof, swsun, swsha, sgimp, sgper, albu)
+        aroof, awall, agimp, agper, fwsun, sroof, swsun, swsha, sgimp, sgper, albu, albc)
+
 
 !-----------------------------------------------------------------------
 !                Sun
@@ -79,6 +79,9 @@ CONTAINS
         sgimp(2),   &! Urban impervious ground absorption [-]
         sgper(2),   &! Urban pervious gournd absorption [-]
         albu(2)      ! Urban overall albedo [-]
+
+   real(r8), intent(out) :: &
+        albc(2)
 
    ! Local variables
    !-------------------------------------------------
@@ -250,6 +253,7 @@ CONTAINS
       sroof = 1. - aroof
 
       ! albedo accout for both roof and urban's wall and ground
+      albc = albu*fg
       albu = aroof*fb + albu*fg
 
    END SUBROUTINE UrbanOnlyShortwave
@@ -257,7 +261,7 @@ CONTAINS
 
    SUBROUTINE UrbanVegShortwave ( theta, HL, fb, fgper, H, &
          aroof, awall, agimp, agper, lai, sai, fv, hv, rho, tau, &
-         fwsun, sroof, swsun, swsha, sgimp, sgper, sveg, albu )
+         fwsun, sroof, swsun, swsha, sgimp, sgper, sveg, albu, albc)
 
 !-----------------------------------------------------------------------
 !                Sun
@@ -323,6 +327,9 @@ CONTAINS
         sgper(2),   &! Urban pervious gournd absorption [-]
         sveg(2),    &! Urban building tree absorption [-]
         albu(2)      ! Urban overall albedo [-]
+
+   real(r8), intent(out) :: &
+        albc(2)
 
    ! Local variables
    !-------------------------------------------------
@@ -664,6 +671,7 @@ CONTAINS
       sroof = 1. - aroof
 
       ! albedo accout for both roof and urban's wall and ground
+      albc = albu *fg
       albu = aroof*fb + albu*fg
 
    END SUBROUTINE UrbanVegShortwave

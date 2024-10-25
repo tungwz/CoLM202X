@@ -180,6 +180,7 @@ CONTAINS
       !    CALL CoLM_stop()
       ! ENDIF
 
+
       DEF_domain%edges = floor(SITE_lat_location)
       DEF_domain%edgen = DEF_domain%edges + 1.0
       DEF_domain%edgew = floor(SITE_lon_location)
@@ -472,11 +473,11 @@ ENDIF
       IF ((.not. mksrfdata) .or. USE_SITE_topography) THEN
          ! otherwise, retrieve from database by Aggregation_Topography.F90
          CALL ncio_read_serial (fsrfdata, 'elevation', SITE_topography)
-         CALL ncio_read_serial (fsrfdata, 'elvstd   ', SITE_topostd   )
 
          IF (DEF_USE_Forcing_Downscaling) THEN
-            CALL ncio_read_serial (fsrfdata, 'SITE_svf', SITE_svf             )
-            CALL ncio_read_serial (fsrfdata, 'SITE_cur', SITE_cur             )
+            CALL ncio_read_serial (fsrfdata, 'elvstd   '     , SITE_topostd   )
+            CALL ncio_read_serial (fsrfdata, 'SITE_svf'      , SITE_svf       )
+            CALL ncio_read_serial (fsrfdata, 'SITE_cur'      , SITE_cur       )
             CALL ncio_read_serial (fsrfdata, 'SITE_slp_type' , SITE_slp_type  )
             CALL ncio_read_serial (fsrfdata, 'SITE_asp_type' , SITE_asp_type  )
             CALL ncio_read_serial (fsrfdata, 'SITE_area_type', SITE_area_type )

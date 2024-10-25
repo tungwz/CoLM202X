@@ -39,7 +39,8 @@ CONTAINS
                         fsno_roof,fsno_gimp,fsno_gper,fsno_lake,&
                         scv_roof,scv_gimp,scv_gper,scv_lake,&
                         sag_roof,sag_gimp,sag_gper,sag_lake,&
-                        dfwsun,extkd,alb,ssun,ssha,sroof,swsun,swsha,sgimp,sgper,slake)
+                        dfwsun,extkd,alb,ssun,ssha,sroof,swsun,swsha,sgimp,sgper,slake,&
+                        alb_can, alb_lake, alb_roof_)
 
 !=======================================================================
 ! Calculates fragmented albedos (direct and diffuse) for urban area in
@@ -120,6 +121,11 @@ CONTAINS
       sgimp(2,2),    &! impervious ground absorption for solar radiation,
       sgper(2,2),    &! pervious ground absorption for solar radiation,
       slake(2,2)      ! lake absorption for solar radiation,
+
+   real(r8), intent(out) :: &
+      alb_can(2,2),  &
+      alb_lake(2,2), &
+      alb_roof_(2,2)
 
 !-------------------------- Local variables ----------------------------
    real(r8) :: &
@@ -332,32 +338,36 @@ CONTAINS
             albroof(1,1), alb_wall(1,1), albgimp(1,1), albgper(1,1), &
             lai, sai, fveg, hveg, erho(1), etau(1), &
             fwsun_, sroof(1,:), swsun(1,:), swsha(1,:), sgimp(1,:), &
-            sgper(1,:), ssun(1,:), alb(1,:))
+            sgper(1,:), ssun(1,:), alb(1,:), alb_can(1,:))
 
          CALL UrbanVegShortwave ( &
             theta, hlr, froof, fgper, hroof, &
             albroof(2,1), alb_wall(2,1), albgimp(2,1), albgper(2,1), &
             lai, sai, fveg, hveg, erho(2), etau(2), &
             fwsun_, sroof(2,:), swsun(2,:), swsha(2,:), sgimp(2,:), &
-            sgper(2,:), ssun(2,:), alb(2,:))
+            sgper(2,:), ssun(2,:), alb(2,:), alb_can(2,:))
       ELSE
 
          CALL UrbanOnlyShortwave ( &
             theta, hlr, froof, fgper, hroof, &
             albroof(1,1), alb_wall(1,1), albgimp(1,1), albgper(1,1), &
             fwsun_, sroof(1,:), swsun(1,:), swsha(1,:), sgimp(1,:), &
-            sgper(1,:), alb(1,:))
+            sgper(1,:), alb(1,:), alb_can(1,:))
 
          CALL UrbanOnlyShortwave ( &
             theta, hlr, froof, fgper, hroof, &
             albroof(2,1), alb_wall(2,1), albgimp(2,1), albgper(2,1), &
             fwsun_, sroof(2,:), swsun(2,:), swsha(2,:), sgimp(2,:), &
-            sgper(2,:), alb(2,:))
+            sgper(2,:), alb(2,:), alb_can(2,:))
 
          ssun(:,:) = 0.
       ENDIF
 
       dfwsun = fwsun_ - fwsun
+
+      alb_roof_(:,:) = albroof(:,:)*froof*(1.-flake)
+      alb_can  (:,:) = alb_can(:,:)*(1.-flake)
+      alb_lake (:,:) = flake*alblake(:,:)
 
       alb(:,:) = (1.-flake)*alb(:,:) + flake*alblake(:,:)
 

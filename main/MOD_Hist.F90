@@ -167,7 +167,7 @@ CONTAINS
          CALL FLUSH_acc_fluxes ()
          RETURN
       ELSE
-         CALL accumulate_fluxes ()
+         CALL accumulate_fluxes (idate)
       ENDIF
 
       select CASE (trim(adjustl(DEF_HIST_FREQ)))
@@ -687,6 +687,18 @@ CONTAINS
             CALL mp2g_hist_urb%get_sumarea (sumarea_urb, filter_urb)
          ENDIF
 
+         CALL write_history_variable_urb_2d ( DEF_hist_vars%fsr_roof, &
+            a_srroof, file_hist, 'f_srroof', itime_in_file, sumarea_urb, filter_urb, &
+            'reflected solar radiation at urban roof [W/m2]','W/m2')
+
+         CALL write_history_variable_urb_2d ( DEF_hist_vars%fsr_can, &
+            a_srcan, file_hist, 'f_srcanyon', itime_in_file, sumarea_urb, filter_urb, &
+            'reflected solar radiation at urban canyon  [W/m2]','W/m2')
+
+         CALL write_history_variable_urb_2d ( DEF_hist_vars%fsr_lake, &
+            a_srlake, file_hist, 'f_srlake', itime_in_file, sumarea_urb, filter_urb, &
+            'reflected solar radiation at urban lake [W/m2]','W/m2')
+
          ! sensible heat from building roof [W/m2]
          CALL write_history_variable_urb_2d ( DEF_hist_vars%fsen_roof, &
             a_senroof, file_hist, 'f_fsenroof', itime_in_file, sumarea_urb, filter_urb, &
@@ -786,6 +798,105 @@ CONTAINS
          CALL write_history_variable_urb_2d ( DEF_hist_vars%t_wall, &
             a_twall, file_hist, 'f_t_wall', itime_in_file, sumarea_urb, filter_urb, &
             'temperature of urban wall [K]','kelvin')
+
+         CALL write_history_variable_urb_2d ( DEF_hist_vars%t_wsun, &
+            a_twsun, file_hist, 'f_t_wsun', itime_in_file, sumarea_urb, filter_urb, &
+            'temperature of urban sun-wall [K]','kelvin')
+
+         CALL write_history_variable_urb_2d ( DEF_hist_vars%t_wsha, &
+            a_twsha, file_hist, 'f_t_wsha', itime_in_file, sumarea_urb, filter_urb, &
+            'temperature of urban shaded wall [K]','kelvin')
+
+         CALL write_history_variable_urb_2d ( DEF_hist_vars%t_gper, &
+            a_tgper, file_hist, 'f_t_gper', itime_in_file, sumarea_urb, filter_urb, &
+            'temperature of urban pervious road [K]','kelvin')
+
+         CALL write_history_variable_urb_2d ( DEF_hist_vars%t_gimp, &
+            a_tgimp, file_hist, 'f_t_gimp', itime_in_file, sumarea_urb, filter_urb, &
+            'temperature of urban impervious road [K]','kelvin')
+
+         ! local noon fluxes
+         IF (p_is_worker) THEN
+            IF (numpatch > 0) THEN
+               DO i = 1, numpatch
+                  IF (patchtype(i) == 1) THEN
+                     u = patch2urban(i)
+
+                     filter_urb(u) = nac_24(u) > 0
+
+                     IF (DEF_forcing%has_missing_value) THEN
+                        filter_urb(u) = filter_urb(u) .and. forcmask_pch(i)
+                     ENDIF
+                  ENDIF
+               ENDDO
+            ENDIF
+         ENDIF
+
+         IF (HistForm == 'Gridded') THEN
+            CALL mp2g_hist_urb%get_sumarea (sumarea_urb, filter_urb)
+         ENDIF
+
+         CALL write_history_variable_urb_tduirl ( DEF_hist_vars%tmax, &
+            a_tmax, file_hist, 'f_tmax', itime_in_file, sumarea_urb, filter_urb, &
+            'temperature of max  [K]','kelvin')
+
+         CALL write_history_variable_urb_tduirl ( DEF_hist_vars%tmin, &
+            a_tmin, file_hist, 'f_tmin', itime_in_file, sumarea_urb, filter_urb, &
+            'temperature of min  [K]','kelvin')
+
+         ! local noon fluxes
+         IF (p_is_worker) THEN
+            IF (numpatch > 0) THEN
+               DO i = 1, numpatch
+                  IF (patchtype(i) == 1) THEN
+                     u = patch2urban(i)
+
+                     filter_urb(u) = nac_tg(u) > 0
+
+                     IF (DEF_forcing%has_missing_value) THEN
+                        filter_urb(u) = filter_urb(u) .and. forcmask_pch(i)
+                     ENDIF
+                  ENDIF
+               ENDDO
+            ENDIF
+         ENDIF
+
+         IF (HistForm == 'Gridded') THEN
+            CALL mp2g_hist_urb%get_sumarea (sumarea_urb, filter_urb)
+         ENDIF
+
+         CALL write_history_variable_tg ( DEF_hist_vars%t_grndln, &
+            a_tgrndln, file_hist, 'f_t_grndln', itime_in_file, sumarea, filter_urb, &
+            'tg at local noon [k]','kelvin')
+
+         IF (p_is_worker) THEN
+            IF (numpatch > 0) THEN
+               DO i = 1, numpatch
+                  IF (patchtype(i) == 1) THEN
+                     u = patch2urban(i)
+
+                     filter_urb(u) = nac_lnurb(u) > 0
+
+                     IF (DEF_forcing%has_missing_value) THEN
+                        filter_urb(u) = filter_urb(u) .and. forcmask_pch(i)
+                     ENDIF
+                  ENDIF
+               ENDDO
+            ENDIF
+         ENDIF
+
+         CALL write_history_variable_lnurb ( DEF_hist_vars%fsr_roofln, &
+            a_srroofln, file_hist, 'f_srroofln', itime_in_file, sumarea_urb, filter_urb, &
+            'reflected solar radiation at urban roof(ln) [W/m2]','W/m2')
+
+         CALL write_history_variable_lnurb ( DEF_hist_vars%fsr_canln, &
+            a_srcanln, file_hist, 'f_srcanyonln', itime_in_file, sumarea_urb, filter_urb, &
+            'reflected solar radiation at urban canyon(ln)  [W/m2]','W/m2')
+
+         CALL write_history_variable_lnurb ( DEF_hist_vars%fsr_lakeln, &
+            a_srlakeln, file_hist, 'f_srlakeln', itime_in_file, sumarea_urb, filter_urb, &
+            'reflected solar radiation at urban lake(ln) [W/m2]','W/m2')
+
 #endif
 
          ! ------------------------------------------------------------------------------------------
@@ -3710,6 +3821,44 @@ CONTAINS
       END select
 
    END SUBROUTINE write_history_variable_urb_2d
+
+   SUBROUTINE write_history_variable_urb_tduirl ( is_hist, &
+         acc_vec, file_hist, varname, itime_in_file, sumarea, filter, &
+         longname, units)
+
+      IMPLICIT NONE
+
+      logical, intent(in) :: is_hist
+
+      real(r8), intent(inout) :: acc_vec(:)
+      character(len=*), intent(in) :: file_hist
+      character(len=*), intent(in) :: varname
+      integer,          intent(in) :: itime_in_file
+      character(len=*), intent(in) :: longname
+      character(len=*), intent(in) :: units
+
+      type(block_data_real8_2d), intent(in) :: sumarea
+      logical, intent(in) :: filter(:)
+
+      IF (.not. is_hist) RETURN
+
+      select CASE (HistForm)
+      CASE ('Gridded')
+         CALL flux_map_and_write_urb_tduirl ( &
+            acc_vec, file_hist, varname, itime_in_file, sumarea, filter, longname, units)
+#if (defined UNSTRUCTURED || defined CATCHMENT)
+      CASE ('Vector')
+         CALL aggregate_to_vector_and_write_2d ( &
+            acc_vec, file_hist, varname, itime_in_file, filter, longname, units)
+#endif
+#ifdef SinglePoint
+      CASE ('Single')
+         CALL single_write_urb_tduirl ( &
+            acc_vec, file_hist, varname, itime_in_file, longname, units)
+#endif
+      END select
+
+   END SUBROUTINE write_history_variable_urb_tduirl
 #endif
 
    ! -------
@@ -3840,6 +3989,82 @@ CONTAINS
       END select
 
    END SUBROUTINE write_history_variable_ln
+
+   ! -------
+   SUBROUTINE write_history_variable_tg ( is_hist, &
+         acc_vec, file_hist, varname, itime_in_file, sumarea, filter, &
+         longname, units)
+
+      IMPLICIT NONE
+
+      logical, intent(in) :: is_hist
+
+      real(r8), intent(inout) :: acc_vec(:)
+      character(len=*), intent(in) :: file_hist
+      character(len=*), intent(in) :: varname
+      integer, intent(in) :: itime_in_file
+
+      type(block_data_real8_2d), intent(in) :: sumarea
+      logical,  intent(in) :: filter(:)
+      character (len=*), intent(in), optional :: longname
+      character (len=*), intent(in), optional :: units
+
+      IF (.not. is_hist) RETURN
+
+      select CASE (HistForm)
+      CASE ('Gridded')
+         CALL flux_map_and_write_tg ( &
+            acc_vec, file_hist, varname, itime_in_file, sumarea, filter, longname, units)
+#if (defined UNSTRUCTURED || defined CATCHMENT)
+      CASE ('Vector')
+         CALL aggregate_to_vector_and_write_ln ( &
+            acc_vec, file_hist, varname, itime_in_file, filter, longname, units)
+#endif
+#ifdef SinglePoint
+      CASE ('Single')
+         CALL single_write_tg (acc_vec, file_hist, varname, itime_in_file, longname, units)
+#endif
+      END select
+
+   END SUBROUTINE write_history_variable_tg
+
+   ! -------
+   SUBROUTINE write_history_variable_lnurb ( is_hist, &
+         acc_vec, file_hist, varname, itime_in_file, sumarea, filter, &
+         longname, units)
+
+      IMPLICIT NONE
+
+      logical, intent(in) :: is_hist
+
+      real(r8), intent(inout) :: acc_vec(:)
+      character(len=*), intent(in) :: file_hist
+      character(len=*), intent(in) :: varname
+      integer, intent(in) :: itime_in_file
+
+      type(block_data_real8_2d), intent(in) :: sumarea
+      logical,  intent(in) :: filter(:)
+      character (len=*), intent(in), optional :: longname
+      character (len=*), intent(in), optional :: units
+
+      IF (.not. is_hist) RETURN
+
+      select CASE (HistForm)
+      CASE ('Gridded')
+         CALL flux_map_and_write_lnurb ( &
+            acc_vec, file_hist, varname, itime_in_file, sumarea, filter, longname, units)
+#if (defined UNSTRUCTURED || defined CATCHMENT)
+      CASE ('Vector')
+         CALL aggregate_to_vector_and_write_ln ( &
+            acc_vec, file_hist, varname, itime_in_file, filter, longname, units)
+#endif
+#ifdef SinglePoint
+      CASE ('Single')
+         CALL single_write_ln (acc_vec, file_hist, varname, itime_in_file, longname, units)
+#endif
+      END select
+
+   END SUBROUTINE write_history_variable_lnurb
 
    !------------------------------
    SUBROUTINE hist_write_time (filename, dataname, time, itime)

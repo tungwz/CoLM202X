@@ -524,9 +524,15 @@ SUBROUTINE Aggregation_Urban (dir_rawdata, dir_srfdata, lc_year, &
       ENDIF
 
       IF (p_is_worker) THEN
-         allocate (wt_roof (numurban))
-         allocate (ht_roof (numurban))
+         allocate (wt_roof  (numurban))
+         allocate (ht_roof  (numurban))
+         allocate (urb_pct  (numurban))
+         allocate (urb_frc  (numurban))
+         allocate (sarea_urb(numurban))
+         allocate (area_urb (numurban))
 
+         sarea_urb(:)     = 0.
+         area_urb (:)     = 0.
          ! loop for urban patch to aggregate building height and fraction data with area-weighted average
          DO iurban = 1, numurban
             CALL aggregation_request_data (landurban, iurban, grid_urban_500m, zip = USE_zip_for_aggregation, area = area_one, &
@@ -534,6 +540,7 @@ SUBROUTINE Aggregation_Urban (dir_rawdata, dir_srfdata, lc_year, &
                data_r8_2d_in1 = wtrf, data_r8_2d_out1 = wt_roof_one, &
                data_r8_2d_in2 = htrf, data_r8_2d_out2 = ht_roof_one)
 
+            area_urb(iurban) = sum(area_one)
             IF (DEF_URBAN_type_scheme == 1) THEN
                ! when urban patch has no data, use table data to fill gap
                ! urban type and region id for look-up-table
@@ -576,6 +583,29 @@ SUBROUTINE Aggregation_Urban (dir_rawdata, dir_srfdata, lc_year, &
 
          ENDDO
 
+         DO i = 1, numelm
+            numpxl = count(landurban%eindex==landelm%eindex(i))
+
+            IF (allocated(locpxl)) deallocate(locpxl)
+            allocate(locpxl(numpxl))
+
+            locpxl = pack([(ipxl, ipxl=1, numurban)], &
+                   landurban%eindex==landelm%eindex(i))
+
+            urb_s = minval(locpxl)
+            urb_e = maxval(locpxl)
+
+            DO il = urb_s, urb_e
+               sarea_urb(urb_s:urb_e) = sarea_urb(urb_s:urb_e) + area_urb(il)
+            ENDDO
+         ENDDO
+
+         DO i = 1, numurban
+            urb2p       = urban2patch(i)
+            urb_frc (i) = elm_patch%subfrc(urb2p)
+            urb_pct (i) = area_urb(i)/sarea_urb(i)
+         ENDDO
+
 #ifdef USEMPI
          CALL aggregation_worker_done ()
 #endif
@@ -603,6 +633,15 @@ SUBROUTINE Aggregation_Urban (dir_rawdata, dir_srfdata, lc_year, &
       landname  = trim(dir_srfdata) // '/diag/wt_roof.nc'
       CALL srfdata_map_and_write (wt_roof, landurban%settyp, typindex, m_urb2diag, &
          -1.0e36_r8, landname, 'WT_ROOF_'//trim(cyear), compress = 0, write_mode = 'one')
+
+      typindex = (/(ityp, ityp = 1, N_URB)/)
+      landname  = trim(dir_srfdata) // '/diag/pct_urban' // trim(cyear) // '.nc'
+
+      CALL srfdata_map_and_write (urb_pct(:), landurban%settyp, typindex, m_urb2diag, &
+         -1.0e36_r8, landname, 'URBAN_PCT', compress = 0, write_mode = 'one')
+
+      CALL srfdata_map_and_write (urb_frc(:), landurban%settyp, typindex, m_urb2diag, &
+         -1.0e36_r8, landname, 'URBAN_PATCH_FRAC', compress = 0, write_mode = 'one')
 #endif
 #else
       IF (.not. USE_SITE_urban_paras) THEN
@@ -668,6 +707,7 @@ SUBROUTINE Aggregation_Urban (dir_rawdata, dir_srfdata, lc_year, &
 
          ! allocate and read grided LSAI raw data
          landdir = trim(dir_rawdata)//'/urban_lai_5x5/'
+         ! landdir = '/stu01/dongwz/hard/CoLM-U/lai_5x5/'
          suffix  = 'UrbLAI_'//trim(iyear)
          ! loop for month
          DO imonth = 1, 12
@@ -945,30 +985,30 @@ SUBROUTINE Aggregation_Urban (dir_rawdata, dir_srfdata, lc_year, &
                   alb_imrd(:,:,iurban) = alb_imrd(:,:,iurban) / sumarea
                   alb_perd(:,:,iurban) = alb_perd(:,:,iurban) / sumarea
 
+            ENDDO
+
+            DO i = 1, numelm
+               numpxl = count(landurban%eindex==landelm%eindex(i))
+
+               IF (allocated(locpxl)) deallocate(locpxl)
+               allocate(locpxl(numpxl))
+
+               locpxl = pack([(ipxl, ipxl=1, numurban)], &
+                        landurban%eindex==landelm%eindex(i))
+
+               urb_s = minval(locpxl)
+               urb_e = maxval(locpxl)
+
+               DO il = urb_s, urb_e
+                  sarea_urb(urb_s:urb_e) = sarea_urb(urb_s:urb_e) + area_urb(il)
                ENDDO
+            ENDDO
 
-               DO i = 1, numelm
-                   numpxl = count(landurban%eindex==landelm%eindex(i))
-
-                   IF (allocated(locpxl)) deallocate(locpxl)
-                   allocate(locpxl(numpxl))
-
-                   locpxl = pack([(ipxl, ipxl=1, numurban)], &
-                            landurban%eindex==landelm%eindex(i))
-
-                   urb_s = minval(locpxl)
-                   urb_e = maxval(locpxl)
-
-                   DO il = urb_s, urb_e
-                      sarea_urb(urb_s:urb_e) = sarea_urb(urb_s:urb_e) + area_urb(il)
-                   ENDDO
-               ENDDO
-
-               DO i = 1, numurban
-                  urb2p       = urban2patch(i)
-                  urb_frc (i) = elm_patch%subfrc(urb2p)
-                  urb_pct (i) = area_urb(i)/sarea_urb(i)
-               ENDDO
+            DO i = 1, numurban
+               urb2p       = urban2patch(i)
+               urb_frc (i) = elm_patch%subfrc(urb2p)
+               urb_pct (i) = area_urb(i)/sarea_urb(i)
+            ENDDO
 
 #ifdef USEMPI
             CALL aggregation_worker_done ()

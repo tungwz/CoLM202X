@@ -321,7 +321,7 @@ MODULE MOD_Namelist
    logical            :: DEF_USE_MEDLYNST        = .false.
 
    !WUE stomata model
-   logical            :: DEF_USE_WUEST           = .true.
+   logical            :: DEF_USE_WUEST           = .false.
 
    !Semi-Analytic-Spin-Up
    logical            :: DEF_USE_SASU            = .false.
@@ -516,6 +516,12 @@ MODULE MOD_Namelist
       logical :: tref                             = .true.
       logical :: qref                             = .true.
 
+      logical :: fsr_roofln                       = .true.
+      logical :: fsr_lakeln                       = .true.
+      logical :: fsr_canln                        = .true.
+      logical :: fsr_roof                         = .true.
+      logical :: fsr_lake                         = .true.
+      logical :: fsr_can                          = .true.
       logical :: fsen_roof                        = .true.
       logical :: fsen_wsun                        = .true.
       logical :: fsen_wsha                        = .true.
@@ -536,6 +542,13 @@ MODULE MOD_Namelist
       logical :: tafu                             = .true.
       logical :: t_roof                           = .true.
       logical :: t_wall                           = .true.
+      logical :: t_wsun                           = .true.
+      logical :: t_wsha                           = .true.
+      logical :: t_gper                           = .true.
+      logical :: t_gimp                           = .true.
+      logical :: tmax                             = .true.
+      logical :: tmin                             = .true.
+      logical :: t_grndln                         = .true.
 
       logical :: assimsun                         = .true.
       logical :: assimsha                         = .true.
@@ -1578,6 +1591,13 @@ CONTAINS
       CALL sync_hist_vars_one (DEF_hist_vars%tref        , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%qref        , set_defaults)
 #ifdef URBAN_MODEL
+      CALL sync_hist_vars_one (DEF_hist_vars%fsr_roofln  , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%fsr_lakeln  , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%fsr_canln   , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%fsr_roof    , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%fsr_lake    , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%fsr_can     , set_defaults)
+
       CALL sync_hist_vars_one (DEF_hist_vars%fsen_roof   , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%fsen_wsun   , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%fsen_wsha   , set_defaults)
@@ -1598,6 +1618,13 @@ CONTAINS
       CALL sync_hist_vars_one (DEF_hist_vars%tafu        , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%t_roof      , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%t_wall      , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%t_wsun      , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%t_wsha      , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%t_gper      , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%t_gimp      , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%tmax        , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%tmin        , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%t_grndln    , set_defaults)
 #endif
       CALL sync_hist_vars_one (DEF_hist_vars%assimsun    , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%assimsha    , set_defaults)
