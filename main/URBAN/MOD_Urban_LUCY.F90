@@ -99,7 +99,7 @@ CONTAINS
       Fahe = 0.
 
       ! set vehicle distance traveled
-      car_sp = 50
+      car_sp = 20
 
       ! emission factor Sailor and Lu (2004),
       ! all vehicle are set to same value

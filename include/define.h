@@ -13,14 +13,14 @@
 #undef LULC_IGBP_PC
 
 ! 2.1 3D Urban model (put it temporarily here):
-#undef URBAN_MODEL
+#define URBAN_MODEL
 
 ! 3. If defined, debug information is output.
 #define CoLMDEBUG
 ! 3.1 If defined, range of variables is checked.
 #define RangeCheck
 ! 3.1 If defined, surface data in vector is mapped to gridded data for checking.
-#undef SrfdataDiag
+#define SrfdataDiag
 
 ! 4. If defined, MPI parallelization is enabled.
 #define USEMPI
@@ -31,8 +31,8 @@
 
 ! 5. Hydrological process options.
 ! 5.1 Two soil hydraulic models can be used.
-#undef   Campbell_SOIL_MODEL
-#define  vanGenuchten_Mualem_SOIL_MODEL
+#define   Campbell_SOIL_MODEL
+#undef  vanGenuchten_Mualem_SOIL_MODEL
 ! 5.2 If defined, lateral flow is modeled.
 #define CatchLateralFlow
 !    Conflicts :
@@ -64,10 +64,10 @@
 #undef DataAssimilation
 
 ! 10. Vector write model.
-!     1) "VectorInOneFileP" : write vector data in one file in parallel mode;  
-!     2) "VectorInOneFileS" : write vector data in one file in serial mode;  
-!     3) Neither "VectorInOneFileS" nor "VectorInOneFileP" is defined : 
-!        write vector data in separate files.  
+!     1) "VectorInOneFileP" : write vector data in one file in parallel mode;
+!     2) "VectorInOneFileS" : write vector data in one file in serial mode;
+!     3) Neither "VectorInOneFileS" nor "VectorInOneFileP" is defined :
+!        write vector data in separate files.
 #undef VectorInOneFileP
 !     Conflict
 #ifdef VectorInOneFileP

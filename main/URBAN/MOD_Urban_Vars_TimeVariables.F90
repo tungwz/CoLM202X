@@ -28,6 +28,10 @@ MODULE MOD_Urban_Vars_TimeVariables
    real(r8), allocatable :: sgper      (:,:,:) !pervious absorptioin [-]
    real(r8), allocatable :: slake      (:,:,:) !urban lake absorptioin [-]
 
+   real(r8), allocatable :: alb_can    (:,:,:)
+   real(r8), allocatable :: alb_roof_  (:,:,:)
+   real(r8), allocatable :: alb_lake   (:,:,:)
+
    ! net longwave radiation for last time temperature change
    real(r8), allocatable :: lwsun          (:) !net longwave of sunlit wall [W/m2]
    real(r8), allocatable :: lwsha          (:) !net longwave of shaded wall [W/m2]
@@ -97,7 +101,14 @@ MODULE MOD_Urban_Vars_TimeVariables
    real(r8), allocatable :: t_room         (:) !temperature of inner building [K]
    real(r8), allocatable :: t_roof         (:) !temperature of roof [K]
    real(r8), allocatable :: t_wall         (:) !temperature of wall [K]
+   real(r8), allocatable :: t_wsun         (:)
+   real(r8), allocatable :: t_wsha         (:)
+   real(r8), allocatable :: t_gper         (:)
+   real(r8), allocatable :: t_gimp         (:)
    real(r8), allocatable :: tafu           (:) !temperature of outer building [K]
+   real(r8), allocatable :: tmax           (:)
+   real(r8), allocatable :: tmin           (:)
+   real(r8), allocatable :: t_grndln       (:)
 
    real(r8), allocatable :: urb_green      (:) !fractional of green leaf in urban patch [-]
    real(r8), allocatable :: urb_lai        (:) !urban tree LAI [m2/m2]
@@ -139,6 +150,10 @@ CONTAINS
             allocate (sgimp                     (2,2,numurban))
             allocate (sgper                     (2,2,numurban))
             allocate (slake                     (2,2,numurban))
+
+            allocate (alb_can                   (2,2,numurban))
+            allocate (alb_lake                  (2,2,numurban))
+            allocate (alb_roof_                 (2,2,numurban))
 
             allocate (lwsun                         (numurban))
             allocate (lwsha                         (numurban))
@@ -204,7 +219,14 @@ CONTAINS
             allocate (t_room                        (numurban))
             allocate (t_roof                        (numurban))
             allocate (t_wall                        (numurban))
+            allocate (t_wsun                        (numurban))
+            allocate (t_wsha                        (numurban))
+            allocate (t_gper                        (numurban))
+            allocate (t_gimp                        (numurban))
             allocate (tafu                          (numurban))
+            allocate (tmax                          (numurban))
+            allocate (tmin                          (numurban))
+            allocate (t_grndln                      (numurban))
 
             allocate (urb_green                     (numurban))
             allocate (urb_lai                       (numurban))
@@ -427,6 +449,10 @@ CONTAINS
             deallocate (sgper        )
             deallocate (slake        )
 
+            deallocate (alb_can      )
+            deallocate (alb_lake     )
+            deallocate (alb_roof_    )
+
             deallocate (lwsun        )
             deallocate (lwsha        )
             deallocate (lgimp        )
@@ -491,7 +517,14 @@ CONTAINS
             deallocate (t_room       )
             deallocate (t_roof       )
             deallocate (t_wall       )
+            deallocate (t_wsun       )
+            deallocate (t_wsha       )
+            deallocate (t_gper       )
+            deallocate (t_gimp       )
             deallocate (tafu         )
+            deallocate (tmax         )
+            deallocate (tmin         )
+            deallocate (t_grndln     )
 
             deallocate (urb_green    )
             deallocate (urb_lai      )

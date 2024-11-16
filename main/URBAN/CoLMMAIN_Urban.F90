@@ -115,7 +115,7 @@
 
            lai          ,sai          ,fveg         ,sigf         ,&
            green        ,tleaf        ,ldew         ,ldew_rain    ,&
-           ldew_snow    ,fwet_snow    ,t_grnd                     ,&
+           ldew_snow    ,fwet_snow    ,t_grnd       ,t_grndln     ,&
 
            sag_roof     ,sag_gimp     ,sag_gper     ,sag_lake     ,&
            scv_roof     ,scv_gimp     ,scv_gper     ,scv_lake     ,&
@@ -152,8 +152,9 @@
            fseng        ,fevpg        ,olrg         ,fgrnd        ,&
            fsen_roof    ,fsen_wsun    ,fsen_wsha    ,fsen_gimp    ,&
            fsen_gper    ,fsen_urbl    ,troof        ,twall        ,&
+           twsun        ,twsha        ,tgper        ,tgimp        ,&
            lfevp_roof   ,lfevp_gimp   ,lfevp_gper   ,lfevp_urbl   ,&
-           trad         ,tref         ,&!tmax       ,tmin         ,&
+           trad         ,tref         ,tmax         ,tmin         ,&
            qref         ,rsur         ,rnof         ,qintr        ,&
            qinfl        ,qdrip        ,rst          ,assim        ,&
            respc        ,sabvsun      ,sabvsha      ,sabg         ,&
@@ -172,7 +173,10 @@
          ! additional variables required by coupling with WRF model
            emis         ,z0m          ,zol          ,rib          ,&
            ustar        ,qstar        ,tstar        ,fm           ,&
-           fh           ,fq           ,hpbl                        )
+           fh           ,fq           ,hpbl                       ,&
+           alb_can      ,alb_lake     ,alb_roof_                  ,&
+           sr_can       ,sr_lake      ,sr_roof                    ,&
+           sr_canln     ,sr_lakeln    ,sr_roofln                   )
 
    USE MOD_Precision
    USE MOD_Vars_Global
@@ -399,9 +403,10 @@
         BVIC                  ,&! b parameter in Fraction of saturated soil in a grid calculated by VIC
 
         t_grnd                ,&! ground surface temperature [k]
+        t_grndln              ,&
         tleaf                 ,&! sunlit leaf temperature [K]
-        !tmax                 ,&! Diurnal Max 2 m height air temperature [kelvin]
-        !tmin                 ,&! Diurnal Min 2 m height air temperature [kelvin]
+        tmax                 ,&! Diurnal Max 2 m height air temperature [kelvin]
+        tmin                 ,&! Diurnal Min 2 m height air temperature [kelvin]
         ldew                  ,&! depth of water on foliage [kg/m2/s]
         ldew_rain             ,&! depth of rain on foliage[kg/m2/s]
         ldew_snow             ,&! depth of snow on foliage[kg/m2/s]
@@ -481,6 +486,19 @@
         sgper(2,2)            ,&! shaded canopy absorption for solar radiation
         slake(2,2)              ! shaded canopy absorption for solar radiation
 
+   real(r8), intent(inout) :: &
+        alb_lake(2,2), &
+        alb_can(2,2),  &
+        alb_roof_(2,2)
+
+   real(r8), intent(inout) :: &
+         sr_can,   &
+         sr_lake,  &
+         sr_roof,  &
+         sr_canln, &
+         sr_lakeln,&
+         sr_roofln
+
 ! additional diagnostic variables for output
    real(r8), intent(out) :: &
         laisun                ,&! sunlit leaf area index
@@ -536,6 +554,8 @@
 
         troof                 ,&! temperature of roof [K]
         twall                 ,&! temperature of wall [K]
+        twsun                 ,&
+        twsha                 ,&
 
         sabvsun               ,&! solar absorbed by sunlit vegetation [W/m2]
         sabvsha               ,&! solar absorbed by shaded vegetation [W/m2]
@@ -714,7 +734,9 @@
                            swsha(:,:),sgimp(:,:),sgper(:,:),slake(:,:),&
                            sr,sabv,par,sabroof,sabwsun,sabwsha,sabgimp,sabgper,sablake,&
                            solvd,solvi,solnd,solni,srvd,srvi,srnd,srni,&
-                           solvdln,solviln,solndln,solniln,srvdln,srviln,srndln,srniln)
+                           solvdln,solviln,solndln,solniln,srvdln,srviln,srndln,srniln,&
+                           alb_can, alb_lake, alb_roof_, sr_can, sr_lake, sr_roof, &
+                           sr_canln, sr_lakeln, sr_roofln)
 
       CALL rain_snow_temp (patchtype,forc_t,forc_q,forc_psrf,forc_prc,forc_prl,forc_us,forc_vs,tcrit,&
                            prc_rain,prc_snow,prl_rain,prl_snow,t_precip,bifall)
@@ -1002,7 +1024,8 @@
          dfwsun             ,lai                ,sai                ,htop               ,&
          hbot               ,fveg               ,sigf               ,extkd              ,&
          lwsun              ,lwsha              ,lgimp              ,lgper              ,&
-         t_grnd             ,t_roofsno(lbr:)    ,t_wallsun(:)       ,t_wallsha(:)       ,&
+         t_grnd             ,t_grndln                                                   ,&
+         t_roofsno(lbr:)    ,t_wallsun(:)       ,t_wallsha(:)       ,&
          t_gimpsno(lbi:)    ,t_gpersno(lbp:)    ,t_lakesno(:)       ,wliq_roofsno(lbr:) ,&
          wliq_gimpsno(lbi:) ,wliq_gpersno(lbp:) ,wliq_lakesno(:)    ,wice_roofsno(lbr:) ,&
          wice_gimpsno(lbi:) ,wice_gpersno(lbp:) ,wice_lakesno(:)    ,t_lake(:)          ,&
@@ -1021,6 +1044,7 @@
          fseng              ,fevpg              ,olrg               ,fgrnd              ,&
          fsen_roof          ,fsen_wsun          ,fsen_wsha          ,fsen_gimp          ,&
          fsen_gper          ,fsen_urbl          ,troof              ,twall              ,&
+         twsun              ,twsha              ,tgper              ,tgimp              ,&
          lfevp_roof         ,lfevp_gimp         ,lfevp_gper         ,lfevp_urbl         ,&
          qseva_roof         ,qseva_gimp         ,qseva_gper         ,qseva_lake         ,&
          qsdew_roof         ,qsdew_gimp         ,qsdew_gper         ,qsdew_lake         ,&
@@ -1301,7 +1325,8 @@
                      fsno_roof,fsno_gimp,fsno_gper,fsno_lake,&
                      scv_roof,scv_gimp,scv_gper,scv_lake,&
                      sag_roof,sag_gimp,sag_gper,sag_lake,&
-                     dfwsun,extkd,alb,ssun,ssha,sroof,swsun,swsha,sgimp,sgper,slake)
+                     dfwsun,extkd,alb,ssun,ssha,sroof,swsun,swsha,sgimp,sgper,slake,&
+                     alb_can, alb_lake, alb_roof_)
 
       ! zero-filling set for glacier/ice-sheet/land water bodies/ocean components
       laisun = lai
@@ -1333,8 +1358,9 @@
       dz_sno(:) = dz_sno(:)*(1-flake) + dz_sno_lake(:)*flake
 
 ! diagnostic diurnal temperature
-      !IF (tref > tmax) tmax = tref
-      !IF (tref < tmin) tmin = tref
+      IF (tmin <=0   ) tmin = tref
+      IF (tref > tmax) tmax = tref
+      IF (tref < tmin) tmin = tref
 
 ! 06/05/2022, yuan: RH for output to compare
       CALL qsadv(tref,forc_psrf,ei,deiDT,qsatl,qsatlDT)

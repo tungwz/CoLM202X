@@ -362,28 +362,28 @@ PROGRAM MKSRFDATA
 
    !TODO: for lulcc, need to run for each year and SAVE to different subdirs
 
-   CALL Aggregation_PercentagesPFT  (gpatch , dir_rawdata, dir_landdata, lc_year)
+   ! CALL Aggregation_PercentagesPFT  (gpatch , dir_rawdata, dir_landdata, lc_year)
 
-   CALL Aggregation_LakeDepth       (gpatch , dir_rawdata, dir_landdata, lc_year)
+   ! CALL Aggregation_LakeDepth       (gpatch , dir_rawdata, dir_landdata, lc_year)
 
-   CALL Aggregation_SoilParameters  (gsoil,   dir_rawdata, dir_landdata, lc_year)
+   ! CALL Aggregation_SoilParameters  (gsoil,   dir_rawdata, dir_landdata, lc_year)
 
-   CALL Aggregation_SoilBrightness  (gpatch , dir_rawdata, dir_landdata, lc_year)
+   ! CALL Aggregation_SoilBrightness  (gpatch , dir_rawdata, dir_landdata, lc_year)
 
    IF (DEF_USE_BEDROCK) THEN
       CALL Aggregation_DBedrock     (gpatch , dir_rawdata, dir_landdata)
    ENDIF
 
-   CALL Aggregation_LAI             (gridlai, dir_rawdata, dir_landdata, lc_year)
+   ! CALL Aggregation_LAI             (gridlai, dir_rawdata, dir_landdata, lc_year)
 
-   CALL Aggregation_ForestHeight    (gpatch , dir_rawdata, dir_landdata, lc_year)
+   ! CALL Aggregation_ForestHeight    (gpatch , dir_rawdata, dir_landdata, lc_year)
 
-   CALL Aggregation_Topography      (gtopo  , dir_rawdata, dir_landdata, lc_year)
+   ! CALL Aggregation_Topography      (gtopo  , dir_rawdata, dir_landdata, lc_year)
 
-   IF (DEF_USE_Forcing_Downscaling) THEN   
+   IF (DEF_USE_Forcing_Downscaling) THEN
       CALL Aggregation_TopographyFactors (grid_topo_factor, dir_rawdata, dir_landdata, lc_year)
    ENDIF
-   
+
 #ifdef URBAN_MODEL
    CALL Aggregation_urban (dir_rawdata, dir_landdata, lc_year, &
                            grid_urban_5km, grid_urban_500m)

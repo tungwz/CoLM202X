@@ -272,7 +272,7 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
 
             lai(i)          ,sai(i)          ,fveg(i)         ,sigf(i)         ,&
             green(i)        ,tleaf(i)        ,ldew(i)         ,ldew_rain(i)    ,&
-            ldew_snow(i)    ,fwet_snow(i)    ,t_grnd(i)                        ,&
+            ldew_snow(i)    ,fwet_snow(i)    ,t_grnd(i)       ,t_grndln(u)     ,&
 
             sag_roof(u)     ,sag_gimp(u)     ,sag_gper(u)     ,sag_lake(u)     ,&
             scv_roof(u)     ,scv_gimp(u)     ,scv_gper(u)     ,scv_lake(u)     ,&
@@ -309,8 +309,9 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
             fseng(i)        ,fevpg(i)        ,olrg(i)         ,fgrnd(i)        ,&
             fsen_roof(u)    ,fsen_wsun(u)    ,fsen_wsha(u)    ,fsen_gimp(u)    ,&
             fsen_gper(u)    ,fsen_urbl(u)    ,t_roof(u)       ,t_wall(u)       ,&
+            t_wsun(u)       ,t_wsha(u)       ,t_gper(u)       ,t_gimp(u)       ,&
             lfevp_roof(u)   ,lfevp_gimp(u)   ,lfevp_gper(u)   ,lfevp_urbl(u)   ,&
-            trad(i)         ,tref(i)         ,&
+            trad(i)         ,tref(i)         ,tmax(u)         ,tmin(u)         ,&
             qref(i)         ,rsur(i)         ,rnof(i)         ,qintr(i)        ,&
             qinfl(i)        ,qdrip(i)        ,rst(i)          ,assim(i)        ,&
             respc(i)        ,sabvsun(i)      ,sabvsha(i)      ,sabg(i)         ,&
@@ -330,7 +331,10 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
           ! additional variables required by coupling with WRF model
             emis(i)         ,z0m(i)          ,zol(i)          ,rib(i)          ,&
             ustar(i)        ,qstar(i)        ,tstar(i)        ,fm(i)           ,&
-            fh(i)           ,fq(i)           ,forc_hpbl(i)                      )
+            fh(i)           ,fq(i)           ,forc_hpbl(i)                     ,&
+            alb_can(1:,1:,u),alb_lake(1:,1:,u),alb_roof_(1:,1:,u)              ,&
+            sr_can(u)       ,sr_lake(u)       ,sr_roof(u)                      ,&
+            sr_canln(u)     ,sr_lakeln(u)     ,sr_roofln(u)                     )
          ENDIF
 
 #endif

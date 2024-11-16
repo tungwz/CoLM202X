@@ -15,7 +15,9 @@ CONTAINS
                               alb,ssun,ssha,sroof,swsun,swsha,sgimp,sgper,slake,&
                               sr,sabv,par,sabroof,sabwsun,sabwsha,sabgimp,sabgper,sablake,&
                               solvd,solvi,solnd,solni,srvd,srvi,srnd,srni,&
-                              solvdln,solviln,solndln,solniln,srvdln,srviln,srndln,srniln)
+                              solvdln,solviln,solndln,solniln,srvdln,srviln,srndln,srniln,&
+                              alb_can, alb_lake, alb_roof_, sr_can, sr_lake, sr_roof, &
+                              sr_canln, sr_lakeln, sr_roofln)
 
 !-----------------------------------------------------------------------
 ! !DESCRIPTION:
@@ -62,6 +64,18 @@ CONTAINS
         sgper,    &! pervious ground absorption for solar radiation
         slake      ! lake absorption for solar radiation
 
+   real(r8), intent(in) :: &
+        alb_can(2,2),  &
+        alb_lake(2,2), &
+        alb_roof_(2,2)
+
+   real(r8), intent(out) :: &
+        sr_can,   &
+        sr_lake,  &
+        sr_roof,  &
+        sr_canln, &
+        sr_lakeln,&
+        sr_roofln
 
    real(r8), intent(out) :: &
         sr,       &! total reflected solar radiation (W/m2)
@@ -92,7 +106,7 @@ CONTAINS
 
 ! ----------------local variables ---------------------------------
    integer  :: local_secs
-   real(r8) :: radpsec
+   real(r8) :: radpsec, alb_ln_, alb_ln
 
       sabroof = 0.
       sabwsun = 0.
@@ -147,6 +161,10 @@ CONTAINS
       srni  = solni*alb(2,2)
       sr    = srvd + srvi + srnd + srni
 
+      sr_can  = alb_can(1,1)*solvd + alb_can(1,2)*solvi + alb_can(2,1)*solnd + alb_can(2,2)*solni
+      sr_lake = alb_lake(1,1)*solvd + alb_lake(1,2)*solvi + alb_lake(2,1)*solnd + alb_lake(2,2)*solni
+      sr_roof = alb_roof_(1,1)*solvd + alb_roof_(1,2)*solvi + alb_roof_(2,1)*solnd + alb_roof_(2,2)*solni
+
       ! calculate the local secs
       radpsec = pi/12./3600.
       IF ( isgreenwich ) THEN
@@ -155,6 +173,8 @@ CONTAINS
       ELSE
          local_secs = idate(3)
       ENDIF
+
+
 
       IF (local_secs == 86400/2) THEN
          solvdln = forc_sols
@@ -165,6 +185,8 @@ CONTAINS
          srviln  = solviln*alb(1,2)
          srndln  = solndln*alb(2,1)
          srniln  = solniln*alb(2,2)
+         ! print*, solvdln, solviln, solndln, solniln
+         ! alb_ln  = (srvdln+srviln+srndln+srniln)/(solvdln+solviln+solndln+solniln)
       ELSE
          solvdln = spval
          solviln = spval
@@ -174,6 +196,20 @@ CONTAINS
          srviln  = spval
          srndln  = spval
          srniln  = spval
+      ENDIF
+
+      IF (local_secs==86400/2) THEN
+         sr_canln  = alb_can(1,1)*solvd + alb_can(1,2)*solvi + alb_can(2,1)*solnd + alb_can(2,2)*solni
+         sr_lakeln = alb_lake(1,1)*solvd + alb_lake(1,2)*solvi + alb_lake(2,1)*solnd + alb_lake(2,2)*solni
+         sr_roofln = alb_roof_(1,1)*solvd + alb_roof_(1,2)*solvi + alb_roof_(2,1)*solnd + alb_roof_(2,2)*solni
+
+         ! IF ((sr-sr_can-sr_lake-sr_roof)>1e-6 .and. alb(1,1).ne.1) THEN
+         !    print*, 'NOTE ', sr-sr_can-sr_lake-sr_roof
+         ! ENDIF
+      ELSE
+         sr_canln = spval
+         sr_lakeln= spval
+         sr_roofln= spval
       ENDIF
 
    END SUBROUTINE netsolar_urban
