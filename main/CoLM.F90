@@ -102,6 +102,7 @@ PROGRAM CoLM
 #ifdef EXTERNAL_LAKE
    USE MOD_Lake_Namelist
 #endif
+   USE MOD_FTorch, only: FTorch_init
 
    IMPLICIT NONE
 
@@ -369,6 +370,8 @@ PROGRAM CoLM
       CALL init_DA ()
 #endif
 
+      CALL FTorch_init
+
       ! ======================================================================
       ! begin time stepping loop
       ! ======================================================================
@@ -476,7 +479,7 @@ PROGRAM CoLM
 #ifdef DataAssimilation
          CALL run_DA (idate, deltim)
 #endif
-         
+
          ! Write out the model histroy file
          ! ----------------------------------------------------------------------
          CALL hist_out (idate, deltim, itstamp, etstamp, ptstamp, dir_hist, casename)

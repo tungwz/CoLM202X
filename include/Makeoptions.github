@@ -24,8 +24,8 @@
            -ffree-line-length-0
   endif
 
-  INCLUDE_DIR = -I../include -I../share -I../mksrfdata -I../mkinidata -I../main -I$(NETCDF_INC)
-  LDFLAGS = -L$(NETCDF_LIB) -lnetcdff -lnetcdf -llapack -lblas 
+  INCLUDE_DIR = -I../include -I../share -I../mksrfdata -I../mkinidata -I../main -I/tera12/yuanhua/dongwz/soft/lib/include/ftorch -I$(NETCDF_INC)
+  LDFLAGS = -L/tera12/yuanhua/dongwz/soft/lib/lib -L$(NETCDF_LIB) -lnetcdff -lnetcdf -llapack -lblas -lftorch
 
 
 

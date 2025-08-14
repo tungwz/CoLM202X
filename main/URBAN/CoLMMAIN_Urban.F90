@@ -175,6 +175,8 @@
            ustar        ,qstar        ,tstar        ,fm           ,&
            fh           ,fq           ,hpbl                        )
 
+   USE, intrinsic :: iso_fortran_env, only : sp => real32
+
    USE MOD_Precision
    USE MOD_Vars_Global
    USE MOD_Const_Physical, only: tfrz, denh2o, denice
@@ -193,6 +195,7 @@
    USE MOD_SnowFraction, only: snowfraction
    USE MOD_ALBEDO, only: snowage
    USE MOD_Qsadv, only: qsadv
+   USE MOD_FTorch, only: FTorch_init, FTorch_routine
 #ifdef USE_LUCY
    USE MOD_Urban_LUCY
 #endif
@@ -700,6 +703,31 @@
    ! A simple urban irrigation scheme accounts for soil water stress of trees
    ! a factor represents irrigation efficiency, '1' represents a 50% direct irrigation efficiency.
    real(r8), parameter :: wst_irrig = 1.0
+
+   !----------------------------------------------------------------------
+   ! Set working precision for reals
+   integer, parameter :: wp = sp
+   integer :: i_torch
+
+   ! Set up Fortran data structures
+   real(wp), dimension(5), target :: in_data
+   real(wp), dimension(5), target :: out_data
+   real(wp), dimension(5), target :: sum_data
+
+   ! Initialise data
+   ! in_data = [0.1257_wp, -0.1321_wp,  0.6404_wp,  0.1049_wp, -0.5357_wp,  &
+   !            0.3616_wp,  1.3040_wp,  0.9471_wp, -0.7037_wp, -1.2654_wp]
+   in_data = [0.0_wp, 1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp]
+   sum_data(:) = 0.0_wp
+
+   ! CALL FTorch_init()
+
+   CALL FTorch_routine(in_data, out_data)
+   sum_data(:) = sum_data(:) + out_data(:)
+
+   in_data(:) = in_data(:) + 1.0_wp
+
+   write (*,*) sum_data(:)
 
 !-----------------------------------------------------------------------
 
