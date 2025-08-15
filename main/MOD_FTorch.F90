@@ -15,7 +15,10 @@ MODULE MOD_FTorch
    type(torch_tensor), dimension(1) :: output_tensors
 
    INTEGER, parameter :: wp = sp
-   INTEGER, parameter, dimension(1) :: tensor_layout = [1]
+   INTEGER, parameter, dimension(2) :: tensor_layout = [1, 2]
+
+   real(wp), target, save  :: in_buf(1,10)
+   real(wp), target, save  :: out_buf(1,1)
 
    CHARACTER(len=128) :: model_torchscript_file
 
@@ -24,9 +27,12 @@ MODULE MOD_FTorch
    SUBROUTINE FTorch_init()
 
       ! Load ML model
-      model_torchscript_file = '/tera12/yuanhua/dongwz/soft/FTorch/examples/5_Looping/saved_simplenet_cpu.pt'
-      ! model_torchscript_file = '/tera12/yuanhua/dongwz/github/master/CoLM-FTorch/CoLM202X/pytorch/RF/rf_regressor_ts.pt'
+      ! model_torchscript_file = '/tera12/yuanhua/dongwz/soft/FTorch/examples/5_Looping/saved_simplenet_cpu.pt'
+      model_torchscript_file = '/tera12/yuanhua/dongwz/github/master/CoLM-FTorch/CoLM202X/pytorch/RF/rf_regressor_ts.pt'
       CALL torch_model_load(torch_net, model_torchscript_file, torch_kCPU)
+
+      CALL torch_tensor_from_array(input_tensors(1), in_buf, tensor_layout, torch_kCPU)
+      CALL torch_tensor_from_array(output_tensors(1), out_buf, tensor_layout, torch_kCPU)
 
    END SUBROUTINE FTorch_init
 
@@ -34,15 +40,17 @@ MODULE MOD_FTorch
    SUBROUTINE FTorch_routine(in_data, out_data)
 
       ! Set up Fortran data structures
-      REAL(wp), dimension(5), target, intent(IN)  :: in_data
-      REAL(wp), dimension(5), target, intent(OUT) :: out_data
+      REAL(wp), dimension(1, 10), target, intent(IN)  :: in_data
+      REAL(wp), dimension(1,  1), target, intent(OUT) :: out_data
 
       ! Create Torch input/output tensors from the above arrays
-      CALL torch_tensor_from_array(input_tensors(1), in_data, tensor_layout, torch_kCPU)
-      CALL torch_tensor_from_array(output_tensors(1), out_data, tensor_layout, torch_kCPU)
+      ! CALL torch_tensor_from_array(input_tensors(1), in_data, tensor_layout, torch_kCPU)
+      ! CALL torch_tensor_from_array(output_tensors(1), out_data, tensor_layout, torch_kCPU)
 
+      in_buf  = in_data
       ! Infer
       CALL torch_model_forward(torch_net, input_tensors, output_tensors)
+      out_data = out_buf
 
    END SUBROUTINE FTorch_routine
 
