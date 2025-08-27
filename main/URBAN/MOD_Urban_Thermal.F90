@@ -1390,6 +1390,7 @@ CONTAINS
       Fach = Fach * (1-flake)
       Fhah = Fhah * (1-flake)
 
+      Fahe = Fahe + Fhac + Fhah + Fwst
 
       deallocate ( fcover )
 

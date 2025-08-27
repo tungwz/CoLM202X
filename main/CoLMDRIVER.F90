@@ -12,6 +12,7 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
 !            2014-2024
 !
 !=======================================================================
+   USE, INTRINSIC :: iso_fortran_env, ONLY: sp=>real32
 
    USE MOD_Precision
    USE MOD_Const_Physical, only: tfrz, rgas, vonkar
@@ -21,10 +22,11 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
    USE MOD_Vars_TimeVariables
    USE MOD_Vars_1DForcing
    USE MOD_Vars_1DFluxes
-   USE MOD_LandPatch, only: numpatch
+   USE MOD_LandPatch, only: numpatch, elm_patch
    USE MOD_LandUrban, only: patch2urban
    USE MOD_Namelist, only: DEF_forcing, DEF_URBAN_RUN
    USE MOD_Forcing, only: forcmask_pch
+   USE MOD_FTorch
    USE omp_lib
 #ifdef CaMa_Flood
    ! get flood variables: inundation depth[mm], inundation fraction [0-1],
@@ -201,6 +203,13 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
          IF (DEF_URBAN_RUN .and. m.eq.URBAN) THEN
 
             u = patch2urban(i)
+
+            ! update AHE
+            !IF (Fhah(u) > 0) Fhah(u) = foutput(u,1)*Fhah(u)/Fahe(u)
+            !IF (Fhac(u) > 0) Fach(u) = foutput(u,1)*Fhac(u)/Fahe(u)
+            !IF (Fwst(u) > 0) Fwst(u) = foutput(u,1)*Fwst(u)/Fahe(u)
+            !IF (vehc(u) > 0) vehc(u) = foutput(u,1)*vehc(u)/Fahe(u)
+            !IF (meta(u) > 0) meta(u) = foutput(u,1)*meta(u)/Fahe(u)
             !
             !              ***** Call CoLM urban model *****
             !
@@ -331,13 +340,39 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
             emis(i)         ,z0m(i)          ,zol(i)          ,rib(i)          ,&
             ustar(i)        ,qstar(i)        ,tstar(i)        ,fm(i)           ,&
             fh(i)           ,fq(i)           ,forc_hpbl(i)                      )
-         ENDIF
 
+           finput(u,1) = pop_den(u)
+           finput(u,2) = hroof  (u)
+           finput(u,3) = froof  (u)
+           finput(u,4) = tref   (i)
+           finput(u,5) = Fahe   (u)*elm_patch%subfrc(i)
+         ENDIF
 #endif
       ENDDO
 #ifdef OPENMP
 !$OMP END PARALLEL DO
 #endif
+
+      CALL FTorch_routine(finput, foutput)
+
+      ! update AHE
+      WHERE (Fhah>0._sp .and. Fahe>0._sp)
+         Fhah = foutput(:,1)*Fhah/Fahe
+         Fwst = foutput(:,1)*Fwst/Fahe
+      END WHERE
+
+      WHERE (Fhac>0._sp .and. Fahe>0._sp)
+         Fhac = foutput(:,1)*Fhac/Fahe
+         Fwst = foutput(:,1)*Fwst/Fahe
+      END WHERE
+
+      WHERE (vehc>0._sp .and. Fahe>0._sp)
+         vehc = foutput(:,1)*vehc/Fahe
+      END WHERE
+
+      WHERE (meta>0._sp .and. Fahe>0._sp)
+         meta = foutput(:,1)*meta/Fahe
+      END WHERE
 
 END SUBROUTINE CoLMDRIVER
 ! ---------- EOP ------------

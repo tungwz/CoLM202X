@@ -949,7 +949,7 @@ CONTAINS
 
             deallocate (a_o3uptakesun)
             deallocate (a_o3uptakesha)
-            
+
 #ifdef DataAssimilation
             deallocate (a_h2osoi_ens     )
             deallocate (a_t_brt_ens      )
@@ -1706,8 +1706,8 @@ CONTAINS
    USE mod_forcing, only: forcmask_pch
    USE MOD_Mesh,    only: numelm
    USE MOD_LandElm
-   USE MOD_LandPatch,      only: numpatch, elm_patch
-   USE MOD_LandUrban,      only: numurban
+   USE MOD_LandPatch,      only: numpatch, elm_patch, landpatch
+   USE MOD_LandUrban,      only: numurban, urban2patch
    USE MOD_Const_Physical, only: vonkar, stefnc, cpair, rgas, grav
    USE MOD_Vars_TimeInvariants
    USE MOD_Vars_TimeVariables
@@ -1744,7 +1744,7 @@ CONTAINS
    logical,  allocatable :: filter  (:)
 
    !---------------------------------------------------------------------
-   integer  ib, jb, i, j, ielm, istt, iend
+   integer  ib, jb, i, j, ielm, istt, iend, u
    real(r8) sumwt
    real(r8) rhoair,thm,th,thv,ur,displa_av,zldis,hgt_u,hgt_t,hgt_q
    real(r8) hpbl ! atmospheric boundary layer height [m]
@@ -1902,13 +1902,34 @@ CONTAINS
 
 #ifdef URBAN_MODEL
             IF (numurban > 0) THEN
+               DO i = 1, numurban
+                  u      = urban2patch(i)
+                  IF (Fhac(i) /= spval) Fhac(i) = Fhac(i)/elm_patch%subfrc(u)
+                  IF (Fhah(i) /= spval) Fhah(i) = Fhah(i)/elm_patch%subfrc(u)
+                  IF (Fwst(i) /= spval) Fwst(i) = Fwst(i)/elm_patch%subfrc(u)
+                  IF (vehc(i) /= spval) vehc(i) = vehc(i)/elm_patch%subfrc(u)
+                  IF (meta(i) /= spval) meta(i) = meta(i)/elm_patch%subfrc(u)
+
+                  IF (Fhac(i) > 200) Fhac(i) = 200
+                  IF (Fhah(i) > 300) Fhah(i) = 300
+                  IF (Fwst(i) > 200) Fwst(i) = 200
+                  IF (vehc(i) > 100) vehc(i) = 100
+                  IF (meta(i) >  50) meta(i) =  50
+
+                  IF (Fhac(i) <   0) Fhac(i) =   0
+                  IF (Fhah(i) <   0) Fhah(i) =   0
+                  IF (Fwst(i) <   0) Fwst(i) =   0
+                  IF (vehc(i) <   0) vehc(i) =   0
+                  IF (meta(i) <   0) meta(i) =   0
+               ENDDO
+
                CALL acc1d(t_room    , a_t_room    )
                CALL acc1d(tafu      , a_tafu      )
-               CALL acc1d(fhac      , a_fhac      )
-               CALL acc1d(fwst      , a_fwst      )
-               CALL acc1d(fach      , a_fach      )
-               CALL acc1d(fahe      , a_fahe      )
-               CALL acc1d(fhah      , a_fhah      )
+               CALL acc1d(Fhac      , a_fhac      )
+               CALL acc1d(Fwst      , a_fwst      )
+               CALL acc1d(Fach      , a_fach      )
+               CALL acc1d(Fahe      , a_fahe      )
+               CALL acc1d(Fhah      , a_fhah      )
                CALL acc1d(vehc      , a_vehc      )
                CALL acc1d(meta      , a_meta      )
 
