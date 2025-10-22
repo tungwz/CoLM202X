@@ -120,6 +120,27 @@ MODULE MOD_Urban_Const_LCZ
    ! minimum temperature of inner room [K]
    real(r8), parameter, dimension(10)  :: tbldmin_lcz &
       = (/290.65, 290.65, 290.65, 290.65, 290.65, 290.65, 290.65, 290.65, 290.65, 290.65/)
+   !real(r8), parameter, dimension(10)  :: hequip &
+   !   = (/9.2, 9.2, 6.84, 9.2, 9.2, 6.27, 6.27, 6.27, 6.27, 6.27/)/3
 
+   !real(r8), parameter, dimension(10)  :: hequip &
+   !   = (/9.2/3, 9.2/3, 6.84/3, 9.2/3, 9.2/3, 6.27/3, 6.27/3, 6.27/3, 6.27/3, 122.4/)
+
+   !real(r8), parameter, dimension(10)  :: hequip &
+   !   = (/8.1, 7., 5.38, 10.6, 9., 10.4, 6.27, 9.2, 10.4, 12.4/)
+
+   ! fit_v1
+   !real(r8), parameter, dimension(10)  :: hequip &
+   !   = (/5.6, 3.7, 2.8, 6.6, 6.8, 16.7, 6.27, 23.1, 10.4, 107.5/)
+
+   !real(r8), parameter, dimension(10)  :: hequip &
+   !   = (/4.2, 2.9, 2.9, 5.8, 4.8, 15.7, 6.27, 7.1, 10.4, 15.8/)
+
+   real(r8), parameter, dimension(10)  :: hequip &
+      = (/4.5, 3.6, 3.2, 6., 6.5, 20.8, 6.27, 8.8, 10.4, 75.8/)
+
+   real(r8), parameter, dimension(24)  :: Equ_scator &
+      = (/0.76, 0.72, 0.71, 0.71, 0.72, 0.72, 0.76, 0.80, 0.86, 0.90, 0.91, 0.92, &
+          0.91, 0.93, 0.93, 0.93, 0.96, 0.99, 1.00, 0.98, 0.94, 0.90, 0.85, 0.81/)
 END MODULE MOD_Urban_Const_LCZ
 ! ---------- EOP ------------

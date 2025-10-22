@@ -3,7 +3,7 @@
 include include/Makeoptions
 HEADER = include/define.h
 
-INCLUDE_DIR = -Iinclude -I.bld/ -I${NETCDF_INC}
+INCLUDE_DIR = -Iinclude -I.bld/ -I/tera12/yuanhua/dongwz/soft/lib/include/ftorch -I${NETCDF_INC}
 VPATH = include : share : mksrfdata : mkinidata \
 	: main : main/HYDRO : main/BGC : main/URBAN : main/LULCC : main/DA \
 	: extends/CaMa/src : postprocess : .bld
@@ -332,6 +332,7 @@ OBJS_MAIN = \
 				MOD_Urban_BEM.o                           \
 				MOD_Urban_LUCY.o                          \
 				MOD_Urban_Thermal.o                       \
+				MOD_FTorch.o                              \
 				CoLMMAIN_Urban.o                          \
 				MOD_Lulcc_Vars_TimeInvariants.o           \
 				MOD_Lulcc_Vars_TimeVariables.o            \

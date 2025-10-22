@@ -106,6 +106,7 @@ PROGRAM CoLM
 #ifdef EXTERNAL_LAKE
    USE MOD_Lake_Namelist
 #endif
+   USE MOD_FTorch, only: FTorch_init
 
    IMPLICIT NONE
 
@@ -382,6 +383,8 @@ PROGRAM CoLM
       ! initialize data assimilation
       CALL init_DA ()
 #endif
+
+      CALL FTorch_init
 
       ! ======================================================================
       ! begin time stepping loop

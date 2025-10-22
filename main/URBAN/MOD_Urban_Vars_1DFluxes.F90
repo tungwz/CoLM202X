@@ -11,6 +11,7 @@ MODULE MOD_Urban_Vars_1DFluxes
 !  Created by Hua Yuan, 12/2020
 !-----------------------------------------------------------------------
 
+   USE, INTRINSIC :: iso_fortran_env, ONLY: sp=>real32
    USE MOD_Precision
    IMPLICIT NONE
    SAVE
@@ -35,6 +36,14 @@ MODULE MOD_Urban_Vars_1DFluxes
    real(r8), allocatable :: lfevp_gimp  (:) !latent heat flux from impervious road [W/m2]
    real(r8), allocatable :: lfevp_gper  (:) !latent heat flux from pervious road [W/m2]
    real(r8), allocatable :: lfevp_urbl  (:) !latent heat flux from urban vegetation [W/m2]
+
+   real(r8), allocatable :: finput (:,:)
+   real(r8), allocatable :: foutput(:,:)
+
+   real(r8), allocatable :: Fahe_24 (:,:)
+   real(r8), allocatable :: Fahe_lcz(:,:)
+   real(r8), allocatable :: vehc_lcz(:,:)
+   real(r8), allocatable :: tref_24 (:,:)
 
 ! PUBLIC MEMBER FUNCTIONS:
    PUBLIC :: allocate_1D_UrbanFluxes
@@ -78,6 +87,14 @@ CONTAINS
             allocate (lfevp_gimp     (numurban)) ; lfevp_gimp     (:) = spval
             allocate (lfevp_gper     (numurban)) ; lfevp_gper     (:) = spval
             allocate (lfevp_urbl     (numurban)) ; lfevp_urbl     (:) = spval
+
+            allocate (finput       (numurban,6))
+            allocate (foutput      (numurban,1))
+
+            allocate (Fahe_24     (24,numurban))
+            allocate (Fahe_lcz    (10,numurban))
+            allocate (vehc_lcz    (10,numurban))
+            allocate (tref_24     (24,numurban))
          ENDIF
       ENDIF
 
@@ -109,6 +126,14 @@ CONTAINS
             deallocate (lfevp_gimp   )
             deallocate (lfevp_gper   )
             deallocate (lfevp_urbl   )
+
+            deallocate (finput       )
+            deallocate (foutput      )
+
+            deallocate (Fahe_24      )
+            deallocate (Fahe_lcz     )
+            deallocate (vehc_lcz     )
+            deallocate (tref_24      )
 
          ENDIF
       ENDIF
