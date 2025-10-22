@@ -14,6 +14,7 @@ MODULE MOD_Vars_1DAccFluxes
 
    real(r8) :: nac ! number of accumulation
    real(r8), allocatable :: nac_ln      (:)
+   real(r8), allocatable :: nac_24    (:,:)
 
    real(r8), allocatable :: a_us        (:)
    real(r8), allocatable :: a_vs        (:)
@@ -138,6 +139,16 @@ MODULE MOD_Vars_1DAccFluxes
 
    real(r8), allocatable :: a_troof     (:) !temperature of roof [K]
    real(r8), allocatable :: a_twall     (:) !temperature of wall [K]
+   real(r8), allocatable :: a_fahe_24 (:,:)
+   real(r8), allocatable :: a_fahe_lcz(:,:)
+   real(r8), allocatable :: a_vehc_lcz(:,:)
+   real(r8), allocatable :: a_fhah_24 (:,:)
+   real(r8), allocatable :: a_fhac_24 (:,:)
+   real(r8), allocatable :: a_fwst_24 (:,:)
+   real(r8), allocatable :: a_vehc_24 (:,:)
+   real(r8), allocatable :: a_meta_24 (:,:)
+   real(r8), allocatable :: a_tref_24 (:,:)
+   real(r8), allocatable :: a_tforc_24(:,:)
 #endif
 
 
@@ -559,6 +570,19 @@ CONTAINS
 
                allocate (a_troof     (numurban))
                allocate (a_twall     (numurban))
+
+               allocate (a_fahe_24 (24,numurban))
+               allocate (a_fahe_lcz(10,numurban))
+               allocate (a_vehc_lcz(10,numurban))
+               allocate (a_fhah_24 (24,numurban))
+               allocate (a_fhac_24 (24,numurban))
+               allocate (a_fwst_24 (24,numurban))
+               allocate (a_vehc_24 (24,numurban))
+               allocate (a_meta_24 (24,numurban))
+               allocate (a_tref_24 (24,numurban))
+               allocate (a_tforc_24(24,numurban))
+
+               allocate (nac_24    (24,numurban))
             ENDIF
 #endif
 #ifdef BGC
@@ -984,6 +1008,18 @@ CONTAINS
 
                deallocate (a_troof     )
                deallocate (a_twall     )
+
+               deallocate (a_fahe_24   )
+               deallocate (a_fahe_lcz  )
+               deallocate (a_vehc_lcz  )
+               deallocate (a_fhah_24   )
+               deallocate (a_fhac_24   )
+               deallocate (a_fwst_24   )
+               deallocate (a_vehc_24   )
+               deallocate (a_meta_24   )
+               deallocate (a_tref_24   )
+               deallocate (a_tforc_24  )
+               deallocate (nac_24      )
             ENDIF
 #endif
 
@@ -1410,6 +1446,18 @@ CONTAINS
 
                a_troof    (:) = spval
                a_twall    (:) = spval
+
+               a_fahe_24 (:,:) = spval
+               a_fahe_lcz(:,:) = spval
+               a_vehc_lcz(:,:) = spval
+               a_fhah_24 (:,:) = spval
+               a_fhac_24 (:,:) = spval
+               a_fwst_24 (:,:) = spval
+               a_vehc_24 (:,:) = spval
+               a_meta_24 (:,:) = spval
+               a_tref_24 (:,:) = spval
+               a_tforc_24(:,:) = spval
+               nac_24    (:,:) = 0
             ENDIF
 #endif
 
@@ -1682,7 +1730,7 @@ CONTAINS
 
             a_sensors(:,:) = spval
 
-            nac_ln  (:) = 0
+            nac_ln   (:) = 0
 
          ENDIF
       ENDIF
@@ -1693,7 +1741,7 @@ CONTAINS
 
    END SUBROUTINE FLUSH_acc_fluxes
 
-   SUBROUTINE accumulate_fluxes
+   SUBROUTINE accumulate_fluxes(idate)
 ! ----------------------------------------------------------------------
 !  perform the grid average mapping: average a subgrid input 1d vector
 !  of length numpatch to a output 2d array of length [ghist%xcnt,ghist%ycnt]
@@ -1703,11 +1751,12 @@ CONTAINS
 
    USE MOD_Precision
    USE MOD_SPMD_Task
+   USE MOD_TimeManager
    USE mod_forcing, only: forcmask_pch
    USE MOD_Mesh,    only: numelm
    USE MOD_LandElm
-   USE MOD_LandPatch,      only: numpatch, elm_patch, landpatch
-   USE MOD_LandUrban,      only: numurban, urban2patch
+   USE MOD_LandPatch,      only: numpatch, elm_patch
+   USE MOD_LandUrban,      only: numurban, urban2patch, patch2urban, landurban
    USE MOD_Const_Physical, only: vonkar, stefnc, cpair, rgas, grav
    USE MOD_Vars_TimeInvariants
    USE MOD_Vars_TimeVariables
@@ -1723,6 +1772,8 @@ CONTAINS
 #endif
 
    IMPLICIT NONE
+
+   integer, intent(in) :: idate(3)
 
    ! Local Variables
 
@@ -1744,7 +1795,8 @@ CONTAINS
    logical,  allocatable :: filter  (:)
 
    !---------------------------------------------------------------------
-   integer  ib, jb, i, j, ielm, istt, iend, u
+   integer  ib, jb, i, j, ielm, istt, iend, u, ihour
+   real(r8) ldate(3)
    real(r8) sumwt
    real(r8) rhoair,thm,th,thv,ur,displa_av,zldis,hgt_u,hgt_t,hgt_q
    real(r8) hpbl ! atmospheric boundary layer height [m]
@@ -1902,25 +1954,44 @@ CONTAINS
 
 #ifdef URBAN_MODEL
             IF (numurban > 0) THEN
-               DO i = 1, numurban
-                  u      = urban2patch(i)
-                  IF (Fhac(i) /= spval) Fhac(i) = Fhac(i)/elm_patch%subfrc(u)
-                  IF (Fhah(i) /= spval) Fhah(i) = Fhah(i)/elm_patch%subfrc(u)
-                  IF (Fwst(i) /= spval) Fwst(i) = Fwst(i)/elm_patch%subfrc(u)
-                  IF (vehc(i) /= spval) vehc(i) = vehc(i)/elm_patch%subfrc(u)
-                  IF (meta(i) /= spval) meta(i) = meta(i)/elm_patch%subfrc(u)
 
-                  IF (Fhac(i) > 200) Fhac(i) = 200
-                  IF (Fhah(i) > 300) Fhah(i) = 300
-                  IF (Fwst(i) > 200) Fwst(i) = 200
-                  IF (vehc(i) > 100) vehc(i) = 100
-                  IF (meta(i) >  50) meta(i) =  50
+ IF (DEF_USE_FTorch) THEN
+              DO i = 1, numurban
+                  u      = urban2patch(i)
+#ifndef SinglePoint
+                  !IF (Fhac(i) /= spval) Fhac(i) = Fhac(i)/elm_patch%subfrc(u)
+                  !IF (Fhah(i) /= spval) Fhah(i) = Fhah(i)/elm_patch%subfrc(u)
+                  !IF (Fwst(i) /= spval) Fwst(i) = Fwst(i)/elm_patch%subfrc(u)
+                  !IF (vehc(i) /= spval) vehc(i) = vehc(i)/elm_patch%subfrc(u)
+                  !IF (meta(i) /= spval) meta(i) = meta(i)/elm_patch%subfrc(u)
+#else
+                  !IF (Fhac(i) /= spval) Fhac(i) = Fhac(i)
+                  !IF (Fhah(i) /= spval) Fhah(i) = Fhah(i)
+                  !IF (Fwst(i) /= spval) Fwst(i) = Fwst(i)
+                  !IF (vehc(i) /= spval) vehc(i) = vehc(i)
+                  !IF (meta(i) /= spval) meta(i) = meta(i)
+#endif
+                  !IF (Fhac(i) > 200) Fhac(i) = 200
+                  !IF (Fhah(i) > 300) Fhah(i) = 300
+                  !IF (Fwst(i) > 200) Fwst(i) = 200
+                  !IF (vehc(i) > 100) vehc(i) = 100
+                  !IF (meta(i) >  50) meta(i) =  50
 
                   IF (Fhac(i) <   0) Fhac(i) =   0
                   IF (Fhah(i) <   0) Fhah(i) =   0
                   IF (Fwst(i) <   0) Fwst(i) =   0
                   IF (vehc(i) <   0) vehc(i) =   0
                   IF (meta(i) <   0) meta(i) =   0
+                  Fahe(i) = Fhac(i) + Fhah(i) + Fwst(i) + vehc(i) + meta(i)
+               ENDDO
+ENDIF
+               Fahe_lcz(:,:) = spval
+               vehc_lcz(:,:) = spval
+               DO i = 1, N_URB
+                  WHERE (landurban%settyp==i)
+                     Fahe_lcz(i,:) = Fhac + Fhah + Fwst
+                     vehc_lcz(i,:) = vehc + meta
+                  ENDWHERE
                ENDDO
 
                CALL acc1d(t_room    , a_t_room    )
@@ -1932,7 +2003,8 @@ CONTAINS
                CALL acc1d(Fhah      , a_fhah      )
                CALL acc1d(vehc      , a_vehc      )
                CALL acc1d(meta      , a_meta      )
-
+               CALL acc2d(Fahe_lcz  , a_fahe_lcz  )
+               CALL acc2d(vehc_lcz  , a_vehc_lcz  )
                CALL acc1d(fsen_roof , a_senroof   )
                CALL acc1d(fsen_wsun , a_senwsun   )
                CALL acc1d(fsen_wsha , a_senwsha   )
@@ -2523,6 +2595,62 @@ CONTAINS
                IF (solvdln(i) /= spval) THEN
                   nac_ln(i) = nac_ln(i) + 1
                ENDIF
+
+               CALL gmt2local(idate, patchlonr(i)*180/PI, ldate)
+               ihour = ceiling(ldate(3)*1./3600)
+
+               u = patch2urban(i)
+               IF (u < 0) CYCLE
+               nac_24(ihour,u) = nac_24(ihour,u) + 1
+
+               IF (a_fahe_24(ihour,u) /= spval) THEN
+                  a_fahe_24(ihour,u) = a_fahe_24(ihour,u) + Fahe(u)
+               ELSE
+                  a_fahe_24(ihour,u) = Fahe(u)
+               ENDIF
+
+               IF (a_fhah_24(ihour,u) /= spval) THEN
+                  a_fhah_24(ihour,u) = a_fhah_24(ihour,u) + Fhah(u)
+               ELSE
+                  a_fhah_24(ihour,u) = Fhah(u)
+               ENDIF
+
+               IF (a_fhac_24(ihour,u) /= spval) THEN
+                  a_fhac_24(ihour,u) = a_fhac_24(ihour,u) + Fhac(u)
+               ELSE
+                  a_fhac_24(ihour,u) = Fhac(u)
+               ENDIF
+
+               IF (a_fwst_24(ihour,u) /= spval) THEN
+                  a_fwst_24(ihour,u) = a_fwst_24(ihour,u) + Fwst(u)
+               ELSE
+                  a_fwst_24(ihour,u) = Fwst(u)
+               ENDIF
+
+               IF (a_vehc_24(ihour,u) /= spval) THEN
+                  a_vehc_24(ihour,u) = a_vehc_24(ihour,u) + vehc(u)
+               ELSE
+                  a_vehc_24(ihour,u) = vehc(u)
+               ENDIF
+
+               IF (a_meta_24(ihour,u) /= spval) THEN
+                  a_meta_24(ihour,u) = a_meta_24(ihour,u) + meta(u)
+               ELSE
+                  a_meta_24(ihour,u) = meta(u)
+               ENDIF
+
+               IF (a_tref_24(ihour,u) /= spval) THEN
+                  a_tref_24(ihour,u) = a_tref_24(ihour,u) + tafu(u)
+               ELSE
+                  a_tref_24(ihour,u) = tafu(u)
+               ENDIF
+
+               IF (a_tforc_24(ihour,u) /= spval) THEN
+                  a_tforc_24(ihour,u) = a_tforc_24(ihour,u) + forc_t(i)
+               ELSE
+                  a_tforc_24(ihour,u) = forc_t(i)
+               ENDIF
+
             ENDDO
 
          ENDIF

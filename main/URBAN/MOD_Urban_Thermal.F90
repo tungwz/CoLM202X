@@ -110,8 +110,10 @@ CONTAINS
    USE MOD_Precision
    USE MOD_SPMD_Task
    USE MOD_Vars_Global
+   USE MOD_LandUrban
    USE MOD_Const_Physical, only: denh2o,roverg,hvap,hsub,rgas,cpair,&
                                  stefnc,denice,tfrz,vonkar,grav
+   USE MOD_Urban_Const_LCZ, only: hequip
    USE MOD_Urban_Shortwave
    USE MOD_Urban_Longwave
    USE MOD_Urban_GroundFlux
@@ -1367,7 +1369,8 @@ CONTAINS
 !=======================================================================
 
       ! A simple Building energy model
-      CALL SimpleBEM ( deltim, forc_rhoair, fcover(0:2), hroof, troommax, troommin, &
+      CALL SimpleBEM ( idate, deltim, patchlonr, forc_rhoair, fcover(0:2), hroof, troommax, troommin, &
+                       hequip(landurban%settyp(patch2urban(ipatch))), weh_prof, &
                        troof_nl_bef, twsun_nl_bef, twsha_nl_bef, &
                        t_roofsno(nl_roof), t_wallsun(nl_wall), t_wallsha(nl_wall), &
                        tkdz_roof, tkdz_wsun, tkdz_wsha, tafu, troom, &

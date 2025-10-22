@@ -714,9 +714,6 @@
    real(wp), dimension(1, 1), target :: out_data
    real(wp), dimension(1   ), target :: sum_data
 
-   integer :: c0, c1, cr, cm
-   real(8) :: elapsed
-
    ! Initialise data
    in_data(1,:) = [0.1257_wp, -0.1321_wp,  0.6404_wp,  0.1049_wp, -0.5357_wp,  &
               0.3616_wp,  1.3040_wp,  0.9471_wp, -0.7037_wp, -1.2654_wp]
@@ -725,15 +722,8 @@
 
    ! CALL FTorch_init()
 
-   ! call system_clock(count_rate=cr, count_max=cm)  ! 每秒“滴答”数
-   ! call system_clock(c0)
-
-   ! CALL FTorch_routine(in_data, out_data)
+   CALL FTorch_routine(in_data, out_data)
    sum_data(:) = sum_data(:) + out_data(1,1)
-
-   call system_clock(c1)
-   ! elapsed = real(c1 - c0, 8) / real(cr, 8)       ! 秒
-   ! print '(A,F10.6,A)', 'FTorch_routine wall time = ', elapsed, ' s'
 
    in_data(1, :) = in_data(1, :) + 1.0_wp
 
@@ -992,8 +982,6 @@
       lbl = snll + 1           !lower bound of array
       lbsn= min(lbp,0)
 
-      ! call system_clock(count_rate=cr, count_max=cm)  ! 每秒“滴答”数
-      ! call system_clock(c0)
       ! Thermal process
       CALL UrbanTHERMAL ( &
          ! model running information
@@ -1079,9 +1067,6 @@
          qstar              ,tstar              ,fm                 ,fh                 ,&
          fq                 ,hpbl                                                        )
 
-      ! call system_clock(c1)
-      ! elapsed = real(c1 - c0, 8) / real(cr, 8)       ! 秒
-      ! print '(A,F10.6,A)', 'THERMAL routine wall time = ', elapsed, ' s'
 !----------------------------------------------------------------------
 ! [5] Urban hydrology
 !----------------------------------------------------------------------

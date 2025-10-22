@@ -232,6 +232,9 @@ MODULE MOD_Namelist
    logical :: DEF_URBAN_WATER       = .true.
    logical :: DEF_URBAN_LUCY        = .true.
    logical :: DEF_USE_CANYON_HWR    = .true.
+   logical :: DEF_USE_FTorch        = .false.
+
+   character(len=256) :: DEF_Torchmodel = 'null'
 
 ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ! ----- Part 11: parameterization schemes -----
@@ -566,6 +569,16 @@ MODULE MOD_Namelist
       logical :: tafu                             = .true.
       logical :: t_roof                           = .true.
       logical :: t_wall                           = .true.
+      logical :: fahe_lcz                         = .true.
+      logical :: vehc_lcz                         = .true.
+      logical :: fahe_24                          = .true.
+      logical :: fhah_24                          = .true.
+      logical :: fhac_24                          = .true.
+      logical :: fwst_24                          = .true.
+      logical :: vehc_24                          = .true.
+      logical :: meta_24                          = .true.
+      logical :: tref_24                          = .true.
+      logical :: tforc_24                         = .true.
 
       logical :: assimsun                         = .true.
       logical :: assimsha                         = .true.
@@ -984,6 +997,8 @@ CONTAINS
       DEF_URBAN_WATER,                        & !add by hua yuan, modeling urban water or not
       DEF_URBAN_LUCY,                         &
       DEF_USE_CANYON_HWR,                     &
+      DEF_USE_FTorch,                         &
+      DEF_Torchmodel,                         &
 
       DEF_USE_SOILPAR_UPS_FIT,                &
       DEF_THERMAL_CONDUCTIVITY_SCHEME,        &
@@ -1519,6 +1534,8 @@ CONTAINS
       CALL mpi_bcast (DEF_URBAN_WATER                        ,1   ,mpi_logical   ,p_address_master ,p_comm_glb ,p_err)
       CALL mpi_bcast (DEF_URBAN_LUCY                         ,1   ,mpi_logical   ,p_address_master ,p_comm_glb ,p_err)
       CALL mpi_bcast (DEF_USE_CANYON_HWR                     ,1   ,mpi_logical   ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_USE_FTorch                         ,1   ,mpi_logical   ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_Torchmodel                         ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
 
       ! 06/2023, added by weinan
       CALL mpi_bcast (DEF_USE_SOILPAR_UPS_FIT                ,1   ,mpi_logical   ,p_address_master ,p_comm_glb ,p_err)
@@ -1836,6 +1853,16 @@ CONTAINS
       CALL sync_hist_vars_one (DEF_hist_vars%tafu        , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%t_roof      , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%t_wall      , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%fahe_lcz    , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%vehc_lcz    , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%fahe_24     , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%fhah_24     , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%fhac_24     , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%fwst_24     , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%vehc_24     , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%meta_24     , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%tref_24     , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%tforc_24    , set_defaults)
 #endif
       CALL sync_hist_vars_one (DEF_hist_vars%assimsun    , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%assimsha    , set_defaults)

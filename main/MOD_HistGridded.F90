@@ -231,6 +231,140 @@ CONTAINS
 
    END SUBROUTINE flux_map_and_write_urb_2d
 
+   SUBROUTINE flux_map_and_write_urb_3d ( &
+         acc_vec, file_hist, varname, itime_in_file, dim1name, lb1, ndim1, sumarea, filter, &
+         longname, units)
+
+   USE MOD_Block
+   USE MOD_Vars_1DAccFluxes,  only: nac
+   USE MOD_Vars_Global, only: spval
+   IMPLICIT NONE
+
+   real(r8), intent(inout) :: acc_vec(:,:)
+   character(len=*), intent(in) :: file_hist
+   character(len=*), intent(in) :: varname
+   integer, intent(in) :: itime_in_file
+   character(len=*), intent(in) :: dim1name
+   integer, intent(in) :: lb1, ndim1
+
+   type(block_data_real8_2d), intent(in) :: sumarea
+   logical, intent(in) :: filter(:)
+   character (len=*), intent(in) :: longname
+   character (len=*), intent(in) :: units
+
+   ! Local variables
+   type(block_data_real8_3d) :: flux_xy_3d
+   integer :: iblkme, xblk, yblk, xloc, yloc, i1
+   integer :: compress
+
+      IF (p_is_worker)  THEN
+         WHERE (acc_vec /= spval)  acc_vec = acc_vec / nac
+      ENDIF
+      IF (p_is_io) THEN
+         CALL allocate_block_data (ghist, flux_xy_3d, ndim1, lb1)
+      ENDIF
+
+      CALL mp2g_hist_urb%pset2grid (acc_vec, flux_xy_3d, spv = spval, msk = filter)
+
+      IF (p_is_io) THEN
+         DO iblkme = 1, gblock%nblkme
+            xblk = gblock%xblkme(iblkme)
+            yblk = gblock%yblkme(iblkme)
+
+            DO yloc = 1, ghist%ycnt(yblk)
+               DO xloc = 1, ghist%xcnt(xblk)
+
+                  IF (sumarea%blk(xblk,yblk)%val(xloc,yloc) > 0.00001) THEN
+                     DO i1 = flux_xy_3d%lb1, flux_xy_3d%ub1
+                        IF (flux_xy_3d%blk(xblk,yblk)%val(i1,xloc,yloc) /= spval) THEN
+                           flux_xy_3d%blk(xblk,yblk)%val(i1,xloc,yloc) &
+                              = flux_xy_3d%blk(xblk,yblk)%val(i1,xloc,yloc) &
+                              / sumarea%blk(xblk,yblk)%val(xloc,yloc)
+                        ENDIF
+                     ENDDO
+                  ELSE
+                     flux_xy_3d%blk(xblk,yblk)%val(:,xloc,yloc) = spval
+                  ENDIF
+
+               ENDDO
+            ENDDO
+
+         ENDDO
+      ENDIF
+
+      compress = DEF_HIST_CompressLevel
+      CALL hist_write_var_real8_3d (file_hist, varname, dim1name, ghist, &
+         itime_in_file, flux_xy_3d, compress, longname, units)
+
+   END SUBROUTINE flux_map_and_write_urb_3d
+
+   SUBROUTINE flux_map_and_write_urb_3d_24 ( &
+         acc_vec, file_hist, varname, itime_in_file, dim1name, lb1, ndim1, sumarea, filter, &
+         longname, units)
+
+   USE MOD_Block
+   USE MOD_Vars_1DAccFluxes,  only: nac_24
+   USE MOD_Vars_Global, only: spval
+   IMPLICIT NONE
+
+   real(r8), intent(inout) :: acc_vec(:,:)
+   character(len=*), intent(in) :: file_hist
+   character(len=*), intent(in) :: varname
+   integer, intent(in) :: itime_in_file
+   character(len=*), intent(in) :: dim1name
+   integer, intent(in) :: lb1, ndim1
+
+   type(block_data_real8_2d), intent(in) :: sumarea
+   logical, intent(in) :: filter(:)
+   character (len=*), intent(in) :: longname
+   character (len=*), intent(in) :: units
+
+   ! Local variables
+   type(block_data_real8_3d) :: flux_xy_3d
+   integer :: iblkme, xblk, yblk, xloc, yloc, i1
+   integer :: compress
+
+      IF (p_is_worker)  THEN
+         WHERE (acc_vec /= spval)  acc_vec = acc_vec / nac_24
+      ENDIF
+      IF (p_is_io) THEN
+         CALL allocate_block_data (ghist, flux_xy_3d, ndim1, lb1)
+      ENDIF
+
+      CALL mp2g_hist_urb%pset2grid (acc_vec, flux_xy_3d, spv = spval, msk = filter)
+
+      IF (p_is_io) THEN
+         DO iblkme = 1, gblock%nblkme
+            xblk = gblock%xblkme(iblkme)
+            yblk = gblock%yblkme(iblkme)
+
+            DO yloc = 1, ghist%ycnt(yblk)
+               DO xloc = 1, ghist%xcnt(xblk)
+
+                  IF (sumarea%blk(xblk,yblk)%val(xloc,yloc) > 0.00001) THEN
+                     DO i1 = flux_xy_3d%lb1, flux_xy_3d%ub1
+                        IF (flux_xy_3d%blk(xblk,yblk)%val(i1,xloc,yloc) /= spval) THEN
+                           flux_xy_3d%blk(xblk,yblk)%val(i1,xloc,yloc) &
+                              = flux_xy_3d%blk(xblk,yblk)%val(i1,xloc,yloc) &
+                              / sumarea%blk(xblk,yblk)%val(xloc,yloc)
+                        ENDIF
+                     ENDDO
+                  ELSE
+                     flux_xy_3d%blk(xblk,yblk)%val(:,xloc,yloc) = spval
+                  ENDIF
+
+               ENDDO
+            ENDDO
+
+         ENDDO
+      ENDIF
+
+      compress = DEF_HIST_CompressLevel
+      CALL hist_write_var_real8_3d (file_hist, varname, dim1name, ghist, &
+         itime_in_file, flux_xy_3d, compress, longname, units)
+
+   END SUBROUTINE flux_map_and_write_urb_3d_24
+
 
    SUBROUTINE flux_map_and_write_3d ( &
          acc_vec, file_hist, varname, itime_in_file, dim1name, lb1, ndim1, sumarea, filter, &

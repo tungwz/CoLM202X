@@ -1,4 +1,5 @@
 MODULE MOD_FTorch
+   USE MOD_Namelist, only: DEF_Torchmodel
    USE, INTRINSIC :: iso_fortran_env, ONLY: sp=>real32, dp=>real64
    USE ftorch, ONLY: torch_tensor, torch_model, torch_kCPU, torch_delete, &
                      torch_tensor_from_array, torch_model_load, torch_model_forward
@@ -18,8 +19,7 @@ MODULE MOD_FTorch
    REAL(wp), ALLOCATABLE, TARGET, SAVE :: in_buf(:, :)   ! (nsample, 5)
    REAL(wp), ALLOCATABLE, TARGET, SAVE :: out_buf(:, :)  ! (nsample, 1)
 
-   CHARACTER(len=*), PARAMETER :: model_torchscript_file = &
-        '/tera12/yuanhua/dongwz/github/master/CoLM-FTorch/CoLM202X/pytorch/Flaml_hum/lgbm_hb_logtarget_ts.pt'
+   CHARACTER(len=256) :: model_torchscript_file
 
    LOGICAL, SAVE :: model_loaded = .FALSE.
    INTEGER, SAVE :: last_nsample = -1
@@ -28,6 +28,8 @@ CONTAINS
 
    SUBROUTINE FTorch_init()
       IF (.NOT. model_loaded) THEN
+         model_torchscript_file = DEF_Torchmodel
+         print*, model_torchscript_file
          CALL torch_model_load(torch_net, model_torchscript_file, torch_kCPU)
          model_loaded = .TRUE.
       END IF
@@ -50,7 +52,7 @@ CONTAINS
          IF (ALLOCATED(in_buf))  DEALLOCATE(in_buf)
          IF (ALLOCATED(out_buf)) DEALLOCATE(out_buf)
 
-         ALLOCATE(in_buf(nsample, 5))
+         ALLOCATE(in_buf (nsample, 6))
          ALLOCATE(out_buf(nsample, 1))
 
          CALL torch_tensor_from_array(input_tensors(1),  in_buf,  tensor_layout, torch_kCPU)
@@ -64,14 +66,14 @@ CONTAINS
    SUBROUTINE FTorch_routine(in_data, out_data)
       !   in_data  : (nsample, 5)
       !   out_data : (nsample, 1)
-      REAL(wp), INTENT(IN),  TARGET :: in_data(:, :)
-      REAL(wp), INTENT(OUT), TARGET :: out_data(:, :)
+      REAL(dp), INTENT(IN),  TARGET :: in_data(:, :)
+      REAL(dp), INTENT(OUT), TARGET :: out_data(:, :)
 
       INTEGER :: nsample, nfeat, nout
 
       nsample = SIZE(in_data, 1)
       nfeat   = SIZE(in_data, 2)
-      IF (nfeat /= 5) STOP 'FTorch_routine: in_data must have 5 features per sample'
+      IF (nfeat /= 6) STOP 'FTorch_routine: in_data must have 5 features per sample'
 
       CALL ensure_bound(nsample)
 

@@ -40,6 +40,11 @@ MODULE MOD_Urban_Vars_1DFluxes
    real(r8), allocatable :: finput (:,:)
    real(r8), allocatable :: foutput(:,:)
 
+   real(r8), allocatable :: Fahe_24 (:,:)
+   real(r8), allocatable :: Fahe_lcz(:,:)
+   real(r8), allocatable :: vehc_lcz(:,:)
+   real(r8), allocatable :: tref_24 (:,:)
+
 ! PUBLIC MEMBER FUNCTIONS:
    PUBLIC :: allocate_1D_UrbanFluxes
    PUBLIC :: deallocate_1D_UrbanFluxes
@@ -83,8 +88,13 @@ CONTAINS
             allocate (lfevp_gper     (numurban)) ; lfevp_gper     (:) = spval
             allocate (lfevp_urbl     (numurban)) ; lfevp_urbl     (:) = spval
 
-            allocate (finput       (numurban,5))
+            allocate (finput       (numurban,6))
             allocate (foutput      (numurban,1))
+
+            allocate (Fahe_24     (24,numurban))
+            allocate (Fahe_lcz    (10,numurban))
+            allocate (vehc_lcz    (10,numurban))
+            allocate (tref_24     (24,numurban))
          ENDIF
       ENDIF
 
@@ -119,6 +129,11 @@ CONTAINS
 
             deallocate (finput       )
             deallocate (foutput      )
+
+            deallocate (Fahe_24      )
+            deallocate (Fahe_lcz     )
+            deallocate (vehc_lcz     )
+            deallocate (tref_24      )
 
          ENDIF
       ENDIF

@@ -18,10 +18,13 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
    USE MOD_Const_Physical, only: tfrz, rgas, vonkar
    USE MOD_Const_LC
    USE MOD_Vars_Global
+   USE MOD_Timemanager
    USE MOD_Vars_TimeInvariants
    USE MOD_Vars_TimeVariables
+   USE MOD_Urban_Vars_TimeVariables
    USE MOD_Vars_1DForcing
    USE MOD_Vars_1DFluxes
+   USE MOD_Urban_Vars_1DFluxes
    USE MOD_LandPatch, only: numpatch, elm_patch
    USE MOD_LandUrban, only: patch2urban
    USE MOD_Namelist, only: DEF_forcing, DEF_URBAN_RUN
@@ -46,8 +49,9 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
    real(r8), intent(inout) :: oro(numpatch)  ! ocean(0)/seaice(2)/ flag
 
    real(r8) :: deltim_phy
+   real(r8) :: ldate(3)
    integer  :: steps_in_one_deltim
-   integer  :: i, m, u, k
+   integer  :: i, m, u, k, ihour
 
 ! ======================================================================
 
@@ -341,11 +345,25 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
             ustar(i)        ,qstar(i)        ,tstar(i)        ,fm(i)           ,&
             fh(i)           ,fq(i)           ,forc_hpbl(i)                      )
 
+IF (DEF_USE_FTorch) THEN
+           CALL gmt2local(idate, patchlonr(i)*180/PI, ldate)
+           ihour = ceiling(ldate(3)*1./3600)
+
            finput(u,1) = pop_den(u)
            finput(u,2) = hroof  (u)
            finput(u,3) = froof  (u)
-           finput(u,4) = tref   (i)
-           finput(u,5) = Fahe   (u)*elm_patch%subfrc(i)
+           finput(u,4) = tafu   (u)
+           ! finput(u,4) = forc_t (i)
+#ifndef SinglePoint
+           ! finput(u,5) = Fahe   (u)*elm_patch%subfrc(i)
+#else
+           ! finput(u,5) = Fahe   (u)
+#endif
+           finput(u,5) = Fahe   (u)
+           finput(u,6) = ihour
+           ! finput(u,7) = patchlatr(i)*180/PI
+ENDIF
+
          ENDIF
 #endif
       ENDDO
@@ -353,7 +371,25 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
 !$OMP END PARALLEL DO
 #endif
 
+IF (DEF_USE_FTorch) THEN
+
+      !write(*,'(A)') 'WT_ROOF'
+      !write(*,'(3(1X,F12.6))') froof
+
+      !write(*,'(A)') 'HT_ROOF'
+      !write(*,'(3(1X,F12.6))') hroof
+
+      !write(*,'(A)') 'POP'
+      !write(*,'(3(1X,F12.6))') pop_den
+
+      !write(*,'(A)') 'before AI Fahe ='
+      !write(*,'(3(1X,F12.6))') Fahe
+      !write(*,'(F12.6)') Fahe*elm_patch%subfrc
+
       CALL FTorch_routine(finput, foutput)
+      !write(*,'(A)') 'after AI Fahe ='
+      !write(*,'(3(1X,F12.6))') foutput
+      !write(*,'(F12.6)') foutput(:,1)*elm_patch%subfrc
 
       ! update AHE
       WHERE (Fhah>0._sp .and. Fahe>0._sp)
@@ -373,6 +409,7 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
       WHERE (meta>0._sp .and. Fahe>0._sp)
          meta = foutput(:,1)*meta/Fahe
       END WHERE
+ENDIF
 
 END SUBROUTINE CoLMDRIVER
 ! ---------- EOP ------------
