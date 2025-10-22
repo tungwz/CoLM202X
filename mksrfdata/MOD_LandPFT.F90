@@ -24,6 +24,7 @@ MODULE MOD_LandPFT
 !-----------------------------------------------------------------------
 
    USE MOD_Namelist
+   USE MOD_Grid
    USE MOD_Pixelset
    USE MOD_Const_LC
    USE MOD_Vars_Global
@@ -31,6 +32,7 @@ MODULE MOD_LandPFT
 
    ! ---- Instance ----
    integer :: numpft
+   type(grid_type)     :: grid_pft
    type(pixelset_type) :: landpft
 
    integer , allocatable :: pft2patch   (:)  !patch index of a PFT
@@ -52,6 +54,7 @@ CONTAINS
    USE MOD_Namelist
    USE MOD_5x5DataReadin
    USE MOD_LandPatch
+   USE MOD_Land2mWMO
    USE MOD_AggregationRequestData
    USE MOD_Const_LC
 #ifdef CROP
@@ -61,17 +64,19 @@ CONTAINS
    IMPLICIT NONE
 
    integer, intent(in) :: lc_year
+
    ! Local Variables
-   character(len=256) :: dir_5x5, suffix, cyear
+   character(len=256) :: dir_5x5, fname, cyear
    type (block_data_real8_3d) :: pctpft
    real(r8), allocatable :: pctpft_patch(:,:), pctpft_one(:,:)
    real(r8), allocatable :: area_one  (:)
    logical,  allocatable :: patchmask (:)
    integer  :: ipatch, ipft, npatch, npft, npft_glb
-   real(r8) :: sumarea
+   integer  :: wmo_src, ipft_grass
+   real(r8) :: sumarea, maxgrass
 
       IF (p_is_master) THEN
-         write(*,'(A)') 'Making land plant function type tiles :'
+         write(*,'(A)') 'Making land plant function type tiles:'
       ENDIF
 
 #ifdef USEMPI
@@ -82,17 +87,17 @@ CONTAINS
 
       IF (p_is_io) THEN
 
-         CALL allocate_block_data (grid_patch, pctpft, N_PFT_modis, lb1 = 0)
+         CALL allocate_block_data (grid_pft, pctpft, N_PFT_modis, lb1 = 0)
          CALL flush_block_data (pctpft, 1.0)
 
-         dir_5x5 = trim(DEF_dir_rawdata) // '/plant_15s'
+         dir_5x5 = trim(DEF_dir_rawdata) // trim(DEF_rawdata%pft%dir)
          ! add parameter input for time year
          write(cyear,'(i4.4)') lc_year
-         suffix  = 'MOD'//trim(cyear)
-         CALL read_5x5_data_pft (dir_5x5, suffix, grid_patch, 'PCT_PFT', pctpft)
+         fname  = trim(DEF_rawdata%pft%fname) // '.' // trim(cyear)
+         CALL read_5x5_data_pft (dir_5x5, fname, grid_pft, 'PCT_PFT', pctpft)
 
 #ifdef USEMPI
-         CALL aggregation_data_daemon (grid_patch, data_r8_3d_in1 = pctpft, n1_r8_3d_in1 = N_PFT_modis)
+         CALL aggregation_data_daemon (grid_pft, data_r8_3d_in1 = pctpft, n1_r8_3d_in1 = N_PFT_modis)
 #endif
       ENDIF
 
@@ -108,18 +113,36 @@ CONTAINS
          ENDIF
 
          DO ipatch = 1, numpatch
+
+            IF (ipatch == wmo_patch(landpatch%ielm(ipatch))) THEN
+
+               wmo_src  = wmo_source(landpatch%ielm(ipatch))
+               maxgrass = maxval(pctpft_patch(12:14,wmo_src))
+
+               IF (maxgrass > 0) THEN
+                  ipft_grass = maxloc(pctpft_patch(12:14,wmo_src), dim=1) + 11
+                  pctpft_patch(:,ipatch) = 0
+                  pctpft_patch(ipft_grass,ipatch) = 1.
+               ELSE
+                  pctpft_patch(0,ipatch) = 1.
+               ENDIF
+
+               CYCLE
+            ENDIF
 #ifndef CROP
             IF (patchtypes(landpatch%settyp(ipatch)) == 0) THEN
 #else
             IF (patchtypes(landpatch%settyp(ipatch)) == 0 .and. landpatch%settyp(ipatch)/=CROPLAND) THEN
 #endif
-               CALL aggregation_request_data (landpatch, ipatch, grid_patch, zip = .false., area = area_one, &
+               CALL aggregation_request_data (landpatch, ipatch, grid_pft, zip = .false., area = area_one, &
                   data_r8_3d_in1 = pctpft, data_r8_3d_out1 = pctpft_one, n1_r8_3d_in1 = N_PFT_modis, lb1_r8_3d_in1 = 0)
 
                sumarea = sum(area_one * sum(pctpft_one(0:N_PFT-1,:),dim=1))
 
+               ! in case of no PFT data, set to 100% bare when patchtype=0,
+               ! be consistent with Aggregation_PercentagesPFT.F90.
                IF (sumarea <= 0.0) THEN
-                  patchmask(ipatch) = .false.
+                  pctpft_patch(0,ipatch) = 1.
                ELSE
                   DO ipft = 0, N_PFT-1
                      pctpft_patch(ipft,ipatch) = sum(pctpft_one(ipft,:) * area_one) / sumarea

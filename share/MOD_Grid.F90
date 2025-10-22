@@ -201,6 +201,12 @@ CONTAINS
 
       ENDIF
 
+      IF (trim(gridname) == 'colm_30m') THEN
+
+         CALL this%define_by_ndims (1296000,648000)
+
+      ENDIF
+
       IF (trim(gridname) == 'nitrif_2deg') THEN
 
          CALL this%define_by_ndims (144,96)
@@ -544,7 +550,7 @@ CONTAINS
          this%ydsp(jblk) = ilat - 1
 
          DO WHILE (ilat <= this%nlat)
-            IF (this%lat_s(ilat) < edgen) THEN
+            IF (this%lat_s(ilat)-edgen < -1.e-10) THEN
                IF (this%lat_s(ilat) < gblock%lat_n(jblk)) THEN
 
                   this%ycnt(jblk) = this%ycnt(jblk) + 1
@@ -582,7 +588,7 @@ CONTAINS
          this%ydsp(jblk) = ilat - 1
 
          DO WHILE (ilat <= this%nlat)
-            IF (this%lat_n(ilat) > edges) THEN
+            IF (this%lat_n(ilat)-edges > 1.e-10) THEN
                IF (this%lat_n(ilat) > gblock%lat_s(jblk)) THEN
 
                   this%ycnt(jblk) = this%ycnt(jblk) + 1

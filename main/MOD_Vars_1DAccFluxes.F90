@@ -14,6 +14,8 @@ MODULE MOD_Vars_1DAccFluxes
 
    real(r8) :: nac ! number of accumulation
    real(r8), allocatable :: nac_ln      (:)
+   real(r8), allocatable :: nac_dt      (:)
+   logical,  allocatable :: filter_dt   (:)
    real(r8), allocatable :: nac_24    (:,:)
 
    real(r8), allocatable :: a_us        (:)
@@ -99,6 +101,7 @@ MODULE MOD_Vars_1DAccFluxes
    real(r8), allocatable :: a_z0m       (:)
    real(r8), allocatable :: a_trad      (:)
    real(r8), allocatable :: a_tref      (:)
+   real(r8), allocatable :: a_t2m_wmo   (:)
    real(r8), allocatable :: a_qref      (:)
    real(r8), allocatable :: a_rain      (:)
    real(r8), allocatable :: a_snow      (:)
@@ -284,10 +287,17 @@ MODULE MOD_Vars_1DAccFluxes
    real(r8), allocatable :: a_grainc_to_seed        (:)
    real(r8), allocatable :: a_fert_to_sminn         (:)
 
-   real(r8), allocatable :: a_irrig_rate            (:)
-   real(r8), allocatable :: a_deficit_irrig         (:)
-   real(r8), allocatable :: a_sum_irrig             (:)
-   real(r8), allocatable :: a_sum_irrig_count       (:)
+   real(r8), allocatable :: a_sum_irrig          (:)
+   real(r8), allocatable :: a_sum_deficit_irrig  (:)
+   real(r8), allocatable :: a_sum_irrig_count    (:)
+   real(r8), allocatable :: a_waterstorage       (:)
+   real(r8), allocatable :: a_groundwater_demand (:)
+   real(r8), allocatable :: a_groundwater_supply (:)
+   real(r8), allocatable :: a_reservoirriver_demand(:)
+   real(r8), allocatable :: a_reservoirriver_supply(:)
+   real(r8), allocatable :: a_reservoir_supply     (:)
+   real(r8), allocatable :: a_river_supply         (:)
+   real(r8), allocatable :: a_runoff_supply        (:)
 #endif
    real(r8), allocatable :: a_ndep_to_sminn         (:)
    real(r8), allocatable :: a_abm                   (:)
@@ -529,6 +539,7 @@ CONTAINS
             allocate (a_z0m       (numpatch))
             allocate (a_trad      (numpatch))
             allocate (a_tref      (numpatch))
+            allocate (a_t2m_wmo   (numpatch))
             allocate (a_qref      (numpatch))
             allocate (a_rain      (numpatch))
             allocate (a_snow      (numpatch))
@@ -718,10 +729,17 @@ CONTAINS
             allocate (a_grainc_to_seed     (numpatch))
             allocate (a_fert_to_sminn      (numpatch))
 
-            allocate (a_irrig_rate         (numpatch))
-            allocate (a_deficit_irrig      (numpatch))
             allocate (a_sum_irrig          (numpatch))
+            allocate (a_sum_deficit_irrig  (numpatch))
             allocate (a_sum_irrig_count    (numpatch))
+            allocate (a_waterstorage       (numpatch))
+            allocate (a_groundwater_demand (numpatch))
+            allocate (a_groundwater_supply (numpatch))
+            allocate (a_reservoirriver_demand(numpatch))
+            allocate (a_reservoirriver_supply(numpatch))
+            allocate (a_reservoir_supply     (numpatch))
+            allocate (a_river_supply         (numpatch))
+            allocate (a_runoff_supply        (numpatch))
 #endif
             allocate (a_ndep_to_sminn      (numpatch))
 
@@ -858,6 +876,8 @@ CONTAINS
             allocate (a_sensors (nsensor,numpatch))
 
             allocate (nac_ln      (numpatch))
+            allocate (nac_dt      (numpatch))
+            allocate (filter_dt   (numpatch))
 
          ENDIF
       ENDIF
@@ -961,12 +981,13 @@ CONTAINS
             deallocate (a_laisha    )
             deallocate (a_sai       )
 
-            deallocate (a_alb  )
+            deallocate (a_alb       )
 
             deallocate (a_emis      )
             deallocate (a_z0m       )
             deallocate (a_trad      )
             deallocate (a_tref      )
+            deallocate (a_t2m_wmo   )
             deallocate (a_qref      )
             deallocate (a_rain      )
             deallocate (a_snow      )
@@ -1156,10 +1177,17 @@ CONTAINS
             deallocate (a_grainc_to_seed     )
             deallocate (a_fert_to_sminn      )
 
-            deallocate (a_irrig_rate         )
-            deallocate (a_deficit_irrig      )
             deallocate (a_sum_irrig          )
+            deallocate (a_sum_deficit_irrig  )
             deallocate (a_sum_irrig_count    )
+            deallocate (a_waterstorage       )
+            deallocate (a_groundwater_demand )
+            deallocate (a_groundwater_supply )
+            deallocate (a_reservoirriver_demand)
+            deallocate (a_reservoirriver_supply)
+            deallocate (a_reservoir_supply     )
+            deallocate (a_river_supply         )
+            deallocate (a_runoff_supply        )
 #endif
             deallocate (a_ndep_to_sminn      )
 
@@ -1295,6 +1323,8 @@ CONTAINS
             deallocate (a_sensors   )
 
             deallocate (nac_ln      )
+            deallocate (nac_dt      )
+            deallocate (filter_dt   )
 
          ENDIF
       ENDIF
@@ -1405,6 +1435,7 @@ CONTAINS
             a_z0m       (:) = spval
             a_trad      (:) = spval
             a_tref      (:) = spval
+            a_t2m_wmo   (:) = spval
             a_qref      (:) = spval
             a_rain      (:) = spval
             a_snow      (:) = spval
@@ -1592,10 +1623,18 @@ CONTAINS
             a_grainc_to_cropprodc(:) = spval
             a_grainc_to_seed     (:) = spval
             a_fert_to_sminn      (:) = spval
-            a_irrig_rate         (:) = spval
-            a_deficit_irrig      (:) = spval
+
             a_sum_irrig          (:) = spval
+            a_sum_deficit_irrig  (:) = spval
             a_sum_irrig_count    (:) = spval
+            a_waterstorage       (:) = spval
+            a_groundwater_demand (:) = spval
+            a_groundwater_supply (:) = spval
+            a_reservoirriver_demand(:) = spval
+            a_reservoirriver_supply(:) = spval
+            a_reservoir_supply     (:) = spval
+            a_river_supply         (:) = spval
+            a_runoff_supply        (:) = spval
 #endif
             a_ndep_to_sminn      (:) = spval
 
@@ -1730,6 +1769,9 @@ CONTAINS
 
             a_sensors(:,:) = spval
 
+            nac_ln     (:) = 0
+            nac_dt     (:) = 0
+            filter_dt  (:) = .true.
             nac_ln   (:) = 0
 
          ENDIF
@@ -1777,22 +1819,22 @@ CONTAINS
 
    ! Local Variables
 
-   real(r8), allocatable :: r_trad  (:)
-   real(r8), allocatable :: r_ustar (:)
-   real(r8), allocatable :: r_ustar2(:) !define a temporary for estimating us10m only, output should be r_ustar. Shaofeng, 2023.05.20
-   real(r8), allocatable :: r_tstar (:)
-   real(r8), allocatable :: r_qstar (:)
-   real(r8), allocatable :: r_zol   (:)
-   real(r8), allocatable :: r_rib   (:)
-   real(r8), allocatable :: r_fm    (:)
-   real(r8), allocatable :: r_fh    (:)
-   real(r8), allocatable :: r_fq    (:)
+   real(r8), allocatable :: r_trad   (:)
+   real(r8), allocatable :: r_ustar  (:)
+   real(r8), allocatable :: r_ustar2 (:) !define a temporary for estimating us10m only, output should be r_ustar. Shaofeng, 2023.05.20
+   real(r8), allocatable :: r_tstar  (:)
+   real(r8), allocatable :: r_qstar  (:)
+   real(r8), allocatable :: r_zol    (:)
+   real(r8), allocatable :: r_rib    (:)
+   real(r8), allocatable :: r_fm     (:)
+   real(r8), allocatable :: r_fh     (:)
+   real(r8), allocatable :: r_fq     (:)
 
-   real(r8), allocatable :: r_us10m (:)
-   real(r8), allocatable :: r_vs10m (:)
-   real(r8), allocatable :: r_fm10m (:)
+   real(r8), allocatable :: r_us10m  (:)
+   real(r8), allocatable :: r_vs10m  (:)
+   real(r8), allocatable :: r_fm10m  (:)
 
-   logical,  allocatable :: filter  (:)
+   logical,  allocatable :: filter   (:)
 
    !---------------------------------------------------------------------
    integer  ib, jb, i, j, ielm, istt, iend, u, ihour
@@ -1809,40 +1851,55 @@ CONTAINS
       IF (p_is_worker) THEN
          IF (numpatch > 0) THEN
 
+            ! count for time steps
             nac = nac + 1
 
-            CALL acc1d (forc_us  , a_us  )
-            CALL acc1d (forc_vs  , a_vs  )
-            CALL acc1d (forc_t   , a_t   )
-            CALL acc1d (forc_q   , a_q   )
-            CALL acc1d (forc_prc , a_prc )
-            CALL acc1d (forc_prl , a_prl )
-            CALL acc1d (forc_pbot, a_pbot)
-            CALL acc1d (forc_frl , a_frl )
+            ! count for local noon time steps
+            DO i = 1, numpatch
+               IF (solvdln(i) /= spval) THEN
+                  nac_ln(i) = nac_ln(i) + 1
+               ENDIF
+            ENDDO
 
-            CALL acc1d (forc_sols,  a_solarin)
-            CALL acc1d (forc_soll,  a_solarin)
-            CALL acc1d (forc_solsd, a_solarin)
-            CALL acc1d (forc_solld, a_solarin)
+            ! set daytime filter
+            filter_dt(:) = coszen(:) > 0
+
+            ! count for daytime time steps
+            WHERE ( filter_dt(:) ) nac_dt(:) = nac_dt(:) + 1
+
+            CALL acc1d (forc_us    , a_us      )
+            CALL acc1d (forc_vs    , a_vs      )
+            CALL acc1d (forc_t     , a_t       )
+            CALL acc1d (forc_q     , a_q       )
+            CALL acc1d (forc_prc   , a_prc     )
+            CALL acc1d (forc_prl   , a_prl     )
+            CALL acc1d (forc_pbot  , a_pbot    )
+            CALL acc1d (forc_frl   , a_frl     )
+
+            CALL acc1d (forc_sols  , a_solarin )
+            CALL acc1d (forc_soll  , a_solarin )
+            CALL acc1d (forc_solsd , a_solarin )
+            CALL acc1d (forc_solld , a_solarin )
+
             IF (DEF_USE_CBL_HEIGHT) THEN
                CALL acc1d (forc_hpbl , a_hpbl)
             ENDIF
 
-            CALL acc1d (taux    , a_taux   )
-            CALL acc1d (tauy    , a_tauy   )
-            CALL acc1d (fsena   , a_fsena  )
-            CALL acc1d (lfevpa  , a_lfevpa )
-            CALL acc1d (fevpa   , a_fevpa  )
-            CALL acc1d (fsenl   , a_fsenl  )
-            CALL acc1d (fevpl   , a_fevpl  )
-            CALL acc1d (etr     , a_etr    )
-            CALL acc1d (fseng   , a_fseng  )
-            CALL acc1d (fevpg   , a_fevpg  )
-            CALL acc1d (fgrnd   , a_fgrnd  )
-            CALL acc1d (sabvsun , a_sabvsun)
-            CALL acc1d (sabvsha , a_sabvsha)
-            CALL acc1d (sabg    , a_sabg   )
-            CALL acc1d (olrg    , a_olrg   )
+            CALL acc1d (taux    , a_taux    )
+            CALL acc1d (tauy    , a_tauy    )
+            CALL acc1d (fsena   , a_fsena   )
+            CALL acc1d (lfevpa  , a_lfevpa  )
+            CALL acc1d (fevpa   , a_fevpa   )
+            CALL acc1d (fsenl   , a_fsenl   )
+            CALL acc1d (fevpl   , a_fevpl   )
+            CALL acc1d (etr     , a_etr     )
+            CALL acc1d (fseng   , a_fseng   )
+            CALL acc1d (fevpg   , a_fevpg   )
+            CALL acc1d (fgrnd   , a_fgrnd   )
+            CALL acc1d (sabvsun , a_sabvsun )
+            CALL acc1d (sabvsha , a_sabvsha )
+            CALL acc1d (sabg    , a_sabg    )
+            CALL acc1d (olrg    , a_olrg    )
 
             IF (DEF_forcing%has_missing_value) THEN
                WHERE (forcmask_pch)
@@ -1853,14 +1910,14 @@ CONTAINS
                  rnet = sabg + sabvsun + sabvsha - olrg + forc_frl
                END WHERE
             ENDIF
-            CALL acc1d (rnet    , a_rnet   )
+            CALL acc1d (rnet    , a_rnet    )
 
-            CALL acc1d (xerr    , a_xerr   )
-            CALL acc1d (zerr    , a_zerr   )
-            CALL acc1d (rsur    , a_rsur   )
+            CALL acc1d (xerr    , a_xerr    )
+            CALL acc1d (zerr    , a_zerr    )
+            CALL acc1d (rsur    , a_rsur    )
 #ifndef CatchLateralFlow
-            CALL acc1d (rsur_se , a_rsur_se)
-            CALL acc1d (rsur_ie , a_rsur_ie)
+            CALL acc1d (rsur_se , a_rsur_se )
+            CALL acc1d (rsur_ie , a_rsur_ie )
 
             WHERE ((rsur /= spval) .and. (rnof /= spval))
                rsub = rnof - rsur
@@ -1868,58 +1925,59 @@ CONTAINS
                rsub = spval
             END WHERE
 #endif
-            CALL acc1d (rsub    , a_rsub   )
-            CALL acc1d (rnof    , a_rnof   )
+            CALL acc1d (rsub          , a_rsub           )
+            CALL acc1d (rnof          , a_rnof           )
 #ifdef CatchLateralFlow
-            CALL acc1d (xwsur   , a_xwsur  )
-            CALL acc1d (xwsub   , a_xwsub  )
-            CALL acc1d (fldarea , a_fldarea)
+            CALL acc1d (xwsur         , a_xwsur          )
+            CALL acc1d (xwsub         , a_xwsub          )
+            CALL acc1d (fldarea       , a_fldarea        )
 #endif
-            CALL acc1d (qintr   , a_qintr  )
-            CALL acc1d (qinfl   , a_qinfl  )
-            CALL acc1d (qdrip   , a_qdrip  )
+            CALL acc1d (qintr         , a_qintr          )
+            CALL acc1d (qinfl         , a_qinfl          )
+            CALL acc1d (qdrip         , a_qdrip          )
 
-            CALL acc1d (rstfacsun_out , a_rstfacsun )
-            CALL acc1d (rstfacsha_out , a_rstfacsha )
+            CALL acc1d (rstfacsun_out , a_rstfacsun      )
+            CALL acc1d (rstfacsha_out , a_rstfacsha      )
 
-            CALL acc1d (gssun_out     , a_gssun )
-            CALL acc1d (gssha_out     , a_gssha )
+            CALL acc1d (gssun_out     , a_gssun          )
+            CALL acc1d (gssha_out     , a_gssha          )
 
-            CALL acc1d (rss    , a_rss    )
-            CALL acc1d (wdsrf  , a_wdsrf  )
-            CALL acc1d (zwt    , a_zwt    )
-            CALL acc1d (wa     , a_wa     )
-            CALL acc1d (wat    , a_wat    )
-            CALL acc1d (wetwat , a_wetwat )
-            CALL acc1d (assim  , a_assim  )
-            CALL acc1d (respc  , a_respc  )
-            CALL acc1d (assimsun_out  , a_assimsun      )
-            CALL acc1d (assimsha_out  , a_assimsha      )
-            CALL acc1d (etrsun_out    , a_etrsun        )
-            CALL acc1d (etrsha_out    , a_etrsha        )
+            CALL acc1d (rss           , a_rss            )
+            CALL acc1d (wdsrf         , a_wdsrf          )
+            CALL acc1d (zwt           , a_zwt            )
+            CALL acc1d (wa            , a_wa             )
+            CALL acc1d (wat           , a_wat            )
+            CALL acc1d (wetwat        , a_wetwat         )
+            CALL acc1d (assim         , a_assim          )
+            CALL acc1d (respc         , a_respc          )
+            CALL acc1d (assimsun_out  , a_assimsun       )
+            CALL acc1d (assimsha_out  , a_assimsha       )
+            CALL acc1d (etrsun_out    , a_etrsun         )
+            CALL acc1d (etrsha_out    , a_etrsha         )
 
-            CALL acc1d (qcharge, a_qcharge)
+            CALL acc1d (qcharge       , a_qcharge        )
 
-            CALL acc1d (t_grnd , a_t_grnd )
-            CALL acc1d (tleaf  , a_tleaf  )
-            CALL acc1d (ldew_rain, a_ldew_rain)
-            CALL acc1d (ldew_snow, a_ldew_snow)
-            CALL acc1d (ldew   , a_ldew   )
-            CALL acc1d (scv    , a_scv    )
-            CALL acc1d (snowdp , a_snowdp )
-            CALL acc1d (fsno   , a_fsno   )
-            CALL acc1d (frcsat , a_frcsat )
-            CALL acc1d (sigf   , a_sigf   )
-            CALL acc1d (green  , a_green  )
-            CALL acc1d (lai    , a_lai    )
-            CALL acc1d (laisun , a_laisun )
-            CALL acc1d (laisha , a_laisha )
-            CALL acc1d (sai    , a_sai    )
+            CALL acc1d (t_grnd        , a_t_grnd         )
+            CALL acc1d (tleaf         , a_tleaf          )
+            CALL acc1d (ldew_rain     , a_ldew_rain      )
+            CALL acc1d (ldew_snow     , a_ldew_snow      )
+            CALL acc1d (ldew          , a_ldew           )
+            CALL acc1d (scv           , a_scv            )
+            CALL acc1d (snowdp        , a_snowdp         )
+            CALL acc1d (fsno          , a_fsno           )
+            CALL acc1d (frcsat        , a_frcsat         )
+            CALL acc1d (sigf          , a_sigf           )
+            CALL acc1d (green         , a_green          )
+            CALL acc1d (lai           , a_lai            )
+            CALL acc1d (laisun        , a_laisun         )
+            CALL acc1d (laisha        , a_laisha         )
+            CALL acc1d (sai           , a_sai            )
 
-            CALL acc3d (alb    , a_alb    )
+            ! only acc for daytime for albedo
+            CALL acc3d (alb           , a_alb, filter_dt )
 
-            CALL acc1d (emis   , a_emis   )
-            CALL acc1d (z0m    , a_z0m    )
+            CALL acc1d (emis          , a_emis           )
+            CALL acc1d (z0m           , a_z0m            )
 
             allocate (r_trad (numpatch)) ; r_trad(:) = spval
             DO i = 1, numpatch
@@ -1930,11 +1988,30 @@ CONTAINS
                IF (.not. patchmask(i)) CYCLE
                r_trad(i) = (olrg(i)/stefnc)**0.25
             ENDDO
-            CALL acc1d (r_trad , a_trad   )
-            deallocate (r_trad            )
+            CALL acc1d (r_trad , a_trad )
+            deallocate (r_trad          )
 
-            CALL acc1d (tref   , a_tref   )
-            CALL acc1d (qref   , a_qref   )
+            CALL acc1d (tref   , a_tref )
+            CALL acc1d (qref   , a_qref )
+
+            ! set 2m WMO temperature
+            DO ielm = 1, numelm
+
+               istt = elm_patch%substt(ielm)
+               iend = elm_patch%subend(ielm)
+
+               ! landelm%settyp=1 means 2m WMO patch exist,
+               ! which is the last end patch in a element.
+               IF (landelm%settyp(ielm)==1 .and. forcmask_pch(iend)) THEN
+                  ! all set to the 2m WMO patch tref
+                  t2m_wmo(istt:iend) = tref(iend)
+               ELSE
+                  ! if no 2m WMO patch, keep t2m_wmo to tref
+                  t2m_wmo(istt:iend) = tref(istt:iend)
+               ENDIF
+            ENDDO
+
+            CALL acc1d (t2m_wmo, a_t2m_wmo)
 
             CALL acc1d (forc_rain, a_rain )
             CALL acc1d (forc_snow, a_snow )
@@ -2155,15 +2232,16 @@ ENDIF
             CALL acc1d (grainc_to_seed     ,   a_grainc_to_seed     )
             CALL acc1d (fert_to_sminn      ,   a_fert_to_sminn      )
 
-           !CALL acc1d (irrig_rate         ,   a_irrig_rate         )
-           !CALL acc1d (deficit_irrig      ,   a_deficit_irrig      )
-           !CALL acc1d (sum_irrig          ,   a_sum_irrig          )
-           !CALL acc1d (sum_irrig_count    ,   a_sum_irrig_count    )
-            CALL acc1d (irrig_rate         ,   a_irrig_rate         )
-            CALL acc1d (deficit_irrig      ,   a_deficit_irrig      )
             a_sum_irrig = sum_irrig
             a_sum_irrig_count = sum_irrig_count
-
+            a_waterstorage = waterstorage
+            CALL acc1d (groundwater_demand   ,   a_groundwater_demand )
+            CALL acc1d (groundwater_supply   ,   a_groundwater_supply )
+            CALL acc1d (reservoirriver_demand,  a_reservoirriver_demand)
+            CALL acc1d (reservoirriver_supply,  a_reservoirriver_supply)
+            CALL acc1d (reservoir_supply     ,  a_reservoir_supply)
+            CALL acc1d (river_supply         ,  a_river_supply)
+            CALL acc1d (runoff_supply        ,  a_runoff_supply)
 #endif
             CALL acc1d (ndep_to_sminn      ,   a_ndep_to_sminn      )
             IF(DEF_USE_FIRE)THEN
@@ -2404,10 +2482,10 @@ ENDIF
                ENDDO
             ENDDO
             CALL acc2d (decomp_vr_tmp, a_cwdnCap_vr     )
-            CALL acc2d (sminn_vr     , a_sminn_vr    )
+            CALL acc2d (sminn_vr     , a_sminn_vr       )
 
-            CALL acc2d (t_scalar             ,a_t_scalar             )
-            CALL acc2d (w_scalar             ,a_w_scalar             )
+            CALL acc2d (t_scalar     , a_t_scalar       )
+            CALL acc2d (w_scalar     , a_w_scalar       )
 #endif
             allocate (r_ustar  (numpatch));  r_ustar (:) = spval
             allocate (r_ustar2 (numpatch));  r_ustar2(:) = spval !Shaofeng, 2023.05.20
@@ -2543,19 +2621,19 @@ ENDIF
 
             ENDDO
 
-            CALL acc1d (r_ustar , a_ustar )
-            CALL acc1d (r_ustar2, a_ustar2)
-            CALL acc1d (r_tstar , a_tstar )
-            CALL acc1d (r_qstar , a_qstar )
-            CALL acc1d (r_zol   , a_zol   )
-            CALL acc1d (r_rib   , a_rib   )
-            CALL acc1d (r_fm    , a_fm    )
-            CALL acc1d (r_fh    , a_fh    )
-            CALL acc1d (r_fq    , a_fq    )
+            CALL acc1d (r_ustar  , a_ustar  )
+            CALL acc1d (r_ustar2 , a_ustar2 )
+            CALL acc1d (r_tstar  , a_tstar  )
+            CALL acc1d (r_qstar  , a_qstar  )
+            CALL acc1d (r_zol    , a_zol    )
+            CALL acc1d (r_rib    , a_rib    )
+            CALL acc1d (r_fm     , a_fm     )
+            CALL acc1d (r_fh     , a_fh     )
+            CALL acc1d (r_fq     , a_fq     )
 
-            CALL acc1d (r_us10m, a_us10m)
-            CALL acc1d (r_vs10m, a_vs10m)
-            CALL acc1d (r_fm10m, a_fm10m)
+            CALL acc1d (r_us10m  , a_us10m  )
+            CALL acc1d (r_vs10m  , a_vs10m  )
+            CALL acc1d (r_fm10m  , a_fm10m  )
 
             deallocate (r_ustar )
             deallocate (r_ustar2) !Shaofeng, 2023.05.20
@@ -2720,7 +2798,7 @@ ENDIF
    END SUBROUTINE acc2d
 
    !------
-   SUBROUTINE acc3d (var, s)
+   SUBROUTINE acc3d (var, s, filter)
 
    USE MOD_Precision
    USE MOD_Vars_Global, only: spval
@@ -2729,10 +2807,17 @@ ENDIF
 
    real(r8), intent(in)    :: var(:,:,:)
    real(r8), intent(inout) :: s  (:,:,:)
+   logical,  intent(in), optional :: filter(:)
+
    ! Local variables
    integer :: i1, i2, i3
 
       DO i3 = lbound(var,3), ubound(var,3)
+
+         IF ( present(filter) ) THEN
+            IF ( .not. filter(i3) ) CYCLE
+         ENDIF
+
          DO i2 = lbound(var,2), ubound(var,2)
             DO i1 = lbound(var,1), ubound(var,1)
                IF (var(i1,i2,i3) /= spval) THEN

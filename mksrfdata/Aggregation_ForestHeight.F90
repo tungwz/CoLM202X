@@ -22,6 +22,7 @@ SUBROUTINE Aggregation_ForestHeight ( &
    USE MOD_SPMD_Task
    USE MOD_Grid
    USE MOD_LandPatch
+   USE MOD_Land2mWMO
    USE MOD_NetCDFVector
    USE MOD_NetCDFBlock
 #ifdef RangeCheck
@@ -52,12 +53,13 @@ SUBROUTINE Aggregation_ForestHeight ( &
    ! ---------------------------------------------------------------
    character(len=256) :: landdir, lndname, cyear
    integer :: L, ipatch, p
+   integer :: wmo_src
 
    type (block_data_real8_2d) :: tree_height
    real(r8), allocatable :: tree_height_patches(:), tree_height_one(:)
 
    ! for IGBP data
-   character(len=256) :: dir_5x5, suffix
+   character(len=256) :: dir_5x5, fname
    type (block_data_real8_2d) :: htop
    type (block_data_real8_3d) :: pftPCT
    real(r8), allocatable :: htop_patches(:), htop_pfts(:), htop_pcs(:,:)
@@ -107,6 +109,7 @@ SUBROUTINE Aggregation_ForestHeight ( &
 
          DO ipatch = 1, numpatch
             L = landpatch%settyp(ipatch)
+
             IF(L/=0 .and. L/=1 .and. L/=16 .and. L/=24)THEN
                ! NOT OCEAN(0)/URBAN and BUILT-UP(1)/WATER BODIES(16)/ICE(24)
                CALL aggregation_request_data (landpatch, ipatch, gland, zip = USE_zip_for_aggregation, &
@@ -139,7 +142,7 @@ SUBROUTINE Aggregation_ForestHeight ( &
       typpatch = (/(ityp, ityp = 0, N_land_classification)/)
       lndname  = trim(dir_model_landdata) // '/diag/htop_patch_' // trim(cyear) // '.nc'
       CALL srfdata_map_and_write (tree_height_patches, landpatch%settyp, typpatch, m_patch2diag, &
-         -1.0e36_r8, lndname, 'htop', compress = 1, write_mode = 'one', defval=0._r8)
+         -1.0e36_r8, lndname, 'htop', compress = 6, write_mode = 'one', defval=0._r8, create_mode=.true.)
 #endif
 
       IF (p_is_worker) THEN
@@ -154,9 +157,10 @@ SUBROUTINE Aggregation_ForestHeight ( &
       ENDIF
 
       IF (p_is_io) THEN
-         dir_5x5 = trim(dir_rawdata) // '/plant_15s'
-         suffix  = 'MOD'//trim(cyear)
-         CALL read_5x5_data (dir_5x5, suffix, gland, 'HTOP', htop)
+
+         dir_5x5 = trim(dir_rawdata) // trim(DEF_rawdata%htop%dir)
+         fname = trim(DEF_rawdata%htop%fname)
+         CALL read_5x5_data (dir_5x5, fname, gland, trim(DEF_rawdata%htop%vname), htop)
 #ifdef USEMPI
          CALL aggregation_data_daemon (gland, data_r8_2d_in1 = htop)
 #endif
@@ -169,8 +173,12 @@ SUBROUTINE Aggregation_ForestHeight ( &
          DO ipatch = 1, numpatch
 
             IF (landpatch%settyp(ipatch) /= 0) THEN
+
                CALL aggregation_request_data (landpatch, ipatch, gland, zip = USE_zip_for_aggregation, &
                   area = area_one, data_r8_2d_in1 = htop, data_r8_2d_out1 = htop_one)
+
+               where (htop_one < 0.) htop_one = 0.
+
                htop_patches(ipatch) = sum(htop_one * area_one) / sum(area_one)
             ENDIF
 
@@ -198,7 +206,7 @@ SUBROUTINE Aggregation_ForestHeight ( &
       typpatch = (/(ityp, ityp = 0, N_land_classification)/)
       lndname  = trim(dir_model_landdata) // '/diag/htop_patch_' // trim(cyear) // '.nc'
       CALL srfdata_map_and_write (htop_patches, landpatch%settyp, typpatch, m_patch2diag, &
-         -1.0e36_r8, lndname, 'htop', compress = 1, write_mode = 'one', defval=0._r8)
+         -1.0e36_r8, lndname, 'htop', compress = 6, write_mode = 'one', defval=0._r8, create_mode=.true.)
 #endif
 
       IF (p_is_worker) THEN
@@ -210,19 +218,23 @@ SUBROUTINE Aggregation_ForestHeight ( &
 
 #if (defined LULC_IGBP_PFT || defined LULC_IGBP_PC)
       IF (p_is_io) THEN
-         CALL allocate_block_data (gland, htop)
-         CALL allocate_block_data (gland, pftPCT, N_PFT_modis, lb1 = 0)
+         CALL allocate_block_data (grid_pft, pftPCT, N_PFT_modis, lb1 = 0)
+         CALL allocate_block_data (gland   , htop)
       ENDIF
 
-      dir_5x5 = trim(dir_rawdata) // '/plant_15s'
-      suffix  = 'MOD'//trim(cyear)
-
       IF (p_is_io) THEN
-         CALL read_5x5_data     (dir_5x5, suffix, gland, 'HTOP',    htop  )
-         CALL read_5x5_data_pft (dir_5x5, suffix, gland, 'PCT_PFT', pftPCT)
+
+         dir_5x5 = trim(DEF_dir_rawdata) // trim(DEF_rawdata%htop%dir)
+         fname = trim(DEF_rawdata%htop%fname)
+         CALL read_5x5_data     (dir_5x5, fname, gland   , trim(DEF_rawdata%htop%vname), htop)
+
+         dir_5x5= trim(DEF_dir_rawdata) // trim(DEF_rawdata%pft%dir)
+         fname = trim(DEF_rawdata%pft%fname)//trim(cyear)
+         CALL read_5x5_data_pft (dir_5x5, fname, grid_pft, 'PCT_PFT', pftPCT)
+
 #ifdef USEMPI
-         CALL aggregation_data_daemon (gland, &
-            data_r8_2d_in1 = htop, data_r8_3d_in1 = pftPCT, n1_r8_3d_in1 = 16)
+         CALL aggregation_data_daemon_multigrid (grid_in1 = grid_pft, data_r8_3d_in1 = pftPCT, n1_r8_3d_in1 = 16, &
+            grid_in2 = gland, data_r8_2d_in2 = htop )
 #endif
       ENDIF
 
@@ -233,11 +245,28 @@ SUBROUTINE Aggregation_ForestHeight ( &
 
          DO ipatch = 1, numpatch
 
-            CALL aggregation_request_data (landpatch, ipatch, gland, zip = USE_zip_for_aggregation, &
-               area = area_one, data_r8_2d_in1 = htop,   data_r8_2d_out1 = htop_one, &
-               data_r8_3d_in1 = pftPCT, data_r8_3d_out1 = pct_one, n1_r8_3d_in1 = 16, lb1_r8_3d_in1 = 0)
+            IF (ipatch == wmo_patch(landpatch%ielm(ipatch))) THEN
+               wmo_src = wmo_source (landpatch%ielm(ipatch))
+
+               ! set patch htop
+               htop_patches(ipatch) = htop_patches(wmo_src)
+
+               ! set pft htop at the same time
+               ip = patch_pft_s(ipatch)
+               htop_pfts(ip) = htop_patches(ipatch)
+
+               CYCLE
+            ENDIF
+
+            CALL aggregation_request_data_multigrid(landpatch, ipatch, &
+               grid_in1 = grid_pft, area = area_one, data_r8_3d_in1 = pftPCT, data_r8_3d_out1 = pct_one, &
+               n1_r8_3d_in1 = 16, lb1_r8_3d_in1 = 0, &
+               grid_in2 = gland, data_r8_2d_in2 = htop, data_r8_2d_out2 = htop_one)
+
+            where (htop_one < 0.) htop_one = 0.
 
             htop_patches(ipatch) = sum(htop_one * area_one) / sum(area_one)
+            pct_one = max(pct_one , 0.0)
 
 #ifndef CROP
             IF (patchtypes(landpatch%settyp(ipatch)) == 0) THEN
@@ -262,7 +291,7 @@ SUBROUTINE Aggregation_ForestHeight ( &
          ENDDO
 
 #ifdef USEMPI
-      CALL aggregation_worker_done ()
+      CALL aggregation_worker_done_multigrid ()
 #endif
       ENDIF
 
@@ -284,7 +313,7 @@ SUBROUTINE Aggregation_ForestHeight ( &
       typpatch = (/(ityp, ityp = 0, N_land_classification)/)
       lndname  = trim(dir_model_landdata) // '/diag/htop_patch_' // trim(cyear) // '.nc'
       CALL srfdata_map_and_write (htop_patches, landpatch%settyp, typpatch, m_patch2diag, &
-         -1.0e36_r8, lndname, 'htop', compress = 1, write_mode = 'one', defval=0._r8)
+         -1.0e36_r8, lndname, 'htop', compress = 6, write_mode = 'one', defval=0._r8, create_mode=.true.)
 #endif
 
       lndname = trim(landdir)//'/htop_pfts.nc'
@@ -300,7 +329,7 @@ SUBROUTINE Aggregation_ForestHeight ( &
 #endif
       lndname = trim(dir_model_landdata) // '/diag/htop_pft_' // trim(cyear) // '.nc'
       CALL srfdata_map_and_write (htop_pfts, landpft%settyp, typpft, m_pft2diag, &
-         -1.0e36_r8, lndname, 'htop_pft', compress = 1, write_mode = 'one', defval=0._r8)
+         -1.0e36_r8, lndname, 'htop_pft', compress = 6, write_mode = 'one', defval=0._r8, create_mode=.true.)
 #endif
 
       IF (p_is_worker) THEN

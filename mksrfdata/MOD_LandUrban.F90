@@ -60,6 +60,7 @@ CONTAINS
    IMPLICIT NONE
 
    integer, intent(in) :: lc_year
+
    ! Local Variables
    character(len=256) :: dir_urban
    type (block_data_int32_2d) :: data_urb_class ! urban type index
@@ -88,10 +89,10 @@ CONTAINS
    integer , allocatable :: urbclass (:)
    real(r8), allocatable :: area_one (:)
 
-   character(len=256) :: suffix, cyear
+   character(len=256) :: fname, cyear
 
       IF (p_is_master) THEN
-         write(*,'(A)') 'Making urban type tiles :'
+         write(*,'(A)') 'Making urban type tiles:'
       ENDIF
 
 #ifdef USEMPI
@@ -101,17 +102,17 @@ CONTAINS
       ! allocate and read the grided LCZ/NCAR urban type
       IF (p_is_io) THEN
 
-         dir_urban = trim(DEF_dir_rawdata) // '/urban_type'
-
          CALL allocate_block_data (grid_urban, data_urb_class)
          CALL flush_block_data (data_urb_class, 0)
 
          ! read urban type data
-         suffix = 'URBTYP'
+         dir_urban = trim(DEF_dir_rawdata) // trim(DEF_rawdata%urban_type%dir)
+         fname     = trim(DEF_rawdata%urban_type%fname)
+
 IF (DEF_URBAN_type_scheme == 1) THEN
-         CALL read_5x5_data (dir_urban, suffix, grid_urban, 'URBAN_DENSITY_CLASS', data_urb_class)
+         CALL read_5x5_data (dir_urban, fname, grid_urban, 'URBAN_DENSITY_CLASS', data_urb_class)
 ELSE IF (DEF_URBAN_type_scheme == 2) THEN
-         CALL read_5x5_data (dir_urban, suffix, grid_urban, 'LCZ_DOM', data_urb_class)
+         CALL read_5x5_data (dir_urban, fname, grid_urban, 'LCZ', data_urb_class)
 ENDIF
 
 #ifdef USEMPI
@@ -349,11 +350,13 @@ ENDIF
       write(*,'(A,I12,A)') 'Total: ', numpatch, ' patches.'
 #endif
 
+IF ( .not. DEF_Output_2mWMO ) THEN
       CALL elm_patch%build (landelm, landpatch, use_frac = .true.)
 #ifdef CATCHMENT
       CALL hru_patch%build (landhru, landpatch, use_frac = .true.)
 #endif
       CALL write_patchfrac (DEF_dir_landdata, lc_year)
+ENDIF
 #endif
 
       IF (allocated (ibuff   )) deallocate (ibuff    )

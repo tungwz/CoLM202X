@@ -135,9 +135,6 @@ CONTAINS
       IF ((.not. fexists) .or. (trim(filename) /= trim(filelast))) THEN
          CALL ncio_create_file (trim(filename))
          CALL ncio_define_dimension(filename, 'patch', numpatch)
-#ifdef URBAN_MODEL
-         CALL ncio_define_dimension(filename, 'urban', numurban)
-#endif
 
          CALL ncio_write_serial (filename, 'lat', SITE_lat_location)
          CALL ncio_put_attr (filename, 'lat', 'long_name', 'latitude')
@@ -192,7 +189,6 @@ CONTAINS
    SUBROUTINE single_write_2d ( &
          acc_vec, file_hist, varname, itime_in_file, longname, units)
 
-      USE MOD_Vars_1DAccFluxes, only: nac
       USE MOD_Vars_Global,      only: spval
       IMPLICIT NONE
 
@@ -202,8 +198,6 @@ CONTAINS
       integer,          intent(in)    :: itime_in_file
       character(len=*), intent(in)    :: longname
       character(len=*), intent(in)    :: units
-
-      WHERE (acc_vec /= spval)  acc_vec = acc_vec / nac
 
       IF (USE_SITE_HistWriteBack) THEN
 
@@ -553,7 +547,6 @@ CONTAINS
          acc_vec, file_hist, varname, itime_in_file, &
          dim1name, ndim1, dim2name, ndim2, longname, units)
 
-      USE MOD_Vars_1DAccFluxes, only: nac
       USE MOD_Vars_Global,      only: spval
       IMPLICIT NONE
 
@@ -567,8 +560,6 @@ CONTAINS
       integer,          intent(in)    :: ndim2
       character(len=*), intent(in)    :: longname
       character(len=*), intent(in)    :: units
-
-      WHERE (acc_vec /= spval)  acc_vec = acc_vec / nac
 
       IF (USE_SITE_HistWriteBack) THEN
 
