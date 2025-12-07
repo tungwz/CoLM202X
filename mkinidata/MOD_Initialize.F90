@@ -280,9 +280,6 @@ CONTAINS
 
       CALL allocate_TimeInvariants
       CALL allocate_TimeVariables
-#ifdef DataAssimilation
-      CALL allocate_TimeVariables_ens
-#endif
 
 ! ---------------------------------------------------------------
 ! 1. INITIALIZE TIME INVARIANT VARIABLES
@@ -1495,7 +1492,7 @@ ENDIF
             wdsrf_bsn_prev(i) = wdsrf_bsn(i)
          ENDDO
 
-         CALL worker_push_subset_data (iam_bsn, iam_elm, basin_hru, elm_hru, wdsrf_bsnhru, wdsrf_hru)
+         CALL worker_push_data (push_bsnhru2elmhru, wdsrf_bsnhru, wdsrf_hru, spval)
 
          ! adjust "wdsrf" according to river and lake water depth
          DO i = 1, numhru
@@ -1553,7 +1550,7 @@ ENDIF
 
 #ifdef DataAssimilation
       IF (p_is_worker) THEN
-         DO i = 1, DEF_DA_ENS
+         DO i = 1, DEF_DA_ENS_NUM
             z_sno_ens(:, i, :) = z_sno
             dz_sno_ens(:, i, :) = dz_sno
             t_soisno_ens(:, i, :) = t_soisno
@@ -1604,17 +1601,11 @@ ENDIF
 
 #ifdef RangeCheck
       CALL check_TimeVariables ()
-#ifdef DataAssimilation
-      CALL check_TimeVariables_ens ()
-#endif
 #endif
 
       IF ( .not. present(lulcc_call) ) THEN
          ! only be called in running MKINI, LULCC will be executed later
          CALL WRITE_TimeVariables (idate, lc_year, casename, dir_restart)
-#ifdef DataAssimilation
-         CALL WRITE_TimeVariables_ens (idate, lc_year, casename, dir_restart)
-#endif
       ENDIF
 
 #ifdef USEMPI
@@ -1631,9 +1622,6 @@ ENDIF
          ! only be called in running MKINI, LULCC will be executed later
          CALL deallocate_TimeInvariants
          CALL deallocate_TimeVariables
-#ifdef DataAssimilation
-         CALL deallocate_TimeVariables_ens
-#endif
       ENDIF
 
       IF (allocated(z_soisno )) deallocate (z_soisno )
