@@ -1370,7 +1370,8 @@ CONTAINS
 !=======================================================================
 
       ! A simple Building energy model
-      CALL SimpleBEM ( idate, deltim, patchlonr, forc_rhoair, fcover(0:2), hroof, troommax, troommin, weh_prof, &
+      CALL SimpleBEM ( idate, deltim, patchlonr, forc_rhoair, fcover(0:2), hroof, &
+                       troommax, troommin, weh_prof, &
                        troof_nl_bef, twsun_nl_bef, twsha_nl_bef, &
                        t_roofsno(nl_roof), t_wallsun(nl_wall), t_wallsha(nl_wall), &
                        tkdz_roof, tkdz_wsun, tkdz_wsha, tafu, troom, &

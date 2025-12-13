@@ -307,11 +307,11 @@ IF (DEF_URBAN_type_scheme == 1) THEN
             IF (all(wt_roof_one <= 0) .or. all(ht_roof_one <= 0)) THEN
                wt_roof_one = wtroof_ncar(urb_typidx,reg_typid_one)
                ht_roof_one = htroof_ncar(urb_typidx,reg_typid_one)
-            END IF
+            ENDIF
 
             IF (all(f_gper_one < 0)) THEN
                f_gper_one = fgper_ncar(urb_typidx,reg_typid_one)
-            END IF
+            ENDIF
 
 IF(DEF_USE_CANYON_HWR) THEN
             hlr_bld_one = -999.
@@ -337,7 +337,7 @@ ELSE IF (DEF_URBAN_type_scheme == 2) THEN
             IF (all(wt_roof_one <= 0) .or. all(ht_roof_one <= 0)) THEN
                wt_roof_one = wtroof_lcz(urb_typidx)
                ht_roof_one = htroof_lcz(urb_typidx)
-            END IF
+            ENDIF
 
             WHERE (f_gper_one <= 0)
                f_gper_one = fgper_lcz(urb_typidx) / (1-wtroof_lcz(urb_typidx))
