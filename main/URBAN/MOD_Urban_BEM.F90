@@ -20,7 +20,8 @@ MODULE MOD_Urban_BEM
 CONTAINS
 
 !-----------------------------------------------------------------------
-   SUBROUTINE SimpleBEM (idate, deltim, patchlonr, rhoair, fcover, H, troom_max, troom_min, weekend, &
+   SUBROUTINE SimpleBEM (idate, deltim, patchlonr, rhoair, fcover, H, &
+                         troom_max, troom_min, weekend, &
                          troof_nl_bef, twsun_nl_bef, twsha_nl_bef, &
                          troof_nl, twsun_nl, twsha_nl, &
                          tkdz_roof, tkdz_wsun, tkdz_wsha, taf, &
@@ -73,6 +74,7 @@ CONTAINS
 ! !REVISIONS:
 !
 !  11/2022, Hua Yuan: Add option for constant AC.
+!  TODO@wenzong: add revision history here & annotations below.
 !
 !-----------------------------------------------------------------------
 
@@ -80,17 +82,17 @@ CONTAINS
 
 !-------------------------- Dummy Arguments ----------------------------
    integer , intent(in) :: &
-      idate(3)            ! calendar (year, julian day, seconds)
+        idate(3)          ! calendar (year, julian day, seconds)
 
    real(r8), intent(in) :: &
         deltim,          &! seconds in a time step [second]
-        patchlonr,       &
+        patchlonr,       &!
         rhoair,          &! density air [kg/m3]
         fcover(0:2),     &! fractional cover of roof, wall
         H,               &! average building height [m]
         troom_max,       &! maximum temperature of inner building
         troom_min,       &! minimum temperature of inner building
-        weekend(24),     &
+        weekend(24),     &!
         troof_nl_bef,    &! roof temperature at layer nl_roof
         twsun_nl_bef,    &! sunlit wall temperature at layer nl_wall
         twsha_nl_bef,    &! shaded wall temperature at layer nl_wall
@@ -128,16 +130,16 @@ CONTAINS
         f_wsha            ! weight factor for shaded wall
 
    real(r8) :: &
-        ldate(3),        &
+        ldate(3),        &!
         A(4,4),          &! Heat transfer matrix
         Ainv(4,4),       &! Inverse of Heat transfer matrix
         B(4),            &! B for Ax=B
         X(4)              ! x for Ax=B
 
    real(r8) :: &
-        londeg,          &
-        AC_factor,       &
-        Fadj,            &
+        londeg,          &!
+        AC_factor,       &!
+        Fadj,            &!
         troom_pro,       &! projected room temperature
         troom_bef,       &! temperature of inner building
         troof_inner_bef, &! temperature of inner roof
@@ -148,8 +150,8 @@ CONTAINS
    logical :: cooling, heating
 
    ! Option for continuous AC
-   logical, parameter :: Constant_AC = .true.
-   logical, parameter :: Effective_AC= .true.
+   logical, parameter :: Constant_AC  = .true.
+   logical, parameter :: Effective_AC = .true.
 
 !-----------------------------------------------------------------------
 
@@ -157,7 +159,7 @@ CONTAINS
       hcv_roof   = 4.040  !convective exchange coefficient for roof<->room (W m-2 K-1)
       hcv_wall   = 3.076  !convective exchange coefficient for wall<->room (W m-2 K-1)
       waste_cool = 0.3    !waste heat for AC cooling
-      !waste_cool = 0.6    !waste heat for AC cooling
+     !waste_cool = 0.6    !waste heat for AC cooling
       waste_heat = 0.2    !waste heat for AC heating
       cooling = .false.   !cooling case
       heating = .false.   !heating case
@@ -168,7 +170,9 @@ CONTAINS
       ! initialization
       Fhac = 0.; Fwst = 0.; Fach = 0.; Fhah = 0.
 
-      ! Heat From Equip
+      ! Heat From Equip (in development)
+
+      ! greenwich to local time
       IF (DEF_simulation_time%greenwich) THEN
          ! convert GMT time to local time
          londeg = patchlonr*180/PI
@@ -234,7 +238,7 @@ CONTAINS
          Fhac  = 0.
       ENDIF
 
-       ! for constant cooling or heating
+      ! for constant cooling or heating
       IF ((troom_pro>troom_max .or. troom_pro<troom_min) .and. Constant_AC) THEN
 
          IF (troom_pro > troom_max) THEN !cooling case
@@ -267,9 +271,11 @@ CONTAINS
          IF (AC_factor > 1) AC_factor = 1
 
          IF ( Effective_AC ) THEN
+
             Fhac = Fhac*AC_factor
 
             IF ( heating ) Fhac = Fhac
+
             Fadj = Fhac - 0.5*hcv_roof*(troof_inner_bef-troom_bef) &
                  - 0.5*hcv_wall*(twsun_inner_bef-troom_bef)*f_wsun &
                  - 0.5*hcv_wall*(twsha_inner_bef-troom_bef)*f_wsha
@@ -278,7 +284,7 @@ CONTAINS
                  + 0.5*hcv_wall*B(2)/A(2,2)*f_wsun &
                  + 0.5*hcv_wall*B(3)/A(3,3)*f_wsha - Fadj
 
-            troom= Fadj / &
+            troom = Fadj / &
                  ( 0.5*hcv_roof*(A(1,4)/A(1,1)+1) &
                  + 0.5*hcv_wall*(A(2,4)/A(2,2)+1)*f_wsun &
                  + 0.5*hcv_wall*(A(3,4)/A(3,3)+1)*f_wsha &
@@ -309,7 +315,7 @@ CONTAINS
 
          Fwst = Fhac*waste_coef
          IF ( heating ) THEN
-            Fhac = 0
+            Fhac = 0.
          ENDIF
 
       ENDIF
