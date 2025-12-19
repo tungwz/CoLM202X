@@ -5,7 +5,7 @@ MODULE MOD_Urban_BEM
    USE MOD_Precision
    USE MOD_Vars_Global
    USE MOD_Const_Physical
-   USE MOD_Namelist, only: DEF_LC_YEAR
+   USE MOD_Namelist, only: DEF_simulation_time
    USE MOD_TimeManager
    USE MOD_Urban_Const_LCZ
    USE MOD_Urban_Shortwave, only: MatrixInverse
