@@ -107,7 +107,6 @@ mksrfdata.x : mkdir_build ${HEADER} ${OBJS_SHARED} ${OBJS_MKSRFDATA}
 # ----- End of Target 1 mksrfdata ----
 
 OBJS_BASIC =    \
-<<<<<<< HEAD
 				 MOD_Vector_ReadWrite.o         \
 				 MOD_Catch_BasinNetwork.o       \
 				 MOD_Catch_Vars_TimeVariables.o \
@@ -167,7 +166,6 @@ OBJS_BASIC =    \
 				 MOD_Catch_RiverLakeNetwork.o   \
 				 MOD_Catch_Reservoir.o          \
 				 MOD_VicParaReadin.o            \
-=======
 				 MOD_Catch_BasinNetwork.o        \
 				 MOD_Catch_IO.o                  \
 				 MOD_Catch_Vars_TimeVariables.o  \
