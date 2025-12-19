@@ -361,6 +361,20 @@ MODULE MOD_Namelist
 
    ! ----- others -----
    character(len=5)   :: DEF_precip_phase_discrimination_scheme = 'II'
+   character(len=256) :: DEF_SSP='585' ! Co2 path for CMIP6 future scenario.
+
+
+   !use irrigation
+   logical            :: DEF_USE_IRRIGATION      = .false.
+
+   !irrigation allocated method
+   integer            :: DEF_IRRIGATION_ALLOCATION = 1
+
+   !photosynthesis stress option
+   logical            :: DEF_USE_NOSTRESSNITROGEN = .false.
+
+   !root resistance factors option
+   integer            :: DEF_RSTFAC               = 1
 
    character(len=256) :: DEF_SSP        = '585'   ! Co2 path for CMIP6 future scenario.
 

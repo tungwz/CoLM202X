@@ -1435,11 +1435,11 @@ CONTAINS
    integer  :: start_year, end_year, ntime, itime, pop_i
    logical  :: readflag
 
-   character(len=256) :: filename, dir_5x5
+   character(len=256) :: filename, dir_5x5, fname
    character(len=4)   :: cyear, c, c5year
 
-   type(grid_type) :: gridupatch, gridhroof, gridfroof , gridhtopu, gridfvegu, gridflakeu, gridlaiu, &
-                      gridpopu  , gridlucy , gridbright, gridsoil , gridrock , gridtopo  , gridlake, &
+   type(grid_type) :: grid_utype, grid_roof, grid_htopu , grid_fveg, grid_flake, grid_ulsai, &
+                      grid_pop  , grid_lucy, grid_bright, grid_soil, grid_rock , grid_topo , grid_lake, &
                       grid_topo_factor
 
    real(r8), allocatable :: tea_f(:), tea_b(:)
@@ -1528,13 +1528,15 @@ IF (DEF_URBAN_type_scheme == 1) THEN
             CALL ncio_read_serial (fsrfdata, 'URBTYP'             , SITE_ncar_rid)
             CALL ncio_read_serial (fsrfdata, 'URBAN_DENSITY_CLASS', SITE_urbtyp  )
          ELSE
-            CALL gridupatch%define_by_name ('colm_500m')
+            CALL grid_utype%define_by_name (trim(DEF_rawdata%urban_type%gname))
 
-            dir_5x5 = trim(DEF_dir_rawdata) // '/urban_type/'
-            CALL read_point_5x5_var_2d_int32 (gridupatch, dir_5x5, 'URBTYP', 'REGION_ID', &
+            dir_5x5 = trim(DEF_dir_rawdata) // trim(DEF_rawdata%urban_type%dir)
+            fname   = trim(DEF_rawdata%urban_type%fname)
+
+            CALL read_point_5x5_var_2d_int32 (grid_utype, dir_5x5, fname, 'REGION_ID', &
                SITE_lon_location, SITE_lat_location, SITE_ncar_rid)
 
-            CALL read_point_5x5_var_2d_int32 (gridupatch, dir_5x5, 'URBTYP', 'URBAN_DENSITY_CLASS', &
+            CALL read_point_5x5_var_2d_int32 (grid_utype, dir_5x5, fname, 'URBAN_DENSITY_CLASS', &
                SITE_lon_location, SITE_lat_location, SITE_urbtyp)
 
             write(*,'(A,I0,A,I0,3A)') 'Urban type : NCAR ', SITE_urbtyp, ' of Region ', SITE_ncar_rid, &
@@ -1545,16 +1547,17 @@ ELSE
          IF ( u_site_utype ) THEN
             CALL ncio_read_serial (fsrfdata, 'LCZ_DOM', SITE_urbtyp  )
          ELSE
-            CALL gridupatch%define_by_name ('colm_500m')
+            CALL grid_utype%define_by_name (trim(DEF_rawdata%urban_type%gname))
 
-            dir_5x5 = trim(DEF_dir_rawdata) // '/urban_type/'
-            CALL read_point_5x5_var_2d_int32 (gridupatch, dir_5x5, 'URBTYP', 'LCZ_DOM', &
+            dir_5x5 = trim(DEF_dir_rawdata) // trim(DEF_rawdata%urban_type%dir)
+            fname   = trim(DEF_rawdata%urban_type%fname)
+
+            CALL read_point_5x5_var_2d_int32 (grid_utype, dir_5x5, fname, 'LCZ', &
                SITE_lon_location, SITE_lat_location, SITE_urbtyp)
          ENDIF
          write(*,'(A,I0,3A)') 'Urban type : LCZ ', SITE_urbtyp, &
             ' (from ',trim(datasource(u_site_utype)),')'
 ENDIF
-
 
          ! (4) urban geometry
          readflag     = USE_SITE_urban_geometry
@@ -1562,33 +1565,37 @@ ENDIF
          IF ( u_site_hroof ) THEN
             CALL ncio_read_serial (fsrfdata, 'building_mean_height', SITE_hroof  )
          ELSE
-            CALL gridhroof%define_by_name ('colm_500m')
-            dir_5x5 = trim(DEF_dir_rawdata) // '/urban/'
-            write(c5year, '(i4.4)') int(DEF_LC_YEAR/5)*5
+            CALL grid_roof%define_by_name (trim(DEF_rawdata%urban_roof%gname))
 
-IF (DEF_Urban_geom_data == 1) THEN
-            CALL read_point_5x5_var_2d_real8 (gridhroof, dir_5x5, 'URBSRF'//trim(c5year), 'HT_ROOF_GHSL', &
-               SITE_lon_location, SITE_lat_location, SITE_hroof)
+            dir_5x5 = trim(DEF_dir_rawdata) // trim(DEF_rawdata%urban_roof%dir)
+
+IF (index(DEF_rawdata%urban_roof%fname, 'GHSL')>0) THEN
+            write(c5year, '(i4.4)') int(DEF_LC_YEAR/5)*5
+            fname = trim(DEF_rawdata%urban_roof%fname)//'.'//trim(c5year)
+
 ELSE
-            CALL read_point_5x5_var_2d_real8 (gridhroof, dir_5x5, 'URBSRF'//trim(c5year), 'HT_ROOF_Li', &
-               SITE_lon_location, SITE_lat_location, SITE_hroof)
+            fname = trim(DEF_rawdata%urban_roof%fname)
 ENDIF
+
+            CALL read_point_5x5_var_2d_real8 (grid_roof, dir_5x5, fname, 'HT_ROOF', &
+               SITE_lon_location, SITE_lat_location, SITE_hroof)
          ENDIF
 
          u_site_froof = readflag .and. ncio_var_exist(fsrfdata,'roof_area_fraction',readflag)
          IF ( u_site_froof ) THEN
             CALL ncio_read_serial (fsrfdata, 'roof_area_fraction', SITE_froof  )
          ELSE
-            CALL gridfroof%define_by_name ('colm_500m')
-            dir_5x5 = trim(DEF_dir_rawdata) // '/urban/'
+            dir_5x5 = trim(DEF_dir_rawdata) // trim(DEF_rawdata%urban_roof%dir)
+
+IF (index(DEF_rawdata%urban_roof%fname, 'GHSL')>0) THEN
             write(c5year, '(i4.4)') int(DEF_LC_YEAR/5)*5
-IF (DEF_Urban_geom_data == 1) THEN
-            CALL read_point_5x5_var_2d_real8 (gridfroof, dir_5x5, 'URBSRF'//trim(c5year), 'PCT_ROOF_GHSL', &
-               SITE_lon_location, SITE_lat_location, SITE_froof)
+            fname = trim(DEF_rawdata%urban_roof%fname)//'.'//trim(c5year)
 ELSE
-            CALL read_point_5x5_var_2d_real8 (gridfroof, dir_5x5, 'URBSRF'//trim(c5year), 'PCT_ROOF_Li', &
-               SITE_lon_location, SITE_lat_location, SITE_froof)
+            fname = trim(DEF_rawdata%urban_roof%fname)
 ENDIF
+            CALL read_point_5x5_var_2d_real8 (grid_roof, dir_5x5, fname, 'PCT_ROOF', &
+               SITE_lon_location, SITE_lat_location, SITE_froof)
+
          ENDIF
 
          u_site_fgper  = readflag .and. ncio_var_exist(fsrfdata,'impervious_area_fraction',readflag)
@@ -1624,11 +1631,11 @@ ENDIF
          IF ( u_site_htopu ) THEN
             CALL ncio_read_serial (fsrfdata, 'tree_mean_height', SITE_htop_urb  )
          ELSE
-            CALL gridhtopu%define_by_name ('colm_500m')
-            dir_5x5 = trim(DEF_dir_rawdata) // '/urban/'
-            write(c5year, '(i4.4)') int(DEF_LC_YEAR/5)*5
+            CALL grid_htopu%define_by_name (trim(DEF_rawdata%urban_htop%gname))
+            dir_5x5 = trim(DEF_dir_rawdata) // trim(DEF_rawdata%urban_htop%dir)
+            fname   = trim(DEF_rawdata%urban_htop%fname)
 
-            CALL read_point_5x5_var_2d_real8 (gridhtopu, dir_5x5, 'URBSRF'//trim(c5year), 'HTOP', &
+            CALL read_point_5x5_var_2d_real8 (grid_htopu, dir_5x5, fname, 'HTOP', &
                SITE_lon_location, SITE_lat_location, SITE_htop_urb)
          ENDIF
 
@@ -1636,11 +1643,13 @@ ENDIF
          IF ( u_site_flake ) THEN
             CALL ncio_read_serial (fsrfdata, 'water_area_fraction', SITE_flake_urb  )
          ELSE
-            CALL gridflakeu%define_by_name ('colm_500m')
-            dir_5x5 = trim(DEF_dir_rawdata) // '/urban/'
-            write(c5year, '(i4.4)') int(DEF_LC_YEAR/5)*5
+            CALL grid_flake%define_by_name (trim(DEF_rawdata%urban_flake%gname))
 
-            CALL read_point_5x5_var_2d_real8 (gridflakeu, dir_5x5, 'URBSRF'//trim(c5year), 'PCT_Water', &
+            write(c5year, '(i4.4)') int(DEF_LC_YEAR/5)*5
+            dir_5x5 = trim(DEF_dir_rawdata) // trim(DEF_rawdata%urban_flake%dir)
+            fname   = trim(DEF_rawdata%urban_flake%fname)//'.'//trim(c5year)
+
+            CALL read_point_5x5_var_2d_real8 (grid_flake, dir_5x5, fname, 'PCT_Water', &
                SITE_lon_location, SITE_lat_location, SITE_flake_urb)
 
             SITE_flake_urb = SITE_flake_urb/100
@@ -1650,11 +1659,13 @@ ENDIF
          IF ( u_site_fveg ) THEN
             CALL ncio_read_serial (fsrfdata, 'tree_area_fraction', SITE_fveg_urb  )
          ELSE
-            CALL gridfvegu%define_by_name ('colm_500m')
-            dir_5x5 = trim(DEF_dir_rawdata) // '/urban/'
-            write(c5year, '(i4.4)') int(DEF_LC_YEAR/5)*5
+            CALL grid_fveg%define_by_name (trim(DEF_rawdata%urban_fveg%gname))
 
-            CALL read_point_5x5_var_2d_real8 (gridfvegu, dir_5x5, 'URBSRF'//trim(c5year), 'PCT_Tree', &
+            write(c5year, '(i4.4)') int(DEF_LC_YEAR/5)*5
+            dir_5x5 = trim(DEF_dir_rawdata) // trim(DEF_rawdata%urban_fveg%dir)
+            fname   = trim(DEF_rawdata%urban_fveg%fname)//'.'//trim(c5year)
+
+            CALL read_point_5x5_var_2d_real8 (grid_fveg, dir_5x5, fname, 'PCT_Tree', &
                SITE_lon_location, SITE_lat_location, SITE_fveg_urb)
 
             SITE_fveg_urb = SITE_fveg_urb/100
@@ -1701,17 +1712,18 @@ ENDIF
             allocate (SITE_LAI_monthly (12,start_year:end_year))
             allocate (SITE_SAI_monthly (12,start_year:end_year))
 
-            CALL gridlaiu%define_by_name ('colm_500m')
-            dir_5x5 = trim(DEF_dir_rawdata) // '/urban_lai_500m/'
+            CALL grid_ulsai%define_by_name (trim(DEF_rawdata%urban_lsai%gname))
+            dir_5x5 = trim(DEF_dir_rawdata) // trim(DEF_rawdata%urban_lsai%dir)
 
             DO iyear = start_year, end_year
                write(cyear,'(i4.4)') iyear
                DO itime = 1, ntime
-                  CALL read_point_5x5_var_2d_time_real8 (gridlaiu, dir_5x5, 'URBLAI_'//trim(cyear), &
+                  fname = trim(DEF_rawdata%urban_lsai%fname)//'.'//trim(cyear)
+                  CALL read_point_5x5_var_2d_time_real8 (grid_ulsai, dir_5x5, fname, &
                         'URBAN_TREE_LAI', SITE_lon_location, SITE_lat_location, itime, &
                         SITE_LAI_monthly(itime,iyear))
 
-                  CALL read_point_5x5_var_2d_time_real8 (gridlaiu, dir_5x5, 'URBLAI_'//trim(cyear), &
+                  CALL read_point_5x5_var_2d_time_real8 (grid_ulsai, dir_5x5, fname, &
                         'URBAN_TREE_SAI', SITE_lon_location, SITE_lat_location, itime, &
                         SITE_SAI_monthly(itime,iyear))
                ENDDO
@@ -1798,9 +1810,13 @@ ENDIF
          IF ( u_site_pop) THEN
             CALL ncio_read_serial (fsrfdata, 'resident_population_density', SITE_popden  )
          ELSE
-            CALL gridpopu%define_by_name ('colm_500m')
-            dir_5x5 = trim(DEF_dir_rawdata) // '/urban/'
-            write(c5year, '(i4.4)') int(DEF_LC_YEAR/5)*5
+            CALL grid_pop%define_by_name (trim(DEF_rawdata%urban_pop%gname))
+            dir_5x5 = trim(DEF_dir_rawdata) // trim(DEF_rawdata%urban_pop%dir)
+
+IF (index(DEF_rawdata%urban_pop%fname, 'GHSL')>0) THEN
+            write(cyear, '(i4.4)') int(DEF_LC_YEAR/5)*5
+
+            fname   = trim(DEF_rawdata%urban_pop%fname)//'.'//trim(cyear)
 
             IF (mod(DEF_LC_YEAR,5) == 0) THEN
                pop_i = 1
@@ -1808,19 +1824,29 @@ ENDIF
                pop_i = 5 - (ceiling(DEF_LC_YEAR*1./5.)*5 - DEF_LC_YEAR) + 1
             ENDIF
 
-            CALL read_point_5x5_var_2d_time_real8 (gridlaiu, dir_5x5, 'URBSRF'//trim(c5year), &
-                  'POP_DEN', SITE_lon_location, SITE_lat_location, pop_i, &
+            CALL read_point_5x5_var_2d_time_real8 (grid_pop, dir_5x5, fname, &
+                  'POP_density', SITE_lon_location, SITE_lat_location, pop_i, &
                   SITE_popden)
-         ENDIF
+ ELSE
+            write(cyear, '(i4.4)') DEF_LC_YEAR
+            fname = trim(DEF_rawdata%urban_pop%fname)//'.'//trim(cyear)
+
+            CALL read_point_5x5_var_2d_real8 (grid_pop, dir_5x5, fname, &
+                  'POP_density', SITE_lon_location, SITE_lat_location, &
+                  SITE_popden)
+
+ENDIF
+
+        ENDIF
 
          u_site_lucy= readflag .and. ncio_var_exist(fsrfdata,'LUCY_ID',readflag)
          IF ( u_site_lucy) THEN
             CALL ncio_read_serial (fsrfdata, 'LUCY_ID', SITE_lucyid )
          ELSE
-            CALL gridlucy%define_by_name ('colm_5km')
-            filename = trim(DEF_dir_rawdata) // '/urban/LUCY_regionid.nc'
+            CALL grid_lucy%define_by_name ('colm_5km')
+            filename = trim(DEF_dir_rawdata) // '/urban_human/lucy/LUCY_regionid.nc'
 
-            CALL read_point_var_2d_real8 (gridlucy, filename, 'LUCY_REGION_ID', &
+            CALL read_point_var_2d_real8 (grid_lucy, filename, 'LUCY_REGION_ID', &
                SITE_lon_location, SITE_lat_location, SITE_lucyid)
          ENDIF
 
@@ -2004,9 +2030,9 @@ ENDIF
          IF (u_site_lakedepth) THEN
             CALL ncio_read_serial (fsrfdata, 'lakedepth', SITE_lakedepth)
          ELSE
-            CALL gridlake%define_by_name ('colm_500m')
+            CALL grid_lake%define_by_name ('colm_500m')
             filename = trim(DEF_dir_rawdata)//'/lake_depth.nc'
-            CALL read_point_var_2d_real8 (gridlake, filename, 'lake_depth', &
+            CALL read_point_var_2d_real8 (grid_lake, filename, 'lake_depth', &
                SITE_lon_location, SITE_lat_location, lakedepth)
             SITE_lakedepth = lakedepth * 0.1
          ENDIF
@@ -2032,9 +2058,9 @@ ENDIF
             SITE_soil_s_n_alb = spval
             SITE_soil_d_n_alb = spval
 
-            CALL gridbright%define_by_name ('colm_500m')
+            CALL grid_bright%define_by_name ('colm_500m')
             filename = trim(DEF_dir_rawdata)//'/soil_brightness.nc'
-            CALL read_point_var_2d_int32 (gridbright, filename, 'soil_brightness', &
+            CALL read_point_var_2d_int32 (grid_bright, filename, 'soil_brightness', &
                SITE_lon_location, SITE_lat_location, isc)
 
 #ifdef LULC_USGS
@@ -2057,7 +2083,7 @@ ENDIF
          write(*,'(A,F8.2,3A)') 'Soil brightness d_n : ', SITE_soil_d_n_alb, ' (from ',trim(datasource(u_site_soil_bright)),')'
 
          ! (8) soil parameters
-         CALL gridsoil%define_by_name ('colm_500m')
+         CALL grid_soil%define_by_name ('colm_500m')
 
          readflag = USE_SITE_soilparameters
          u_site_vf_quartz_mineral = readflag .and. ncio_var_exist(fsrfdata,'soil_vf_quartz_mineral',readflag)
@@ -2068,7 +2094,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/vf_quartz_mineral_s.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'vf_quartz_mineral_s_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'vf_quartz_mineral_s_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_vf_quartz_mineral(nsl))
             ENDDO
          ENDIF
@@ -2081,7 +2107,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/vf_gravels_s.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'vf_gravels_s_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'vf_gravels_s_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_vf_gravels(nsl))
             ENDDO
          ENDIF
@@ -2094,7 +2120,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/vf_sand_s.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'vf_sand_s_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'vf_sand_s_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_vf_sand(nsl))
             ENDDO
          ENDIF
@@ -2107,7 +2133,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/vf_clay_s.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'vf_clay_s_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'vf_clay_s_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_vf_clay(nsl))
             ENDDO
          ENDIF
@@ -2120,7 +2146,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/vf_om_s.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'vf_om_s_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'vf_om_s_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_vf_om(nsl))
             ENDDO
          ENDIF
@@ -2133,7 +2159,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/wf_gravels_s.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'wf_gravels_s_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'wf_gravels_s_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_wf_gravels(nsl))
             ENDDO
          ENDIF
@@ -2146,7 +2172,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/wf_sand_s.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'wf_sand_s_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'wf_sand_s_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_wf_sand(nsl))
             ENDDO
          ENDIF
@@ -2159,7 +2185,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/wf_clay_s.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'wf_clay_s_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'wf_clay_s_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_wf_clay(nsl))
             ENDDO
          ENDIF
@@ -2172,7 +2198,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/wf_om_s.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'wf_om_s_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'wf_om_s_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_wf_om(nsl))
             ENDDO
          ENDIF
@@ -2185,7 +2211,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/OM_density_s.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'OM_density_s_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'OM_density_s_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_OM_density(nsl))
             ENDDO
          ENDIF
@@ -2198,7 +2224,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/BD_all_s.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'BD_all_s_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'BD_all_s_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_BD_all(nsl))
             ENDDO
          ENDIF
@@ -2211,7 +2237,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/theta_s.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'theta_s_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'theta_s_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_theta_s(nsl))
             ENDDO
          ENDIF
@@ -2224,7 +2250,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/k_s.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'k_s_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'k_s_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_k_s(nsl))
             ENDDO
          ENDIF
@@ -2237,7 +2263,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/csol.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'csol_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'csol_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_csol(nsl))
             ENDDO
          ENDIF
@@ -2250,7 +2276,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/tksatu.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'tksatu_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'tksatu_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_tksatu(nsl))
             ENDDO
          ENDIF
@@ -2263,7 +2289,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/tksatf.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'tksatf_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'tksatf_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_tksatf(nsl))
             ENDDO
          ENDIF
@@ -2276,7 +2302,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/tkdry.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'tkdry_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'tkdry_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_tkdry(nsl))
             ENDDO
          ENDIF
@@ -2289,7 +2315,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/k_solids.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'k_solids_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'k_solids_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_k_solids(nsl))
             ENDDO
          ENDIF
@@ -2302,7 +2328,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/psi_s.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'psi_s_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'psi_s_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_psi_s(nsl))
             ENDDO
          ENDIF
@@ -2315,7 +2341,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/lambda.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'lambda_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'lambda_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_lambda(nsl))
             ENDDO
          ENDIF
@@ -2329,7 +2355,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/VGM_theta_r.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'VGM_theta_r_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'VGM_theta_r_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_theta_r(nsl))
             ENDDO
          ENDIF
@@ -2342,7 +2368,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/VGM_alpha.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'VGM_alpha_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'VGM_alpha_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_alpha_vgm(nsl))
             ENDDO
          ENDIF
@@ -2355,7 +2381,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/VGM_L.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'VGM_L_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'VGM_L_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_L_vgm(nsl))
             ENDDO
          ENDIF
@@ -2368,7 +2394,7 @@ ENDIF
             DO nsl = 1, 8
                write(c,'(i1)') nsl
                filename = trim(DEF_dir_rawdata)//'/soil/VGM_n.nc'
-               CALL read_point_var_2d_real8 (gridsoil, filename, 'VGM_n_l'//trim(c), &
+               CALL read_point_var_2d_real8 (grid_soil, filename, 'VGM_n_l'//trim(c), &
                   SITE_lon_location, SITE_lat_location, SITE_soil_n_vgm(nsl))
             ENDDO
          ENDIF
@@ -2397,7 +2423,7 @@ ENDIF
                CALL ncio_read_serial (fsrfdata, 'soil_texture', SITE_soil_texture)
             ELSE
                filename = trim(DEF_dir_rawdata)//'/soil/soiltexture_0cm-60cm_mean.nc'
-               CALL read_point_var_2d_int32 (gridsoil, filename, 'soiltexture', &
+               CALL read_point_var_2d_int32 (grid_soil, filename, 'soiltexture', &
                   SITE_lon_location, SITE_lat_location, SITE_soil_texture)
             ENDIF
          ENDIF
@@ -2442,9 +2468,9 @@ ENDIF
             IF (u_site_dbedrock) THEN
                CALL ncio_read_serial (fsrfdata, 'depth_to_bedrock', SITE_dbedrock)
             ELSE
-               CALL gridrock%define_by_name ('colm_500m')
+               CALL grid_rock%define_by_name ('colm_500m')
                filename = trim(DEF_dir_rawdata)//'/bedrock.nc'
-               CALL read_point_var_2d_real8 (gridrock, filename, 'dbedrock', &
+               CALL read_point_var_2d_real8 (grid_rock, filename, 'dbedrock', &
                   SITE_lon_location, SITE_lat_location, SITE_dbedrock)
             ENDIF
 
@@ -2458,9 +2484,9 @@ ENDIF
          IF (u_site_elevation) THEN
             CALL ncio_read_serial (fsrfdata, 'elevation', SITE_elevation)
          ELSE
-            CALL gridtopo%define_by_name ('colm_500m')
+            CALL grid_topo%define_by_name ('colm_500m')
             filename = trim(DEF_dir_rawdata)//'/elevation.nc'
-            CALL read_point_var_2d_real8 (gridtopo, filename, 'elevation', &
+            CALL read_point_var_2d_real8 (grid_topo, filename, 'elevation', &
                SITE_lon_location, SITE_lat_location, SITE_elevation)
          ENDIF
 
@@ -2469,9 +2495,9 @@ ENDIF
          IF (u_site_elvstd) THEN
             CALL ncio_read_serial (fsrfdata, 'elvstd', SITE_elvstd)
          ELSE
-            CALL gridtopo%define_by_name ('colm_500m')
+            CALL grid_topo%define_by_name ('colm_500m')
             filename = trim(DEF_dir_rawdata)//'/topography.nc'
-            CALL read_point_var_2d_real8 (gridtopo, filename, 'elvstd', &
+            CALL read_point_var_2d_real8 (grid_topo, filename, 'elvstd', &
                SITE_lon_location, SITE_lat_location, SITE_elvstd)
          ENDIF
 
@@ -2480,9 +2506,9 @@ ENDIF
          IF (u_site_sloperatio) THEN
             CALL ncio_read_serial (fsrfdata, 'sloperatio', SITE_sloperatio)
          ELSE
-            CALL gridtopo%define_by_name ('colm_500m')
+            CALL grid_topo%define_by_name ('colm_500m')
             filename = trim(DEF_dir_rawdata)//'/topography.nc'
-            CALL read_point_var_2d_real8 (gridtopo, filename, 'slope', &
+            CALL read_point_var_2d_real8 (grid_topo, filename, 'slope', &
                SITE_lon_location, SITE_lat_location, SITE_sloperatio)
          ENDIF
 
@@ -3082,7 +3108,7 @@ ENDIF
       fsrfdata = trim(DEF_dir_landdata) // '/srfdata.nc'
 
       SITE_fgper     = 1 - (SITE_fgimp-SITE_froof)/(1-SITE_froof-SITE_flake_urb)
-      SITE_froof     = SITE_froof/(1-SITE_flake_urb)
+      SITE_froof     = SITE_froof /(1-SITE_flake_urb)
       SITE_fveg_urb  = SITE_fveg_urb  * 100
       SITE_flake_urb = SITE_flake_urb * 100
 

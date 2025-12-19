@@ -276,7 +276,7 @@ CONTAINS
         binter              ,&! conductance-photosynthesis intercept
         lambda              ,&! marginal water cost of carbon gain
         extkn                ! coefficient of leaf nitrogen allocation
-   
+
    integer , intent(in) :: &
         c3c4                              ! 1 for C3, 0 for C4
 
@@ -1370,7 +1370,8 @@ CONTAINS
 !=======================================================================
 
       ! A simple Building energy model
-      CALL SimpleBEM ( deltim, forc_rhoair, fcover(0:2), hroof, troommax, troommin, &
+      CALL SimpleBEM ( idate, deltim, patchlonr, forc_rhoair, fcover(0:2), hroof, &
+                       troommax, troommin, weh_prof, &
                        troof_nl_bef, twsun_nl_bef, twsha_nl_bef, &
                        t_roofsno(nl_roof), t_wallsun(nl_wall), t_wallsha(nl_wall), &
                        tkdz_roof, tkdz_wsun, tkdz_wsha, tafu, troom, &
@@ -1392,7 +1393,6 @@ CONTAINS
       Fwst = Fwst * (1-flake)
       Fach = Fach * (1-flake)
       Fhah = Fhah * (1-flake)
-
 
       deallocate ( fcover )
 
