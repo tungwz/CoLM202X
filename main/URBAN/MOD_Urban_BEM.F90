@@ -94,7 +94,7 @@ CONTAINS
         H,               &! average building height [m]
         troom_max,       &! maximum temperature of inner building
         troom_min,       &! minimum temperature of inner building
-        weekend,         &! Diurnal traffic flow profile of weekend
+        weekend(24),     &! Diurnal traffic flow profile of weekend
         troof_nl_bef,    &! roof temperature at layer nl_roof
         twsun_nl_bef,    &! sunlit wall temperature at layer nl_wall
         twsha_nl_bef,    &! shaded wall temperature at layer nl_wall
