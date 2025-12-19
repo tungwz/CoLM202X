@@ -138,9 +138,48 @@ MODULE MOD_Namelist
    !         only available for USGS/IGBP/PFT CLASSIFICATION
    logical :: USE_srfdata_from_3D_gridded_data = .false.
 
+   ! ----- rawdata definition -----
+
+   character(len=256) :: DEF_rawdata_namelist  = 'path/to/rawdata/namelist'
+
+   type :: datainfo
+      character(len=256) :: dir   = 'dir related to rawdata dir'
+      character(len=256) :: gname = 'grid name'
+      character(len=256) :: fname = 'file name'
+      character(len=256) :: vname = 'variable name'
+   end type
+
+   type rawdata
+      type(datainfo) :: landcover
+      type(datainfo) :: pft
+      type(datainfo) :: htop
+      type(datainfo) :: lai_sai
+     !type(datainfo) :: soil
+     !type(datainfo) :: topo
+      type(datainfo) :: urban_type
+      type(datainfo) :: urban_htop
+      type(datainfo) :: urban_fveg
+      type(datainfo) :: urban_flake
+      type(datainfo) :: urban_lsai
+      type(datainfo) :: urban_lucy
+      type(datainfo) :: urban_pop
+      type(datainfo) :: urban_roof
+      type(datainfo) :: urban_hl
+      type(datainfo) :: urban_fgper
+      type(datainfo) :: urban_alb
+   end type rawdata
+
+   type (rawdata) :: DEF_rawdata
+
    ! ----- land cover data year (for static land cover, i.e. non-LULCC) -----
    ! NOTE: Please check the LC data year range available
-   integer :: DEF_LC_YEAR  = 2005
+   integer :: DEF_LC_YEAR = 2005
+
+   ! ----- land cover data -----
+   ! NOTE: default using MODIS MCD12Q1 IGBP land cover system, or choose one below
+   !       it will be automatically set according to rawdata namelist
+   logical :: DEF_USE_GLC30  = .false.
+   logical :: DEF_USE_ESACCI = .false.
 
    ! ----- Subgrid scheme -----
    logical :: DEF_USE_USGS = .false.
@@ -223,8 +262,7 @@ MODULE MOD_Namelist
    ! Options for urban type scheme
    ! 1: NCAR Urban Classification, 3 urban type with Tall Building, High Density and Medium Density
    ! 2: LCZ Classification, 10 urban type with LCZ 1-10
-   integer :: DEF_URBAN_type_scheme = 1
-   integer :: DEF_URBAN_geom_data   = 1
+   integer :: DEF_URBAN_type_scheme = 2
    logical :: DEF_URBAN_ONLY        = .false.
    logical :: DEF_URBAN_RUN         = .false.
    logical :: DEF_URBAN_BEM         = .true.
@@ -1020,6 +1058,8 @@ CONTAINS
       DEF_CatchmentMesh_data,                 &
       DEF_file_mesh_filter,                   &
 
+      DEF_rawdata_namelist,                   &
+
       DEF_USE_LCT,                            &
       DEF_USE_PFT,                            &
       DEF_USE_PC,                             &
@@ -1045,7 +1085,6 @@ CONTAINS
       DEF_LULCC_SCHEME,                       &
 
       DEF_URBAN_type_scheme,                  &
-      DEF_URBAN_geom_data,                    &
       DEF_URBAN_ONLY,                         &
       DEF_URBAN_RUN,                          & !add by hua yuan, open urban model or not
       DEF_URBAN_BEM,                          & !add by hua yuan, open urban BEM model or not
@@ -1162,6 +1201,7 @@ CONTAINS
       DEF_HIST_vars_namelist,                 &
       DEF_HIST_vars_out_default
 
+   namelist /nl_colm_rawdata/ DEF_rawdata
    namelist /nl_colm_forcing/ DEF_dir_forcing, DEF_forcing
    namelist /nl_colm_history/ DEF_hist_vars
 
@@ -1175,12 +1215,25 @@ CONTAINS
          ENDIF
          close(10)
 
+         CALL set_rawdata_default()
+         open(10, status='OLD', file=trim(DEF_rawdata_namelist), form="FORMATTED")
+         read(10, nml=nl_colm_rawdata, iostat=ierr)
+         IF (ierr /= 0) THEN
+            CALL CoLM_Stop (' ***** ERROR: Problem reading namelist: '// trim(DEF_rawdata_namelist))
+         ENDIF
+         close(10)
+
+         IF ( trim(DEF_rawdata%landcover%fname) == "LC30m.GLC" ) THEN
+            DEF_USE_GLC30 = .true.
+         ENDIF
+
          open(10, status='OLD', file=trim(DEF_forcing_namelist), form="FORMATTED")
          read(10, nml=nl_colm_forcing, iostat=ierr)
          IF (ierr /= 0) THEN
             CALL CoLM_Stop (' ***** ERROR: Problem reading namelist: '// trim(DEF_forcing_namelist))
          ENDIF
          close(10)
+
 #ifdef SinglePoint
          DEF_forcing%has_missing_value = .false.
 #endif
@@ -1401,6 +1454,19 @@ CONTAINS
          DEF_USE_OZONESTRESS     = .false.
          DEF_USE_OZONEDATA       = .false.
          DEF_SPLIT_SOILSNOW      = .false.
+
+#if !defined(SinglePoint)
+IF (index(DEF_rawdata%urban_type%fname, 'LCZ')>0) THEN
+         write(*,*) 'The current urban classification is Local Climate Zone'
+         DEF_URBAN_type_scheme = 2
+ENDIF
+
+IF (index(DEF_rawdata%urban_type%fname, 'NCAR')>0) THEN
+         write(*,*) 'The current urban classification is NCAR urban type'
+         DEF_URBAN_type_scheme = 1
+ENDIF
+#endif
+
 #else
          IF (DEF_URBAN_RUN) THEN
             write(*,*) '                  *****                  '
@@ -1588,6 +1654,73 @@ CONTAINS
       CALL mpi_bcast (USE_zip_for_aggregation                ,1   ,mpi_logical   ,p_address_master ,p_comm_glb ,p_err)
       CALL mpi_bcast (DEF_Srfdata_CompressLevel              ,1   ,mpi_integer   ,p_address_master ,p_comm_glb ,p_err)
 
+      CALL mpi_bcast (DEF_rawdata_namelist                   ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+
+      ! 09/2025, added by yuan: rawdata info
+      CALL mpi_bcast (DEF_rawdata%landcover%dir              ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%landcover%gname            ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%landcover%fname            ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+
+      CALL mpi_bcast (DEF_rawdata%pft%dir                    ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%pft%gname                  ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%pft%fname                  ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+
+      CALL mpi_bcast (DEF_rawdata%lai_sai%dir                ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%lai_sai%gname              ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%lai_sai%fname              ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+
+      CALL mpi_bcast (DEF_rawdata%htop%dir                   ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%htop%gname                 ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%htop%fname                 ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%htop%vname                 ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+
+      CALL mpi_bcast (DEF_rawdata%urban_type%dir             ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_type%gname           ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_type%fname           ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+
+      CALL mpi_bcast (DEF_rawdata%urban_roof%dir             ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_roof%gname           ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_roof%fname           ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+
+      CALL mpi_bcast (DEF_rawdata%urban_hl%dir               ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_hl%gname             ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_hl%fname             ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+
+      CALL mpi_bcast (DEF_rawdata%urban_fgper%dir            ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_fgper%gname          ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_fgper%fname          ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+
+      CALL mpi_bcast (DEF_rawdata%urban_lsai%dir             ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_lsai%gname           ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_lsai%fname           ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+
+      CALL mpi_bcast (DEF_rawdata%urban_fveg%dir             ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_fveg%gname           ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_fveg%fname           ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+
+      CALL mpi_bcast (DEF_rawdata%urban_flake%dir            ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_flake%gname          ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_flake%fname          ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+
+      CALL mpi_bcast (DEF_rawdata%urban_htop%dir             ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_htop%gname           ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_htop%fname           ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_htop%vname           ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+
+      CALL mpi_bcast (DEF_rawdata%urban_pop%dir              ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_pop%gname            ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_pop%fname            ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+
+      CALL mpi_bcast (DEF_rawdata%urban_lucy%dir             ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_lucy%gname           ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_lucy%fname           ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+
+      CALL mpi_bcast (DEF_rawdata%urban_alb%dir              ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_alb%gname            ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%urban_alb%fname            ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+
+      CALL mpi_bcast (DEF_USE_GLC30                          ,1   ,mpi_logical   ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_USE_ESACCI                         ,1   ,mpi_logical   ,p_address_master ,p_comm_glb ,p_err)
       ! 07/2023, added by yuan: subgrid setting related
       CALL mpi_bcast (DEF_USE_LCT                            ,1   ,mpi_logical   ,p_address_master ,p_comm_glb ,p_err)
       CALL mpi_bcast (DEF_USE_PFT                            ,1   ,mpi_logical   ,p_address_master ,p_comm_glb ,p_err)
@@ -1614,7 +1747,6 @@ CONTAINS
       CALL mpi_bcast (DEF_LULCC_SCHEME                       ,1   ,mpi_integer   ,p_address_master ,p_comm_glb ,p_err)
 
       CALL mpi_bcast (DEF_URBAN_type_scheme                  ,1   ,mpi_integer   ,p_address_master ,p_comm_glb ,p_err)
-      CALL mpi_bcast (DEF_URBAN_geom_data                    ,1   ,mpi_integer   ,p_address_master ,p_comm_glb ,p_err)
       ! 05/2023, added by yuan
       CALL mpi_bcast (DEF_URBAN_ONLY                         ,1   ,mpi_logical   ,p_address_master ,p_comm_glb ,p_err)
       CALL mpi_bcast (DEF_URBAN_RUN                          ,1   ,mpi_logical   ,p_address_master ,p_comm_glb ,p_err)
@@ -1852,6 +1984,16 @@ CONTAINS
       CALL sync_hist_vars (set_defaults = .false.)
 
    END SUBROUTINE read_namelist
+
+
+   SUBROUTINE set_rawdata_default
+
+   IMPLICIT NONE
+
+      DEF_rawdata%htop%vname          = 'HTOP'
+      DEF_rawdata%urban_htop%vname    = 'HTOP'
+
+   END SUBROUTINE set_rawdata_default
 
    ! ---------------
    SUBROUTINE sync_hist_vars (set_defaults)
