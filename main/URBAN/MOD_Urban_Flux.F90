@@ -660,10 +660,10 @@ CONTAINS
          IF (numlay .eq. 2) THEN
 
             ! - Equations:
-            ! taf(3) = (1/rah*thm + fg/rd(3)*taf(2) + 1/rb(0)*troof*fc(0) &
-            !        + AHE/(rho*cp))/(1/rah + fg/rd(3) + 1/rb(0)*fc(0))
-            ! taf(2) = (fg/rd(3)*taf(3) + 1/rd(2)*tg*fg + 1/rb(1)*twsun*fc(1) + 1/rb(2)*twsha*fc(2) &
-            !        + AHE/(rho*cp))/ (fg/rd(3) + 1/rd(2)*fg + 1/rb(1)*fc(1) + 1/rb(2)*fc(2))
+            ! taf(3) = (1/rah*thm + fg/rd(3)*taf(2) + fc(0)/rb(0)*troof &
+            !        + AHE/(rho*cp))/(1/rah + fg/rd(3) + fc(0)/rb(0))
+            ! taf(2) = (fg/rd(3)*taf(3) + fg/rd(2)*tg + fc(1)/rb(1)*twsun + fc(2)/rb(2)*twsha &
+            !        + AHE/(rho*cp))/ (fg/rd(3) + fg/rd(2) + fc(1)/rb(1) + fc(2)/rb(2))
             ! Also written as:
             ! taf(3) = (cah(3)*thm + cah(2)*taf(2) &
             !        + cfh(0)*troof*fc(0))/(cah(3) + cah(2) + cfh(0)*fc(0))
@@ -671,10 +671,10 @@ CONTAINS
             !        + AHE/(rho*cp))/(cah(2) + cgh(2)*fg + cfh(1)*fc(1) + cfh(2)*fc(2))
             !
             ! - Equations:
-            ! qaf(3) = (1/raw*qm + 1/rd(3)*qaf(2) + 1/rb(0)*qroof*fc(0)) &
-            !        / (1/raw + fg/rd(3) + 1/rb(0)*fc(0))
-            ! qaf(2) = (1/rd(3)*qaf(3) + 1/(rd(2)+rss)*qper*fgper*fg + fwetimp/rd(2)*qimp*fgimp*fg &
-            !        + AHE/rho)/(1/rd(3) + 1/(rd(2)+rss)*fgper*fg + fwetimp/rd(2)*fgimp*fg)
+            ! qaf(3) = (1/raw*qm + 1/rd(3)*qaf(2) + fc(0)/rb(0)*qroof) &
+            !        / (1/raw + fg/rd(3) + fc(0)/rb(0))
+            ! qaf(2) = (1/rd(3)*qaf(3) + fg*fgper/(rd(2)+rss)*qper + fg*fgimp*fwetimp/rd(2)*qimp &
+            !        + AHE/rho)/(1/rd(3) + fg*fgper/(rd(2)+rss) + fg*fgimp*fwetimp/rd(2))
             ! Also written as:
             ! qaf(3) = (caw(3)*qm + caw(2)*qaf(2) &
             !        + cfw(0)*qroof*fc(0))/(caw(3) + caw(2) + cfw(0)*fc(0))
@@ -1770,11 +1770,11 @@ ENDIF
          IF (numlay .eq. 2) THEN
 
             ! - Equations:
-            ! taf(3) = (1/rah*thm + 1/rd(3)*taf(2) + 1/rb(0)*troof*fc(0) &
-            !        + AHE/(rho*cp))/(1/rah + 1/rd(3) + 1/rb(0)*fc(0))
-            ! taf(2) = (1/rd(3)*taf(3) + 1/rd(2)*tg*fg + 1/rb(1)*twsun*fc(1) + 1/rb(2)*twsha*fc(2) &
+            ! taf(3) = (1/rah*thm + 1/rd(3)*taf(2) + fc(0)/rb(0)*troof &
+            !        + AHE/(rho*cp))/(1/rah + 1/rd(3) + fc(0)/rb(0))
+            ! taf(2) = (1/rd(3)*taf(3) + fg/rd(2)*tg + fc(1)/rb(1)*twsun + fc(2)/rb(2)*twsha &
             !        + lsai/rb(3)*tl*fc(3) + AHE/(rho*cp)) &
-            !        / (1/rd(3) + 1/rd(2)*fg + 1/rb(1)*fc(1) + 1/rb(2)*fc(2) + lsai/rb(3)*fc(3))
+            !        / (1/rd(3) + fg/rd(2) + fc(1)/rb(1) + fc(2)/rb(2) + lsai/rb(3)*fc(3))
             !
             ! Also written as:
             ! taf(3) = (cah(3)*thm + cah(2)*taf(2) &
@@ -1785,11 +1785,11 @@ ENDIF
             !
             ! - Equations:
             ! qaf(3) = (1/raw*qm + 1/rd(3)*qaf(2) &
-            !        + 1/rb(0)*qroof*fc(0))/(1/raw + 1/rd(3) + 1/rb(0)*fc(0))
-            ! qaf(2) = (1/rd(3)*qaf(3) + 1/(rd(2)+rss)*qper*fgper*fg + fwetimp/rd(2)*qimp*fgimp*fg &
+            !        + 1/rb(0)*qroof*fc(0))/(1/raw + 1/rd(3) + fc(0)/rb(0))
+            ! qaf(2) = (1/rd(3)*qaf(3) + fg*fgper/(rd(2)+rss)*qper + fwetimp*fg*fgimp/rd(2)*qimp &
             !        + lsai/(rb(3)+rs)*ql*fc(3) + AHE/rho) &
-            !        / (1/rd(3) + 1/(rd(2)+rss)*fgper*fg &
-            !        + fwetimp/rd(2)*fgimp*fg + lsai/(rb(3)+rs)*fc(3))
+            !        / (1/rd(3) + fg*fgper/(rd(2)+rss) &
+            !        + fwetimp*fg*fgimp/rd(2) + lsai/(rb(3)+rs)*fc(3))
             !
             ! Also written as:
             ! qaf(3) = (caw(3)*qm + caw(2)*qaf(2) + cfw(0)*qroof*fc(0)) &
@@ -1837,21 +1837,21 @@ ENDIF
          IF (numlay .eq. 3) THEN
 
             ! - Equations:
-            ! taf(3) = (thm/rah+1/rd(3)*taf(2)+AHE2/rho/cpair+1/rb(0)*troof*fc(0))/&
-            !          (1/rah+1/rd(3)+1/rb(0)*fc(0))
+            ! taf(3) = (thm/rah+1/rd(3)*taf(2)+AHE2/rho/cpair+fc(0)/rb(0)*troof)/&
+            !          (1/rah+1/rd(3)+fc(0)/rb(0))
             ! taf(2) = (1/rd(3)*taf(3)+1/rd(2)*taf1+1/rb(1)*twsun*fc(1)+1/rb(2)*twsha*fc(2)+&
-            !          AHE1/rho/cpair)/(1/rd(3)+1/rd(2)+1/rb(1)*fc(1)+1/rb(2)*fc(2))
-            ! taf(1) = (1/rd(2)*taf(2)+1/rd(1)*tg*fg+1/rb(3)*tl*fc(3)+Hveh/rhoair/cpair)/&
-            !          (1/rd(2)+1/rd(1)*fg+1/rb(3)*fc(3))
+            !          AHE1/rho/cpair)/(1/rd(3)+1/rd(2)+fc(1)/rb(1)+fc(2)/rb(2))
+            ! taf(1) = (1/rd(2)*taf(2)+fg/rd(1)*tg+fc(3)/rb(3)*tl+Hveh/rhoair/cpair)/&
+            !          (1/rd(2)+fg/rd(1)+fc(3)/rb(3))
             !
             ! - Equations:
-            ! qaf(3) = (1/raw*qm+1/rd(3)*qaf(2)+1/rb(0)*qroof*fc(0))/&
-            !          (1/raw+1/rd(3)+1/rb(0)*fc(0))
+            ! qaf(3) = (1/raw*qm+1/rd(3)*qaf(2)+fc(0)/rb(0)*qroof)/&
+            !          (1/raw+1/rd(3)+fc(0)/rb(0))
             ! qaf(2) = (1/rd(3)*qaf(3)+1/rd(2)*qaf(1))/&
             !          (1/rd(3) + 1/rd(2))
             ! qaf(1) = (1/rd(2)*qaf(2)+1/(rd(1)+rss)*qgper*fgper*fg+&
             !          1/rd(1)*qimp*fgimp*fg+1/(rb(3)+rs)*ql*fc(3)+h_veh/rho)/&
-            !          (1/rd(2)+1/(rd(1)+rss)*fgper*fg+1/rd(1)*fgimp*fg+1/(rb(3)+rs)*fc(3))
+            !          (1/rd(2)+fg*fgper/(rd(1)+rss)+fg*fgimp/rd(1)+fc(3)/(rb(3)+rs))
 
             Hahe(1) = vehc*fsh + meta
             Hahe(2) = 4*hlr/(4*hlr+1)*(Fhac+Fwst)*fsh + Fach
@@ -2048,11 +2048,11 @@ ENDIF
          IF (numlay .eq. 2) THEN
 
             ! - Equations:
-            ! taf(3) = (1/rah*thm + 1/rd(3)*taf(2) + 1/rb(0)*troof*fc(0) &
-            !        + AHE/(rho*cp))/(1/rah + 1/rd(3) + 1/rb(0)*fc(0))
-            ! taf(2) = (1/rd(3)*taf(3) + 1/rd(2)*tg*fg + 1/rb(1)*twsun*fc(1) + 1/rb(2)*twsha*fc(2) &
+            ! taf(3) = (1/rah*thm + 1/rd(3)*taf(2) + fc(0)/rb(0)*troof &
+            !        + AHE/(rho*cp))/(1/rah + 1/rd(3) + fc(0)/rb(0))
+            ! taf(2) = (1/rd(3)*taf(3) + fg/rd(2)*tg + fc(1)/rb(1)*twsun + fc(2)/rb(2)*twsha &
             !        + lsai/rb(3)*tl*fc(3) + AHE/(rho*cp)) &
-            !        / (1/rd(3) + 1/rd(2)*fg + 1/rb(1)*fc(1) + 1/rb(2)*fc(2) + lsai/rb(3)*fc(3))
+            !        / (1/rd(3) + fg/rd(2) + fc(1)/rb(1) + fc(2)/rb(2) + lsai/rb(3)*fc(3))
             !
             ! Also written as:
             ! taf(3) = (cah(3)*thm + cah(2)*taf(2) &
@@ -2063,11 +2063,11 @@ ENDIF
             !
             ! - Equations:
             ! qaf(3) = (1/raw*qm + 1/rd(3)*qaf(2) &
-            !        + 1/rb(0)*qroof*fc(0))/(1/raw + 1/rd(3) + 1/rb(0)*fc(0))
-            ! qaf(2) = (1/rd(3)*qaf(3) + 1/(rd(2)+rss)*qper*fgper*fg &
-            !        + fwetimp/rd(2)*qimp*fgimp*fg + lsai/(rb(3)+rs)*ql*fc(3) + AHE/rho) &
-            !        / (1/rd(3) + 1/(rd(2)+rss)*fgper*fg &
-            !        + fwetimp/rd(2)*fgimp*fg + lsai/(rb(3)+rs)*fc(3))
+            !        + fc(0)/rb(0)*qroof)/(1/raw + 1/rd(3) + fc(0)/rb(0))
+            ! qaf(2) = (1/rd(3)*qaf(3) + fg*fgper/(rd(2)+rss)*qper &
+            !        + fwetimp*fg*fgimp/rd(2)*qimp + lsai/(rb(3)+rs)*ql*fc(3) + AHE/rho) &
+            !        / (1/rd(3) + fg*fgper/(rd(2)+rss) &
+            !        + fg*fgimp*fwetimp/rd(2) + lsai/(rb(3)+rs)*fc(3))
             !
             ! Also written as:
             ! qaf(3) = (caw(3)*qm + caw(2)*qaf(2) &
@@ -2115,16 +2115,16 @@ ENDIF
          IF (numlay .eq. 3) THEN
 
             ! - Equations:
-            ! taf(3) = (thm/rah+1/rd(3)*taf(2)+AHE2/rho/cpair+1/rb(0)*troof*fc(0))/&
-            !          (1/rah+1/rd(3)+1/rb(0)*fc(0))
-            ! taf(2) = (1/rd(3)*taf(3)+1/rd(2)*taf1+1/rb(1)*twsun*fc(1)+1/rb(2)*twsha*fc(2)+&
-            !          AHE1/rho/cpair)/(1/rd(3)+1/rd(2)+1/rb(1)*fc(1)+1/rb(2)*fc(2))
-            ! taf(1) = (1/rd(2)*taf(2)+1/rd(1)*tg*fg+1/rb(3)*tl*fc(3)+Hveh/rhoair/cpair)/&
-            !          (1/rd(2)+1/rd(1)*fg+1/rb(3)*fc(3))
+            ! taf(3) = (thm/rah+1/rd(3)*taf(2)+AHE2/rho/cpair+fc(0)/rb(0)*troof)/&
+            !          (1/rah+1/rd(3)+fc(0)/rb(0))
+            ! taf(2) = (1/rd(3)*taf(3)+1/rd(2)*taf1+fc(1)/rb(1)*twsun+fc(2)/rb(2)*twsha+&
+            !          AHE1/rho/cpair)/(1/rd(3)+1/rd(2)+fc(1)/rb(1)+fc(2)/rb(2))
+            ! taf(1) = (1/rd(2)*taf(2)+fg/rd(1)*tg+fc(3)/rb(3)*tl+Hveh/rhoair/cpair)/&
+            !          (1/rd(2)+fg/rd(1)+fc(3)/rb(3))
             !
             ! - Equations:
             ! qaf(3) = (1/raw*qm+1/rd(3)*qaf(2)+1/rb(0)*qroof*fc(0))/&
-            !          (1/raw+1/rd(3)+1/rb(0)*fc(0))
+            !          (1/raw+1/rd(3)+fc(0)/rb(0))
             ! qaf(2) = (1/rd(3)*qaf(3)+1/rd(2)*qaf(1))/&
             !          (1/rd(3) + 1/rd(2))
             ! qaf(1) = (1/rd(2)*qaf(2)+1/(rd(1)+rss)*qgper*fgper*fg+&
