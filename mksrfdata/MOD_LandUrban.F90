@@ -163,26 +163,9 @@ ENDIF
                      area_one = 0
                   END WHERE
 
-                  buff_p = 0
-                  IF (sum(area_one) > 0) THEN
-                     DO ib = 1, size(area_one)
-                        IF (ibuff(ib)>1 .and. ibuff(ib)<N_URB) THEN
-                           iurb         = ibuff(ib)
-                           buff_p(iurb) = buff_p(iurb) + area_one(ib)
-                        ENDIF
-                     ENDDO
-                     buff_p(:) = buff_p(:)/sum(area_one)
-                  ENDIF
-
-                  ! The number of URBAN ID of each type is assigned to urban pixels without URBAN ID in relative proportion
-                  DO iurb = 1, N_URB-1
-                     buff_count(iurb) = int(buff_p(iurb)*imiss)
-                  ENDDO
-                  buff_count(N_URB) = imiss - sum(buff_count(1:N_URB-1))
-
                   ! Some urban patches and NCAR/LCZ data are inconsistent (NCAR/LCZ has no urban ID),
                   ! so the these points are assigned
-                  IF (all(buff_count==0)) THEN
+                  IF (sum(area_one) == 0) THEN
                      ! If none of the urban pixels have an URBAN ID, they are assigned directly
                      IF (DEF_URBAN_type_scheme == 1) THEN
                         ibuff = 3
@@ -190,7 +173,27 @@ ENDIF
                         ibuff = 9
                      ENDIF
                   ELSE
-                     ! Otherwise, URBAN ID are assigned based on the previously calculated number
+                     buff_p = 0
+                     DO ib = 1, size(area_one)
+                        IF (ibuff(ib)>=1 .and. ibuff(ib)<=N_URB) THEN
+                           iurb         = ibuff(ib)
+                           buff_p(iurb) = buff_p(iurb) + area_one(ib)
+                        ENDIF
+                     ENDDO
+                     buff_p(:) = buff_p(:)/sum(area_one)
+
+                     ! The number of URBAN ID of each type is assigned to urban pixels without URBAN ID in relative proportion
+                     DO iurb = 1, N_URB-1
+                        buff_count(iurb) = int(buff_p(iurb)*imiss)
+                     ENDDO
+
+                     IF (buff_p(N_URB) > 0) THEN
+                        buff_count(N_URB) = imiss - sum(buff_count(1:N_URB-1))
+                     ELSE
+                        buff_count(N_URB-1) = buff_count(N_URB-1) + imiss - sum(buff_count(1:N_URB-1))
+                     ENDIF
+
+                     ! URBAN ID are assigned based on the previously calculated number
                      DO ib = 1, size(ibuff)
                         IF (ibuff(ib)<1 .or. ibuff(ib)>N_URB) THEN
                            type_loop: DO iurb = 1, N_URB

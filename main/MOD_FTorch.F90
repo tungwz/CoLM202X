@@ -73,7 +73,7 @@ CONTAINS
 
       nsample = SIZE(in_data, 1)
       nfeat   = SIZE(in_data, 2)
-      IF (nfeat /= 6) STOP 'FTorch_routine: in_data must have 5 features per sample'
+      IF (nfeat /= 6) STOP 'FTorch_routine: in_data must have 6 features per sample'
 
       CALL ensure_bound(nsample)
 

@@ -269,6 +269,7 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
             forc_frl(i)     ,forc_hgt_u(i)   ,forc_hgt_t(i)   ,forc_hgt_q(i)   ,&
             forc_rhoair(i)  ,Fhac(u)         ,Fwst(u)         ,Fach(u)         ,&
             Fahe(u)         ,Fhah(u)         ,vehc(u)         ,meta(u)         ,&
+            Fequ(u)                                                            ,&
 
           ! LAND SURFACE VARIABLES REQUIRED FOR RESTART
             z_sno_roof  (maxsnl+1:,u)        ,z_sno_gimp  (maxsnl+1:,u)        ,&
@@ -356,16 +357,10 @@ IF (DEF_USE_FTorch) THEN
            finput(u,1) = pop_den(u)
            finput(u,2) = hroof  (u)
            finput(u,3) = froof  (u)
-           finput(u,4) = tafu   (u)
-           ! finput(u,4) = forc_t (i)
-#ifndef SinglePoint
-           ! finput(u,5) = Fahe   (u)*elm_patch%subfrc(i)
-#else
-           ! finput(u,5) = Fahe   (u)
-#endif
+           finput(u,4) = tref   (i)
+!           finput(u,4) = forc_t (i)
            finput(u,5) = Fahe   (u)
            finput(u,6) = ihour
-           ! finput(u,7) = patchlatr(i)*180/PI
 ENDIF
 
          ENDIF
@@ -410,9 +405,9 @@ IF (DEF_USE_FTorch) THEN
          vehc = foutput(:,1)*vehc/Fahe
       END WHERE
 
-      WHERE (meta>0._sp .and. Fahe>0._sp)
-         meta = foutput(:,1)*meta/Fahe
-      END WHERE
+!      WHERE (meta>0._sp .and. Fahe>0._sp)
+!         meta = foutput(:,1)*meta/Fahe
+!      END WHERE
 ENDIF
 
 END SUBROUTINE CoLMDRIVER

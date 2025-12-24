@@ -167,7 +167,7 @@ CONTAINS
    logical,  allocatable ::  filter_dt  (:)
 
 #ifdef CROP
-   type(block_data_real8_2d) :: sumarea_crop                        
+   type(block_data_real8_2d) :: sumarea_crop
    type(block_data_real8_2d) :: sumarea_irrig
    logical,  allocatable ::  filter_crop (:)
    logical,  allocatable ::  filter_irrig (:)
@@ -892,6 +892,10 @@ ENDIF
             a_fhah, file_hist, 'f_fhah', itime_in_file, sumarea_urb, filter_urb, &
             'flux from heating/cooling [W/m2]','W/m2')
 
+         CALL write_history_variable_urb_2d ( DEF_hist_vars%fequ, &
+            a_fequ, file_hist, 'f_fequ', itime_in_file, sumarea_urb, filter_urb, &
+            'flux from baseloading [W/m2]','W/m2')
+
          ! flux from metabolism [W/m2]
          CALL write_history_variable_urb_2d ( DEF_hist_vars%meta, &
             a_meta, file_hist, 'f_fmeta', itime_in_file, sumarea_urb, filter_urb, &
@@ -1486,7 +1490,7 @@ ENDIF
             CALL write_history_variable_2d ( DEF_hist_vars%reservoirriver_demand, &
                vecacc, file_hist, 'f_reservoirriver_demand', itime_in_file, sumarea_irrig, filter_irrig, &
                'irrigation demand for reservoir or river','kg/m2')
-            
+
             ! irrigation supply from reservoir or river [kg/m2]
             IF (p_is_worker) THEN
                IF (numpatch > 0) THEN
@@ -1496,7 +1500,7 @@ ENDIF
             CALL write_history_variable_2d ( DEF_hist_vars%reservoirriver_supply, &
                vecacc, file_hist, 'f_reservoirriver_supply', itime_in_file, sumarea_irrig, filter_irrig, &
                'irrigation supply from reservoir or river','kg/m2')
-            
+
             ! irrigation supply from reservoir [kg/m2]
             IF (p_is_worker) THEN
                IF (numpatch > 0) THEN
@@ -1516,7 +1520,7 @@ ENDIF
             CALL write_history_variable_2d ( DEF_hist_vars%reservoirriver_supply, &
                vecacc, file_hist, 'f_river_supply', itime_in_file, sumarea_irrig, filter_irrig, &
                'irrigation supply from river','kg/m2')
-            
+
             ! irrigation supply from runoff [kg/m2]
             IF (p_is_worker) THEN
                IF (numpatch > 0) THEN
@@ -1525,7 +1529,7 @@ ENDIF
             ENDIF
             CALL write_history_variable_2d ( DEF_hist_vars%reservoirriver_supply, &
                vecacc, file_hist, 'f_runoff_supply', itime_in_file, sumarea_irrig, filter_irrig, &
-               'irrigation supply from runoff','kg/m2')   
+               'irrigation supply from runoff','kg/m2')
          ENDIF
 #endif
 

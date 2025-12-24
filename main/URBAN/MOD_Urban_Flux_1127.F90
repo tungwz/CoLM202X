@@ -685,17 +685,18 @@ CONTAINS
             ! 06/20/2021, yuan: account for Anthropogenic heat
             ! 92% heat release as SH, Pigeon et al., 2007
 
-            Hahe(2) = 4*hlr/(4*hlr+1)*(Fhac+Fwst)*fsh + Fach + vehc*fsh + meta
-            Hahe(3) = 1/(4*hlr+1)*(Fhac+Fwst)*fsh
+!            Hahe(2) = 4*hlr/(4*hlr+1)*(Fhac+Fwst)*fsh + Fach + vehc*fsh + meta
+            Hahe(2) = 4*hlr/(4*hlr+1)*(Fhac)*fsh + Fach + vehc*fsh + meta
+            Hahe(3) = 1/(4*hlr+1)*(Fhac)*fsh
 
             bT     = fg/(rd(3) * (1/rah+fg/rd(3)+fc(0)/rb(0)))
             cT     = fg/rd(3) + fg/rd(2) + fc(1)/rb(1) + fc(2)/rb(2)
             aT     = (thm/rah + tu(0)*fc(0)/rb(0) + Hahe(3)/(rhoair*cpair))*bT
 
             taf(2) = (aT + tg*fg/rd(2) + tu(1)*fc(1)/rb(1) + tu(2)*fc(2)/rb(2) &
-                     + Hahe(2)/(rhoair*cpair)) / (cT - bT*fg/rd(3))
+                     + Hahe(2)/(rhoair*cpair)) / (cT * (1- bT*fg/(cT*rd(3))))
 
-            taf(3) = (thm/rah +  taf(2)*fg/rd(3) + tu(0)*fc(0)/rb(0) + Hahe(3)/(rhoair*cpair)) &
+            taf(3) = (taf(2)*fg/rd(3) + thm/rah + tu(0)*fc(0)/rb(0) + Hahe(3)/(rhoair*cpair)) &
                      / (1/rah + fg/rd(3) + fc(0)/rb(0))
 
             IF (qgper < qaf(2)) THEN
@@ -705,15 +706,15 @@ CONTAINS
               rss_ = rss
             ENDIF
 
-            Lahe   = (Fhac + Fwst + vehc)*flh
+            Lahe   = (Fhac + vehc)*flh
             cQ     = fg/rd(3) + fg*fgper/(rd(2)+rss_) + fwet_gimp*fg*fgimp/rd(2)
             bQ     = fg/(rd(3) * (1/raw+fg/rd(3)+fwet_roof*fc(0)/rb(0)))
             aQ     = (qm/raw + qsatl(0)*fwet_roof*fc(0)/rb(0))*bQ
 
-            qaf(2) = (aQ + qgper*fg*fgper/(rd(2)+rss_) + qgimp*fwet_gimp*fg*fgimp/rd(2) &
-                     + Lahe/rhoair/hvap) / (cQ-bQ*fg/rd(3))
+            qaf(2) = (aQ + qgper*fgper*fg/(rd(2)+rss_) + qgimp*fwet_gimp*fgimp*fg/rd(2) &
+                     + Lahe/rhoair/hvap) / (cQ * (1-bQ*fg/(cQ*rd(3))))
 
-            qaf(3) = (qm/raw + qaf(2)*fg/rd(3) + qsatl(0)*fwet_roof*fc(0)/rb(0)) &
+            qaf(3) = (qaf(2)*fg/rd(3) + qm/raw + qsatl(0)*fwet_roof*fc(0)/rb(0)) &
                      / (1/raw + fg/rd(3) + fwet_roof*fc(0)/rb(0))
 
          ENDIF
@@ -799,15 +800,15 @@ CONTAINS
       cQ     = fg/rd(3) + fg*fgper/(rd(2)+rss_) + fwet_gimp*fg*fgimp/rd(2)
 
       cwsuns = rhoair*cpair/rb(1) &
-             * ( 1. - fc(1) / (rb(1)*(cT-bT*fg/rd(3))) )
+             * ( 1. - fc(1) / (cT*rb(1)*(1-bT*fg/(cT*rd(3)))) )
       cwshas = rhoair*cpair/rb(2) &
-             * ( 1. - fc(2) / (rb(2)*(cT-bT*fg/rd(3))) )
+             * ( 1. - fc(2) / (cT*rb(2)*(1-bT*fg/(cT*rd(3)))) )
       croofs = rhoair*cpair/rb(0) &
-             * ( 1. - fc(0)*bT*bT / (rb(0)*(cT-bT*fg/rd(3))) &
+             * ( 1. - fc(0)*bT*bT / (cT*rb(0)*(1-bT*fg/(cT*rd(3)))) &
                     - fc(0) / (rb(0)*(1/rah+fg/rd(3)+fc(0)/rb(0))) )
 
       croofl = rhoair*fwet_roof/rb(0)*qsatldT(0) &
-             * ( 1. - fwet_roof*fc(0)*bQ*bQ / (rb(0)*(cQ-bQ*fg/rd(3))) &
+             * ( 1. - fwet_roof*fc(0)*bQ*bQ / (cQ*rb(0)*(1-bQ*fg/(cQ*rd(3)))) &
                     - fwet_roof*fc(0) / (rb(0)*(1/raw+fg/rd(3)+fwet_roof*fc(0)/rb(0))) )
 
       croof  = croofs + croofl*htvp_roof
@@ -840,12 +841,12 @@ CONTAINS
 ! Derivative of soil energy flux with respect to soil temperature (cgrnd)
 !-----------------------------------------------------------------------
 
-      cgrnds = cpair*rhoair/rd(2)*( 1. - fg/(rd(2)*(cT-bT*fg/rd(3))) )
+      cgrnds = cpair*rhoair/rd(2)*( 1. - fg/(cT*rd(2)*(1-bT*fg/(cT*rd(3)))) )
 
       cgperl = rhoair/(rd(2)+rss_)   &
-             * dqgperdT*( 1 - fg*fgper/((rd(2)+rss_)*(cQ-bQ*fg/rd(3))) )
+             * dqgperdT*( 1 - fg*fgper/(cQ*(rd(2)+rss_)*(1-bQ*fg/(cQ*rd(3)))) )
       cgimpl = rhoair*fwet_gimp/rd(2)&
-             * dqgimpdT*( 1 - fwet_gimp*fg*fgimp/(rd(2)*(cQ-bQ*fg/rd(3))) )
+             * dqgimpdT*( 1 - fwet_gimp*fg*fgimp/(cQ*rd(2)*(1-bQ*fg/(cQ*rd(3)))) )
 
       cgimp  = cgrnds + cgimpl*htvp_gimp
       cgper  = cgrnds + cgperl*htvp_gper
@@ -1807,11 +1808,11 @@ ENDIF
             Hahe(3) = 1/(4*hlr+1)*(Fhac+Fwst)*fsh
 
             bT     = fg/(rd(3) * (1/rah+fg/rd(3)+fc(0)/rb(0)))
-            aT     = (thm/rah + tu(0)*fc(0)/rb(0) + Hahe(3)/(rhoair*cpair))*bT
             cT     = fg/rd(3) + fg/rd(2) + fc(1)/rb(1) + fc(2)/rb(2) + fc(3)*lsai/rb(3)
+            aT     = (thm/rah + tu(0)*fc(0)/rb(0) + Hahe(3)/(rhoair*cpair))*bT
 
             taf(2) = (aT + tg*fg/rd(2) + tu(1)*fc(1)/rb(1) + tu(2)*fc(2)/rb(2) &
-                   + tu(3)*fc(3)*lsai/rb(3) + Hahe(2)/(rhoair*cpair)) / (cT - bT*fg/rd(3))
+                   + tu(3)*fc(3)*lsai/rb(3) + Hahe(2)/(rhoair*cpair)) / (cT * (1- bT*fg/(cT*rd(3))))
 
             taf(3) = (thm/rah + taf(2)*fg/rd(3) + tu(0)*fc(0)/rb(0) + Hahe(3)/(rhoair*cpair)) &
                    / (1/rah + fg/rd(3) + fc(0)/rb(0))
@@ -1824,13 +1825,13 @@ ENDIF
             ENDIF
 
             Lahe   = (Fhac + Fwst + vehc)*flh
-
+            cQ     = fg/rd(3) + fg*fgper/(rd(2)+rss_) + fwet_gimp*fg*fgimp/rd(2) + fc(3)/rv
             bQ     = fg/(rd(3) * (1/raw+fg/rd(3)+fwet_roof*fc(0)/rb(0)))
             aQ     = (qm/raw + qsatl(0)*fwet_roof*fc(0)/rb(0))*bQ
-            cQ     = fg/rd(3) + fg*fgper/(rd(2)+rss_) + fwet_gimp*fg*fgimp/rd(2) + fc(3)/rv
 
             qaf(2) = (aQ + qgper*fg*fgper/(rd(2)+rss_) + qgimp*fwet_gimp*fg*fgimp/rd(2) &
-                     + qsatl(3)*fc(3)/rv + Lahe/rhoair/hvap) / (cQ-bQ*fg/rd(3))
+                     + qsatl(3)*fc(3)/rv + Lahe/rhoair/hvap) &
+                     / (cQ * (1-bQ*fg/(cQ*rd(3))))
 
             qaf(3) = (qm/raw + qaf(2)*fg/rd(3) + qsatl(0)*fwet_roof*fc(0)/rb(0)) &
                      / (1/raw + fg/rd(3) + fwet_roof*fc(0)/rb(0))
@@ -1915,7 +1916,7 @@ ENDIF
 
          IF (botlay == 2) THEN
             fsenl_dtl = rhoair * cpair * lsai/rb(3) &
-                      * ( 1. - fc(3)*lsai/(rb(3)*(cT-bT*fg/rd(3))) )
+                      * ( 1. - fc(3)*lsai/(rb(3)*cT*(1-bT*fg/(cT*rd(3)))) )
          ELSE
             fsenl_dtl = rhoair * cpair * lsai/rb(3) &
                       * ( 1. - fc(3)*lsai*aT*aT/(rb(3)*cT*(1-aT*fg/(cT*rd(2))-bT*fg/(cT*rd(3)))) &
@@ -1929,7 +1930,7 @@ ENDIF
 
          IF (botlay == 2) THEN
             etr_dtl = rhoair * (1.-fwet) * delta * lai/(rb(3)+rs) &
-                    * (1.-fc(3)/(rv*(cQ-bQ*fg/rd(3)))) &
+                    * (1.-fc(3)/(cQ*rv*(1-bQ*fg/(cQ*rd(3))))) &
                     * qsatldT(3)
          ELSE
             etr_dtl = rhoair * (1.-fwet) * delta * lai/(rb(i)+rs) &
@@ -1955,7 +1956,7 @@ ENDIF
 
          IF (botlay == 2) THEN
             evplwet_dtl = rhoair * (1.-delta*(1.-fwet)) * lsai/rb(3) &
-                        * (1.-fc(3)/(rv*(cQ-bQ*fg/rd(3)))) &
+                        * (1.-fc(3)/(cQ*rv*(1-bQ*fg/(cQ*rd(3))))) &
                         * qsatldT(3)
          ELSE
             evplwet_dtl = rhoair * (1.-delta*(1.-fwet)) * lsai/rb(i) &
@@ -2086,11 +2087,11 @@ ENDIF
             Hahe(3) = 1/(4*hlr+1)*(Fhac+Fwst)*fsh
 
             bT     = fg/(rd(3) * (1/rah+fg/rd(3)+fc(0)/rb(0)))
-            aT     = (thm/rah + tu(0)*fc(0)/rb(0) + Hahe(3)/(rhoair*cpair))*bT
             cT     = fg/rd(3) + fg/rd(2) + fc(1)/rb(1) + fc(2)/rb(2) + fc(3)*lsai/rb(3)
+            aT     = (thm/rah + tu(0)*fc(0)/rb(0) + Hahe(3)/(rhoair*cpair))*bT
 
             taf(2) = (aT + tg*fg/rd(2) + tu(1)*fc(1)/rb(1) + tu(2)*fc(2)/rb(2) &
-                     + tu(3)*fc(3)*lsai/rb(3) + Hahe(2)/(rhoair*cpair)) / (cT - bT*fg/rd(3))
+                     + tu(3)*fc(3)*lsai/rb(3) + Hahe(2)/(rhoair*cpair)) / (cT * (1- bT*fg/(cT*rd(3))))
 
             taf(3) = (thm/rah + taf(2)*fg/rd(3) + tu(0)*fc(0)/rb(0) + Hahe(3)/(rhoair*cpair)) &
                      / (1/rah + fg/rd(3) + fc(0)/rb(0))
@@ -2103,13 +2104,12 @@ ENDIF
             ENDIF
 
             Lahe   = (Fhac + Fwst + vehc)*flh
-
+            cQ     = fg/rd(3) + fg*fgper/(rd(2)+rss_) + fwet_gimp*fg*fgimp/rd(2) + fc(3)/rv
             bQ     = fg/(rd(3) * (1/raw+fg/rd(3)+fwet_roof*fc(0)/rb(0)))
             aQ     = (qm/raw + qsatl(0)*fwet_roof*fc(0)/rb(0))*bQ
-            cQ     = fg/rd(3) + fg*fgper/(rd(2)+rss_) + fwet_gimp*fg*fgimp/rd(2) + fc(3)/rv
 
             qaf(2) = (aQ + qgper*fg*fgper/(rd(2)+rss_) + qgimp*fwet_gimp*fg*fgimp/rd(2) &
-                     + qsatl(3)*fc(3)/rv + Lahe/rhoair/hvap) / (cQ-bQ*fg/rd(3))
+                     + qsatl(3)*fc(3)/rv + Lahe/rhoair/hvap) / (cQ * (1-bQ*fg/(cQ*rd(3))))
 
             qaf(3) = (qm/raw + qaf(2)*fg/rd(3) + qsatl(0)*fwet_roof*fc(0)/rb(0)) &
                      / (1/raw + fg/rd(3) + fwet_roof*fc(0)/rb(0))
@@ -2457,21 +2457,21 @@ ENDIF
          bT     = fg/(rd(3) * (1/rah+fg/rd(3)+fc(0)/rb(0)))
          cT     = fg/rd(3) + fg/rd(2) + fc(1)/rb(1) + fc(2)/rb(2) + fc(3)*lsai/rb(3)
 
-         bQ     = fg/(rd(3) * (1/raw+fg/rd(3)+fwet_roof*fc(0)/rb(0)))
          cQ     = fg/rd(3) + fg*fgper/(rd(2)+rss_) + fwet_gimp*fg*fgimp/rd(2) + fc(3)/rv
+         bQ     = fg/(rd(3) * (1/raw+fg/rd(3)+fwet_roof*fc(0)/rb(0)))
 
          cwsuns = rhoair*cpair/rb(1) &
-                  *( 1. - fc(1)/(rb(1)*(cT-bT*fg/rd(3))) )
+                  *( 1. - fc(1)/(cT*rb(1)*(1-bT*fg/(cT*rd(3)))) )
 
          cwshas = rhoair*cpair/rb(2) &
-                  *( 1. - fc(2)/(rb(2)*(cT-bT*fg/rd(3))) )
+                  *( 1. - fc(2)/(cT*rb(2)*(1-bT*fg/(cT*rd(3)))) )
 
          croofs = rhoair*cpair/rb(0) &
-                  *( 1. - fc(0)*bT*bT / (rb(0)*(cT-bT*fg/rd(3))) &
+                  *( 1. - fc(0)*bT*bT / (cT*rb(0)*(1-bT*fg/(cT*rd(3)))) &
                         - fc(0) / (rb(0)*(1/rah+fg/rd(3)+fc(0)/rb(0))) )
 
          croofl = rhoair*fwet_roof/rb(0)*qsatldT(0) &
-                  * ( 1. - fwet_roof*fc(0)*bQ*bQ / (rb(0)*(cQ-bQ*fg/rd(3))) &
+                  * ( 1. - fwet_roof*fc(0)*bQ*bQ / (cQ*rb(0)*(1-bQ*fg/(cQ*rd(3)))) &
                          - fwet_roof*fc(0) / (rb(0)*(1/raw+fg/rd(3)+fwet_roof*fc(0)/rb(0))) )
 
          croof  = croofs + croofl*htvp_roof
@@ -2517,10 +2517,10 @@ ENDIF
 !-----------------------------------------------------------------------
 
       IF (botlay == 2) THEN
-         cgrnds = cpair*rhoair/rd(2)*( 1. - fg/(rd(2)*(cT-bT*fg/rd(3))) )
+         cgrnds = cpair*rhoair/rd(2)*( 1. - fg/(cT*rd(2)*(1-bT*fg/(cT*rd(3)))) )
 
-         cgperl = rhoair/(rd(2)+rss_)*dqgperdT*( 1-fg*fgper/((rd(2)+rss_)*(cQ-bQ*fg/rd(3))) )
-         cgimpl = rhoair/rd(2)       *dqgimpdT*( 1-fwet_gimp*fg*fgimp/(rd(2)*(cQ-bQ*fg/rd(3))) )
+         cgperl = rhoair/(rd(2)+rss_)*dqgperdT*(1-fg*fgper/(cQ*(rd(2)+rss_)*(1-bQ*fg/(cQ*rd(3)))) )
+         cgimpl = rhoair/rd(2)       *dqgimpdT*(1-fwet_gimp*fg*fgimp/(cQ*rd(2)*(1-bQ*fg/(cQ*rd(3)))) )
          cgimpl = cgimpl*fwet_gimp
 
       ELSE !botlay == 1

@@ -481,7 +481,7 @@ CONTAINS
             trda,     &! temperature coefficient in gs-a model             (1.3)
             trdm,     &! temperature coefficient in gs-a model             (328.16)
             psrf       ! surface atmospheric pressure (pa)
-            
+
    integer, intent(in) :: &
             c3c4       ! 1 for c3, 0 for c4
 
@@ -570,6 +570,7 @@ CONTAINS
       epar = min(4.6e-6 * par * effcon, jmax)
 
       respcp = 0.015 * c3 + 0.025 * c4
+!      IF (tlef>400) write(6,*) ( 1. + exp( trda*(tlef-trdm )) ), tlef, trda, trdm
       respc = respcp * vmax25 * 2.0**qt / ( 1. + exp( trda*(tlef-trdm )) ) * rstfac
 !     respc = 0.7e-6 * 2.0**qt / ( 1. + exp( trda*(tlef-trdm )) ) * rstfac
       respc = respc * cint(1)

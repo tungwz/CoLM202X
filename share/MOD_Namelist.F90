@@ -139,7 +139,7 @@ MODULE MOD_Namelist
 
    ! ----- rawdata definition -----
 
-   character(len=256) :: DEF_rawdata_namelist  = 'path/to/rawdata/namelist'
+   character(len=256) :: DEF_rawdata_namelist  = '/tera12/yuanhua/dongwz/github/master/CoLM-FTorch/CoLM202X/run/rawdata/colm500m.nml'
 
    type :: datainfo
       character(len=256) :: dir   = 'dir related to rawdata dir'
@@ -271,7 +271,8 @@ MODULE MOD_Namelist
    logical :: DEF_USE_CANYON_HWR    = .true.
    logical :: DEF_USE_FTorch        = .false.
 
-   character(len=256) :: DEF_Torchmodel = 'null'
+   character(len=256) :: DEF_Torchmodel = &
+   '/tera12/yuanhua/dongwz/github/master/CoLM-FTorch/CoLM202X/pytorch/Flaml_cycle/lgbm_hb_logtarget_ts_AHE_gt5.pt'
 
 ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ! ----- Part 11: parameterization schemes -----
@@ -617,6 +618,7 @@ MODULE MOD_Namelist
       logical :: fwst                             = .true.
       logical :: fach                             = .true.
       logical :: fhah                             = .true.
+      logical :: fequ                             = .true.
       logical :: meta                             = .true.
       logical :: vehc                             = .true.
       logical :: t_room                           = .true.
@@ -2046,6 +2048,7 @@ ENDIF
       CALL sync_hist_vars_one (DEF_hist_vars%fwst        , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%fach        , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%fhah        , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%fequ        , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%meta        , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%vehc        , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%t_room      , set_defaults)

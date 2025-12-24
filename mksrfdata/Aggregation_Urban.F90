@@ -304,26 +304,27 @@ IF (DEF_URBAN_type_scheme == 1) THEN
                WHERE(reg_typid_one==0) reg_typid_one = num_max_frequency(reg_typid_one)
             ENDIF
 
-            WHERE (wt_roof_one <= 0)
+            IF (all(wt_roof_one <= 0) .or. all(ht_roof_one <= 0)) THEN
                wt_roof_one = wtroof_ncar(urb_typidx,reg_typid_one)
-            END WHERE
-
-            WHERE (ht_roof_one <= 0)
                ht_roof_one = htroof_ncar(urb_typidx,reg_typid_one)
-            END WHERE
+            END IF
 
-            WHERE (f_gper_one < 0)
+            IF (all(f_gper_one < 0)) THEN
                f_gper_one = fgper_ncar(urb_typidx,reg_typid_one)
-            END WHERE
+            END IF
 
 IF(DEF_USE_CANYON_HWR) THEN
             hlr_bld_one = -999.
 ENDIF
 
-            WHERE (hlr_bld_one<=0 .or. hlr_bld_one>5)
+            WHERE (hlr_bld_one<=0 .or. hlr_bld_one>=5)
                hlr_bld_one = hwrbld_ncar(urb_typidx,reg_typid_one) &
                            *(1-sqrt(wtroof_ncar(urb_typidx,reg_typid_one))) &
                            /sqrt(wtroof_ncar(urb_typidx,reg_typid_one))
+            END WHERE
+
+            WHERE (wt_roof_one<0 .or. ht_roof_one<0 .or. f_gper_one<0)
+               area_one = 0
             END WHERE
 
 ELSE IF (DEF_URBAN_type_scheme == 2) THEN
@@ -333,15 +334,12 @@ ELSE IF (DEF_URBAN_type_scheme == 2) THEN
                grid_in3 = grid_roof , data_r8_2d_in3 = hlr   , data_r8_2d_out3 = hlr_bld_one, &
                grid_in4 = grid_fgper, data_r8_2d_in4 = fgper , data_r8_2d_out4 = f_gper_one)
 
-            WHERE (wt_roof_one <= 0)
+            IF (all(wt_roof_one <= 0) .or. all(ht_roof_one <= 0)) THEN
                wt_roof_one = wtroof_lcz(urb_typidx)
-            END WHERE
-
-            WHERE (ht_roof_one <= 0)
                ht_roof_one = htroof_lcz(urb_typidx)
-            END WHERE
+            END IF
 
-            WHERE (f_gper_one < 0)
+            WHERE (f_gper_one <= 0)
                f_gper_one = fgper_lcz(urb_typidx) / (1-wtroof_lcz(urb_typidx))
             END WHERE
 
@@ -349,11 +347,16 @@ IF(DEF_USE_CANYON_HWR) THEN
             hlr_bld_one = -999.
 ENDIF
 
-           WHERE (hlr_bld_one<=0 .or. hlr_bld_one>5)
+            WHERE (hlr_bld_one<=0 .or. hlr_bld_one>=5)
                hlr_bld_one = hwrbld_lcz(urb_typidx) &
                            *(1-sqrt(wtroof_lcz(urb_typidx))) &
                            /sqrt(wtroof_lcz(urb_typidx))
             END WHERE
+
+            WHERE (wt_roof_one<0 .or. ht_roof_one<0)
+               area_one = 0
+            END WHERE
+
 ENDIF
             ! area-weight average
             pct_roof(iurban) = sum(wt_roof_one * area_one) / sum(area_one)
@@ -363,7 +366,6 @@ ENDIF
 
             f_gimp  (iurban) = 1. - f_gper(iurban)
             f_isa   (iurban) = f_gimp(iurban)*(1.-pct_roof(iurban)) + pct_roof(iurban)
-
          ENDDO
 
 #ifdef USEMPI
@@ -432,7 +434,7 @@ ENDIF
       IF (p_is_io) THEN
 
          landdir= trim(DEF_dir_rawdata) // trim(DEF_rawdata%urban_fveg%dir)
-         fname  = trim(DEF_rawdata%urban_fveg%fname) // '.' // trim(c5year)
+         fname  = trim(DEF_rawdata%urban_fveg%fname) // '.' // '2015'!trim(c5year)
 
          CALL allocate_block_data (grid_pctt, fvegu)
          CALL read_5x5_data (landdir, fname, grid_pctt, "PCT_Tree", fvegu)
@@ -474,7 +476,6 @@ ENDIF
 
             ! area-weighted average
             IF (sum(area_one) > 0._r8) THEN
-               ! print*, sum(area_one)
                pct_tree(iurban) = sum(fvegu_one * area_one) / sum(area_one)
                htop_urb(iurban) = sum(htopu_one * area_one * fvegu_one) / sum(area_one * fvegu_one)
             ENDIF
@@ -849,7 +850,7 @@ ENDIF
          CALL allocate_block_data (grid_pop, pop)
 
          landdir = TRIM(dir_rawdata) // trim(DEF_rawdata%urban_pop%dir)
-         fname  = trim(DEF_rawdata%urban_pop%fname) // '.' // trim(c5year)
+         fname  = trim(DEF_rawdata%urban_pop%fname) // '.' // trim(cyear)
 
          ! population data is year by year,
          ! so pop_i is calculated to determine the dimension of POP data reads
@@ -860,7 +861,7 @@ ENDIF
          ENDIF
 
          ! read the population data of total 5x5 region
-         ! CALL read_5x5_data_time (landdir, fname, grid_500m, "POP_DEN", pop_i, pop)
+         !CALL read_5x5_data_time (landdir, fname, grid_pop, "POP_density", pop_i, pop)
          CALL read_5x5_data (landdir, fname, grid_pop, "POP_density", pop)
 
 #ifdef USEMPI
@@ -881,7 +882,7 @@ ENDIF
             CALL aggregation_request_data (landurban, iurban, grid_pop, zip = USE_zip_for_aggregation, &
                area = area_one, data_r8_2d_in1 = pop, data_r8_2d_out1 = pop_one)
 
-            WHERE (pop_one < 0)
+            WHERE (pop_one <= 0)
                area_one = 0
             END WHERE
             ! area-weighted average

@@ -5,6 +5,7 @@ MODULE MOD_Urban_BEM
    USE MOD_Precision
    USE MOD_Vars_Global
    USE MOD_Const_Physical
+   USE MOD_Namelist, only: DEF_simulation_time
    USE MOD_TimeManager
    USE MOD_Urban_Const_LCZ
    USE MOD_Urban_Shortwave, only: MatrixInverse
@@ -19,12 +20,12 @@ MODULE MOD_Urban_BEM
 CONTAINS
 
 !-----------------------------------------------------------------------
-   SUBROUTINE SimpleBEM (idate, deltim, patchlonr, rhoair, fcover, H, troom_max, troom_min, Hequ, weekend, &
+   SUBROUTINE SimpleBEM (ipatch, idate, deltim, patchlonr, rhoair, fcover, H, troom_max, troom_min, urb_type, weekend, &
                          troof_nl_bef, twsun_nl_bef, twsha_nl_bef, &
                          troof_nl, twsun_nl, twsha_nl, &
                          tkdz_roof, tkdz_wsun, tkdz_wsha, taf, &
                          troom, troof_inner, twsun_inner, twsha_inner, &
-                         Fhac, Fwst, Fach, Fhah)
+                         Fhac, Fwst, Fach, Fhah, Fequ)
 
 !-----------------------------------------------------------------------
 !
@@ -79,6 +80,8 @@ CONTAINS
 
 !-------------------------- Dummy Arguments ----------------------------
    integer , intent(in) :: &
+      ipatch, &
+      urb_type,&
       idate(3)            ! calendar (year, julian day, seconds)
 
    real(r8), intent(in) :: &
@@ -89,7 +92,6 @@ CONTAINS
         H,               &! average building height [m]
         troom_max,       &! maximum temperature of inner building
         troom_min,       &! minimum temperature of inner building
-        Hequ,            &
         weekend(24),     &
         troof_nl_bef,    &! roof temperature at layer nl_roof
         twsun_nl_bef,    &! sunlit wall temperature at layer nl_wall
@@ -112,7 +114,8 @@ CONTAINS
         Fhah,            &! flux from heating
         Fhac,            &! flux from heat or cool AC
         Fwst,            &! waste heat from cool or heat
-        Fach              ! flux from air exchange
+        Fach,            &! flux from air exchange
+        Fequ
 
 !-------------------------- Local Variables ----------------------------
    real(r8) :: &
@@ -135,27 +138,30 @@ CONTAINS
         X(4)              ! x for Ax=B
 
    real(r8) :: &
+        Hequ,            &
         londeg,          &
-        Fequ,            &
+        AC_factor,       &
+        Fadj,            &
         troom_pro,       &! projected room temperature
         troom_bef,       &! temperature of inner building
         troof_inner_bef, &! temperature of inner roof
         twsun_inner_bef, &! temperature of inner sunlit wall
         twsha_inner_bef   ! temperature of inner shaded wall
 
-   integer :: nl_floor, tloc
+   integer :: nl_floor, tloc, s_heating, e_heating
    logical :: cooling, heating
 
-   real(r8), parameter :: ht_floor = 3.0
    ! Option for continuous AC
    logical, parameter :: Constant_AC = .true.
+   logical, parameter :: Effective_AC= .true.
 
 !-----------------------------------------------------------------------
 
       ACH = 0.3           !air exchange coefficient
       hcv_roof   = 4.040  !convective exchange coefficient for roof<->room (W m-2 K-1)
       hcv_wall   = 3.076  !convective exchange coefficient for wall<->room (W m-2 K-1)
-      waste_cool = 0.6    !waste heat for AC cooling
+      waste_cool = 0.3    !waste heat for AC cooling
+      !waste_cool = 0.6    !waste heat for AC cooling
       waste_heat = 0.2    !waste heat for AC heating
       cooling = .false.   !cooling case
       heating = .false.   !heating case
@@ -173,14 +179,14 @@ CONTAINS
          CALL gmt2local(idate, londeg, ldate)
       ENDIF
 
-      tloc = CEILING(ldate(3)*1./3600)
+      tloc = ceiling(ldate(3)*1./3600)
 
       IF (maxval(weekend)==0) THEN
-         Fequ = H*Hequ*Equ_scator(tloc)
+         Fequ = H*1!*Equ_scator(tloc)
       ELSE
-         Fequ = H*Hequ*weekend(tloc)/maxval(weekend)
+         Fequ = H*1!*weekend(tloc)/maxval(weekend)
       ENDIF
-      Fequ = 0
+!      Fequ = 0
 
       ! Ax = B
       ! set values for heat transfer matrix
@@ -239,7 +245,7 @@ CONTAINS
          Fhac  = 0.
       ENDIF
 
-      ! for constant cooling or heating
+       ! for constant cooling or heating
       IF ((troom_pro>troom_max .or. troom_pro<troom_min) .and. Constant_AC) THEN
 
          IF (troom_pro > troom_max) THEN !cooling case
@@ -267,24 +273,75 @@ CONTAINS
          Fhac = 0.5*hcv_wall*(twsha_inner_bef-troom_bef)*f_wsha &
               + 0.5*hcv_wall*(twsha_inner-troom)*f_wsha + Fhac
 
-         IF ( heating ) THEN
-            IF (maxval(weekend)==0) THEN
-               Fhac = Fhac!*Equ_scator(tloc) + Fequ
-            ELSE
-               Fhac = Fhac!*weekend(tloc)/maxval(weekend) + Fequ
-            ENDIF
+!         AC_factor = sqrt(3./7. + exp(0.277*(taf-273.15)-8.09)/(1+exp(0.277*(taf-273.15)-8.09)))
+         IF (maxval(weekend)==0) THEN
+            AC_factor = Equ_scator(tloc)*scal_f(DEF_LC_YEAR-2000+1)
          ELSE
-            IF (maxval(weekend)==0) THEN
-               Fhac = Fhac!*Equ_scator(tloc) + Fequ
+            AC_factor = weekend(tloc)/maxval(weekend)*0.5*scal_f(DEF_LC_YEAR-2000+1)
+         ENDIF
+
+         IF (AC_factor > 1) AC_factor = 1
+
+!         IF ( Heating ) THEN
+!            IF (abs(Fhac) > cap_heat(urb_type)) Fhac = cap_heat(urb_type)*-1.
+!         ENDIF
+
+         IF ( Effective_AC ) THEN
+            Fhac = Fhac*AC_factor + Fequ
+
+            Fadj = Fhac - 0.5*hcv_roof*(troof_inner_bef-troom_bef) &
+                 - 0.5*hcv_wall*(twsun_inner_bef-troom_bef)*f_wsun &
+                 - 0.5*hcv_wall*(twsha_inner_bef-troom_bef)*f_wsha
+
+            Fadj = 0.5*hcv_roof*B(1)/A(1,1) &
+                 + 0.5*hcv_wall*B(2)/A(2,2)*f_wsun &
+                 + 0.5*hcv_wall*B(3)/A(3,3)*f_wsha - Fadj
+
+            troom= Fadj / &
+                 ( 0.5*hcv_roof*(A(1,4)/A(1,1)+1) &
+                 + 0.5*hcv_wall*(A(2,4)/A(2,2)+1)*f_wsun &
+                 + 0.5*hcv_wall*(A(3,4)/A(3,3)+1)*f_wsha &
+                 )
+
+            troof_inner = (B(1)-A(1,4)*troom)/A(1,1)
+            twsun_inner = (B(2)-A(2,4)*troom)/A(2,2)
+            twsha_inner = (B(3)-A(3,4)*troom)/A(3,3)
+
+            Fach = (ACH/3600.)*H*rhoair*cpair*(troom - taf)
+         ENDIF
+
+         IF ( heating ) THEN
+            IF ( isleapyear(int(ldate(1))) ) THEN
+               s_heating = 320
+               e_heating = 75
             ELSE
-               Fhac = Fhac!*weekend(tloc)/maxval(weekend) + Fequ
+               s_heating = 319
+               e_heating = 74
+            ENDIF
+
+            IF ( ldate(2)>=s_heating .or. ldate(2)<=e_heating ) THEN
+               IF (Fach > 0) THEN
+                  Fhac = abs(Fhac) + Fach
+               ELSE
+                  Fhac = abs(Fhac)
+               ENDIF
+            ELSE
+               Fhac = 0
+            ENDIF
+
+            Fhah = Fhac
+         ELSE
+            IF (Fach < 0) THEN
+               Fhac = abs(Fhac) + abs(Fach)
+            ELSE
+               Fhac = abs(Fhac)
             ENDIF
          ENDIF
 
-         IF ( heating ) Fhah = abs(Fhac)
-         Fhac = abs(Fhac) + abs(Fach)
          Fwst = Fhac*waste_coef
-         IF ( heating ) Fhac = 0.
+         IF ( heating ) THEN
+            Fhac = 0
+         ENDIF
 
       ENDIF
 
@@ -292,6 +349,7 @@ CONTAINS
       Fach = Fach*fcover(0)
       Fwst = Fwst*fcover(0)
       Fhac = Fhac*fcover(0)
+      Fequ = Fequ*fcover(0)
 
    END SUBROUTINE SimpleBEM
 
