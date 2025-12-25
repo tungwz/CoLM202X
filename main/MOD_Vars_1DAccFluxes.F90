@@ -111,10 +111,13 @@ MODULE MOD_Vars_1DAccFluxes
 
 #ifdef DataAssimilation
    real(r8), allocatable :: a_h2osoi_ens     (:,:,:)
-   real(r8), allocatable :: a_t_brt_ens      (:,:,:)
-   real(r8), allocatable :: a_t_brt            (:,:)
+   real(r8), allocatable :: a_t_brt_smap_ens (:,:,:)
+   real(r8), allocatable :: a_t_brt_fy3d_ens (:,:,:)
+   real(r8), allocatable :: a_t_brt_smap       (:,:)
+   real(r8), allocatable :: a_t_brt_fy3d       (:,:)
    real(r8), allocatable :: a_wliq_soisno_ens(:,:,:)
    real(r8), allocatable :: a_wice_soisno_ens(:,:,:)
+   real(r8), allocatable :: a_t_soisno_ens   (:,:,:)
 #endif
 
 #ifdef URBAN_MODEL
@@ -125,6 +128,7 @@ MODULE MOD_Vars_1DAccFluxes
    real(r8), allocatable :: a_fach      (:) !flux from inner and outer air exchange [W/m2]
    real(r8), allocatable :: a_fahe      (:) !flux from metabolic and vehicle [W/m2]
    real(r8), allocatable :: a_fhah      (:) !sensible flux from heating [W/m2]
+   real(r8), allocatable :: a_fequ      (:) !sensible flux from heating [W/m2]
    real(r8), allocatable :: a_vehc      (:) !flux from vehicle [W/m2]
    real(r8), allocatable :: a_meta      (:) !flux from metabolic [W/m2]
 
@@ -154,6 +158,22 @@ MODULE MOD_Vars_1DAccFluxes
    real(r8), allocatable :: a_tforc_24(:,:)
 #endif
 
+#if (defined LULC_IGBP_PFT || defined LULC_IGBP_PC)
+   real(r8), allocatable :: a_lai_enftemp      (:) !1
+   real(r8), allocatable :: a_lai_enfboreal    (:) !2
+   real(r8), allocatable :: a_lai_dnfboreal    (:) !3
+   real(r8), allocatable :: a_lai_ebftrop      (:) !4
+   real(r8), allocatable :: a_lai_ebftemp      (:) !5
+   real(r8), allocatable :: a_lai_dbftrop      (:) !6
+   real(r8), allocatable :: a_lai_dbftemp      (:) !7
+   real(r8), allocatable :: a_lai_dbfboreal    (:) !8
+   real(r8), allocatable :: a_lai_ebstemp      (:) !9
+   real(r8), allocatable :: a_lai_dbstemp      (:) !10
+   real(r8), allocatable :: a_lai_dbsboreal    (:) !11
+   real(r8), allocatable :: a_lai_c3arcgrass   (:) !12
+   real(r8), allocatable :: a_lai_c3grass      (:) !13
+   real(r8), allocatable :: a_lai_c4grass      (:) !14
+#endif
 
 #ifdef BGC
    real(r8), allocatable :: a_leafc              (:)
@@ -231,6 +251,34 @@ MODULE MOD_Vars_1DAccFluxes
    real(r8), allocatable :: a_gpp_c3arcgrass     (:) !12
    real(r8), allocatable :: a_gpp_c3grass        (:) !13
    real(r8), allocatable :: a_gpp_c4grass        (:) !14
+   real(r8), allocatable :: a_npp_enftemp      (:) !1
+   real(r8), allocatable :: a_npp_enfboreal    (:) !2
+   real(r8), allocatable :: a_npp_dnfboreal    (:) !3
+   real(r8), allocatable :: a_npp_ebftrop      (:) !4
+   real(r8), allocatable :: a_npp_ebftemp      (:) !5
+   real(r8), allocatable :: a_npp_dbftrop      (:) !6
+   real(r8), allocatable :: a_npp_dbftemp      (:) !7
+   real(r8), allocatable :: a_npp_dbfboreal    (:) !8
+   real(r8), allocatable :: a_npp_ebstemp      (:) !9
+   real(r8), allocatable :: a_npp_dbstemp      (:) !10
+   real(r8), allocatable :: a_npp_dbsboreal    (:) !11
+   real(r8), allocatable :: a_npp_c3arcgrass   (:) !12
+   real(r8), allocatable :: a_npp_c3grass      (:) !13
+   real(r8), allocatable :: a_npp_c4grass      (:) !14
+   real(r8), allocatable :: a_npptoleafc_enftemp      (:) !1
+   real(r8), allocatable :: a_npptoleafc_enfboreal    (:) !2
+   real(r8), allocatable :: a_npptoleafc_dnfboreal    (:) !3
+   real(r8), allocatable :: a_npptoleafc_ebftrop      (:) !4
+   real(r8), allocatable :: a_npptoleafc_ebftemp      (:) !5
+   real(r8), allocatable :: a_npptoleafc_dbftrop      (:) !6
+   real(r8), allocatable :: a_npptoleafc_dbftemp      (:) !7
+   real(r8), allocatable :: a_npptoleafc_dbfboreal    (:) !8
+   real(r8), allocatable :: a_npptoleafc_ebstemp      (:) !9
+   real(r8), allocatable :: a_npptoleafc_dbstemp      (:) !10
+   real(r8), allocatable :: a_npptoleafc_dbsboreal    (:) !11
+   real(r8), allocatable :: a_npptoleafc_c3arcgrass   (:) !12
+   real(r8), allocatable :: a_npptoleafc_c3grass      (:) !13
+   real(r8), allocatable :: a_npptoleafc_c4grass      (:) !14
    real(r8), allocatable :: a_leafc_enftemp      (:) !1
    real(r8), allocatable :: a_leafc_enfboreal    (:) !2
    real(r8), allocatable :: a_leafc_dnfboreal    (:) !3
@@ -548,11 +596,14 @@ CONTAINS
             allocate (a_o3uptakesha(numpatch))
 
 #ifdef DataAssimilation
-            allocate (a_h2osoi_ens            (1:nl_soil,DEF_DA_ENS,numpatch))
-            allocate (a_t_brt_ens                     (2,DEF_DA_ENS,numpatch))
-            allocate (a_t_brt                                    (2,numpatch))
-            allocate (a_wliq_soisno_ens(maxsnl+1:nl_soil,DEF_DA_ENS,numpatch))
-            allocate (a_wice_soisno_ens(maxsnl+1:nl_soil,DEF_DA_ENS,numpatch))
+            allocate (a_h2osoi_ens            (1:nl_soil,DEF_DA_ENS_NUM,numpatch))
+            allocate (a_t_brt_smap_ens                (2,DEF_DA_ENS_NUM,numpatch))
+            allocate (a_t_brt_fy3d_ens                (2,DEF_DA_ENS_NUM,numpatch))
+            allocate (a_t_brt_smap                                   (2,numpatch))
+            allocate (a_t_brt_fy3d                                   (2,numpatch))
+            allocate (a_wliq_soisno_ens(maxsnl+1:nl_soil,DEF_DA_ENS_NUM,numpatch))
+            allocate (a_wice_soisno_ens(maxsnl+1:nl_soil,DEF_DA_ENS_NUM,numpatch))
+            allocate (a_t_soisno_ens   (maxsnl+1:nl_soil,DEF_DA_ENS_NUM,numpatch))
 #endif
 
 #ifdef URBAN_MODEL
@@ -564,6 +615,7 @@ CONTAINS
                allocate (a_fach      (numurban))
                allocate (a_fahe      (numurban))
                allocate (a_fhah      (numurban))
+               allocate (a_fequ      (numurban))
                allocate (a_vehc      (numurban))
                allocate (a_meta      (numurban))
 
@@ -595,6 +647,22 @@ CONTAINS
 
                allocate (nac_24    (24,numurban))
             ENDIF
+#endif
+#if (defined LULC_IGBP_PFT || defined LULC_IGBP_PC)
+            allocate (a_lai_enftemp        (numpatch))
+            allocate (a_lai_enfboreal      (numpatch))
+            allocate (a_lai_dnfboreal      (numpatch))
+            allocate (a_lai_ebftrop        (numpatch))
+            allocate (a_lai_ebftemp        (numpatch))
+            allocate (a_lai_dbftrop        (numpatch))
+            allocate (a_lai_dbftemp        (numpatch))
+            allocate (a_lai_dbfboreal      (numpatch))
+            allocate (a_lai_ebstemp        (numpatch))
+            allocate (a_lai_dbstemp        (numpatch))
+            allocate (a_lai_dbsboreal      (numpatch))
+            allocate (a_lai_c3arcgrass     (numpatch))
+            allocate (a_lai_c3grass        (numpatch))
+            allocate (a_lai_c4grass        (numpatch))
 #endif
 #ifdef BGC
             allocate (a_leafc              (numpatch))
@@ -672,6 +740,34 @@ CONTAINS
             allocate (a_gpp_c3arcgrass     (numpatch)) !12
             allocate (a_gpp_c3grass        (numpatch)) !13
             allocate (a_gpp_c4grass        (numpatch)) !14
+            allocate (a_npp_enftemp        (numpatch)) !1
+            allocate (a_npp_enfboreal      (numpatch)) !2
+            allocate (a_npp_dnfboreal      (numpatch)) !3
+            allocate (a_npp_ebftrop        (numpatch)) !4
+            allocate (a_npp_ebftemp        (numpatch)) !5
+            allocate (a_npp_dbftrop        (numpatch)) !6
+            allocate (a_npp_dbftemp        (numpatch)) !7
+            allocate (a_npp_dbfboreal      (numpatch)) !8
+            allocate (a_npp_ebstemp        (numpatch)) !9
+            allocate (a_npp_dbstemp        (numpatch)) !10
+            allocate (a_npp_dbsboreal      (numpatch)) !11
+            allocate (a_npp_c3arcgrass     (numpatch)) !12
+            allocate (a_npp_c3grass        (numpatch)) !13
+            allocate (a_npp_c4grass        (numpatch)) !14
+            allocate (a_npptoleafc_enftemp        (numpatch)) !1
+            allocate (a_npptoleafc_enfboreal      (numpatch)) !2
+            allocate (a_npptoleafc_dnfboreal      (numpatch)) !3
+            allocate (a_npptoleafc_ebftrop        (numpatch)) !4
+            allocate (a_npptoleafc_ebftemp        (numpatch)) !5
+            allocate (a_npptoleafc_dbftrop        (numpatch)) !6
+            allocate (a_npptoleafc_dbftemp        (numpatch)) !7
+            allocate (a_npptoleafc_dbfboreal      (numpatch)) !8
+            allocate (a_npptoleafc_ebstemp        (numpatch)) !9
+            allocate (a_npptoleafc_dbstemp        (numpatch)) !10
+            allocate (a_npptoleafc_dbsboreal      (numpatch)) !11
+            allocate (a_npptoleafc_c3arcgrass     (numpatch)) !12
+            allocate (a_npptoleafc_c3grass        (numpatch)) !13
+            allocate (a_npptoleafc_c4grass        (numpatch)) !14
             allocate (a_leafc_enftemp      (numpatch)) !1
             allocate (a_leafc_enfboreal    (numpatch)) !2
             allocate (a_leafc_dnfboreal    (numpatch)) !3
@@ -997,10 +1093,13 @@ CONTAINS
 
 #ifdef DataAssimilation
             deallocate (a_h2osoi_ens     )
-            deallocate (a_t_brt_ens      )
-            deallocate (a_t_brt          )
+            deallocate (a_t_brt_smap_ens )
+            deallocate (a_t_brt_fy3d_ens )
+            deallocate (a_t_brt_fy3d     )
+            deallocate (a_t_brt_smap     )
             deallocate (a_wliq_soisno_ens)
             deallocate (a_wice_soisno_ens)
+            deallocate (a_t_soisno_ens   )
 #endif
 
 #ifdef URBAN_MODEL
@@ -1012,6 +1111,7 @@ CONTAINS
                deallocate (a_fach      )
                deallocate (a_fahe      )
                deallocate (a_fhah      )
+               deallocate (a_fequ      )
                deallocate (a_vehc      )
                deallocate (a_meta      )
 
@@ -1042,6 +1142,23 @@ CONTAINS
                deallocate (a_tforc_24  )
                deallocate (nac_24      )
             ENDIF
+#endif
+
+#if (defined LULC_IGBP_PFT || defined LULC_IGBP_PC)
+            deallocate (a_lai_enftemp        )
+            deallocate (a_lai_enfboreal      )
+            deallocate (a_lai_dnfboreal      )
+            deallocate (a_lai_ebftrop        )
+            deallocate (a_lai_ebftemp        )
+            deallocate (a_lai_dbftrop        )
+            deallocate (a_lai_dbftemp        )
+            deallocate (a_lai_dbfboreal      )
+            deallocate (a_lai_ebstemp        )
+            deallocate (a_lai_dbstemp        )
+            deallocate (a_lai_dbsboreal      )
+            deallocate (a_lai_c3arcgrass     )
+            deallocate (a_lai_c3grass        )
+            deallocate (a_lai_c4grass        )
 #endif
 
 #ifdef BGC
@@ -1120,6 +1237,34 @@ CONTAINS
             deallocate (a_gpp_c3arcgrass     ) !12
             deallocate (a_gpp_c3grass        ) !13
             deallocate (a_gpp_c4grass        ) !14
+            deallocate (a_npp_enftemp        ) !1
+            deallocate (a_npp_enfboreal      ) !2
+            deallocate (a_npp_dnfboreal      ) !3
+            deallocate (a_npp_ebftrop        ) !4
+            deallocate (a_npp_ebftemp        ) !5
+            deallocate (a_npp_dbftrop        ) !6
+            deallocate (a_npp_dbftemp        ) !7
+            deallocate (a_npp_dbfboreal      ) !8
+            deallocate (a_npp_ebstemp        ) !9
+            deallocate (a_npp_dbstemp        ) !10
+            deallocate (a_npp_dbsboreal      ) !11
+            deallocate (a_npp_c3arcgrass     ) !12
+            deallocate (a_npp_c3grass        ) !13
+            deallocate (a_npp_c4grass        ) !14
+            deallocate (a_npptoleafc_enftemp        ) !1
+            deallocate (a_npptoleafc_enfboreal      ) !2
+            deallocate (a_npptoleafc_dnfboreal      ) !3
+            deallocate (a_npptoleafc_ebftrop        ) !4
+            deallocate (a_npptoleafc_ebftemp        ) !5
+            deallocate (a_npptoleafc_dbftrop        ) !6
+            deallocate (a_npptoleafc_dbftemp        ) !7
+            deallocate (a_npptoleafc_dbfboreal      ) !8
+            deallocate (a_npptoleafc_ebstemp        ) !9
+            deallocate (a_npptoleafc_dbstemp        ) !10
+            deallocate (a_npptoleafc_dbsboreal      ) !11
+            deallocate (a_npptoleafc_c3arcgrass     ) !12
+            deallocate (a_npptoleafc_c3grass        ) !13
+            deallocate (a_npptoleafc_c4grass        ) !14
             deallocate (a_leafc_enftemp      ) !1
             deallocate (a_leafc_enfboreal    ) !2
             deallocate (a_leafc_dnfboreal    ) !3
@@ -1445,10 +1590,13 @@ CONTAINS
 
 #ifdef DataAssimilation
             a_h2osoi_ens     (:,:,:) = spval
-            a_t_brt_ens      (:,:,:) = spval
-            a_t_brt            (:,:) = spval
+            a_t_brt_smap_ens (:,:,:) = spval
+            a_t_brt_fy3d_ens (:,:,:) = spval
+            a_t_brt_fy3d       (:,:) = spval
+            a_t_brt_smap       (:,:) = spval
             a_wliq_soisno_ens(:,:,:) = spval
             a_wice_soisno_ens(:,:,:) = spval
+            a_t_soisno_ens   (:,:,:) = spval
 #endif
 
 #ifdef URBAN_MODEL
@@ -1460,6 +1608,7 @@ CONTAINS
                a_fach     (:) = spval
                a_fahe     (:) = spval
                a_fhah     (:) = spval
+               a_fequ     (:) = spval
                a_vehc     (:) = spval
                a_meta     (:) = spval
 
@@ -1492,6 +1641,22 @@ CONTAINS
             ENDIF
 #endif
 
+#if (defined LULC_IGBP_PFT || defined LULC_IGBP_PC)
+            a_lai_enftemp      (:) = spval
+            a_lai_enfboreal    (:) = spval
+            a_lai_dnfboreal    (:) = spval
+            a_lai_ebftrop      (:) = spval
+            a_lai_ebftemp      (:) = spval
+            a_lai_dbftrop      (:) = spval
+            a_lai_dbftemp      (:) = spval
+            a_lai_dbfboreal    (:) = spval
+            a_lai_ebstemp      (:) = spval
+            a_lai_dbstemp      (:) = spval
+            a_lai_dbsboreal    (:) = spval
+            a_lai_c3arcgrass   (:) = spval
+            a_lai_c3grass      (:) = spval
+            a_lai_c4grass      (:) = spval
+#endif
 #ifdef BGC
             a_leafc              (:) = spval
             a_leafc_storage      (:) = spval
@@ -1568,6 +1733,34 @@ CONTAINS
             a_gpp_c3arcgrass     (:) = spval
             a_gpp_c3grass        (:) = spval
             a_gpp_c4grass        (:) = spval
+            a_npp_enftemp        (:) = spval
+            a_npp_enfboreal      (:) = spval
+            a_npp_dnfboreal      (:) = spval
+            a_npp_ebftrop        (:) = spval
+            a_npp_ebftemp        (:) = spval
+            a_npp_dbftrop        (:) = spval
+            a_npp_dbftemp        (:) = spval
+            a_npp_dbfboreal      (:) = spval
+            a_npp_ebstemp        (:) = spval
+            a_npp_dbstemp        (:) = spval
+            a_npp_dbsboreal      (:) = spval
+            a_npp_c3arcgrass     (:) = spval
+            a_npp_c3grass        (:) = spval
+            a_npp_c4grass        (:) = spval
+            a_npptoleafc_enftemp        (:) = spval
+            a_npptoleafc_enfboreal      (:) = spval
+            a_npptoleafc_dnfboreal      (:) = spval
+            a_npptoleafc_ebftrop        (:) = spval
+            a_npptoleafc_ebftemp        (:) = spval
+            a_npptoleafc_dbftrop        (:) = spval
+            a_npptoleafc_dbftemp        (:) = spval
+            a_npptoleafc_dbfboreal      (:) = spval
+            a_npptoleafc_ebstemp        (:) = spval
+            a_npptoleafc_dbstemp        (:) = spval
+            a_npptoleafc_dbsboreal      (:) = spval
+            a_npptoleafc_c3arcgrass     (:) = spval
+            a_npptoleafc_c3grass        (:) = spval
+            a_npptoleafc_c4grass        (:) = spval
             a_leafc_enftemp      (:) = spval
             a_leafc_enfboreal    (:) = spval
             a_leafc_dnfboreal    (:) = spval
@@ -2023,10 +2216,13 @@ CONTAINS
 
 #ifdef DataAssimilation
             CALL acc3d (h2osoi_ens     , a_h2osoi_ens     )
-            CALL acc3d (t_brt_ens      , a_t_brt_ens      )
-            CALL acc2d (t_brt          , a_t_brt          )
+            CALL acc3d (t_brt_smap_ens , a_t_brt_smap_ens )
+            CALL acc2d (t_brt_smap     , a_t_brt_smap     )
+            CALL acc3d (t_brt_fy3d_ens , a_t_brt_fy3d_ens )
+            CALL acc2d (t_brt_fy3d     , a_t_brt_fy3d     )
             CALL acc3d (wliq_soisno_ens, a_wliq_soisno_ens)
             CALL acc3d (wice_soisno_ens, a_wice_soisno_ens)
+            CALL acc3d (t_soisno_ens   , a_t_soisno_ens   )
 #endif
 
 #ifdef URBAN_MODEL
@@ -2078,6 +2274,7 @@ ENDIF
                CALL acc1d(Fach      , a_fach      )
                CALL acc1d(Fahe      , a_fahe      )
                CALL acc1d(Fhah      , a_fhah      )
+               CALL acc1d(Fequ      , a_fequ      )
                CALL acc1d(vehc      , a_vehc      )
                CALL acc1d(meta      , a_meta      )
                CALL acc2d(Fahe_lcz  , a_fahe_lcz  )
@@ -2099,6 +2296,22 @@ ENDIF
             ENDIF
 #endif
 
+#if (defined LULC_IGBP_PFT || defined LULC_IGBP_PC)
+            CALL acc1d (lai_enftemp        , a_lai_enftemp       )
+            CALL acc1d (lai_enfboreal      , a_lai_enfboreal     )
+            CALL acc1d (lai_dnfboreal      , a_lai_dnfboreal     )
+            CALL acc1d (lai_ebftrop        , a_lai_ebftrop       )
+            CALL acc1d (lai_ebftemp        , a_lai_ebftemp       )
+            CALL acc1d (lai_dbftrop        , a_lai_dbftrop       )
+            CALL acc1d (lai_dbftemp        , a_lai_dbftemp       )
+            CALL acc1d (lai_dbfboreal      , a_lai_dbfboreal     )
+            CALL acc1d (lai_ebstemp        , a_lai_ebstemp       )
+            CALL acc1d (lai_dbstemp        , a_lai_dbstemp       )
+            CALL acc1d (lai_dbsboreal      , a_lai_dbsboreal     )
+            CALL acc1d (lai_c3arcgrass     , a_lai_c3arcgrass    )
+            CALL acc1d (lai_c3grass        , a_lai_c3grass       )
+            CALL acc1d (lai_c4grass        , a_lai_c4grass       )
+#endif
 #ifdef BGC
             CALL acc1d (leafc              , a_leafc               )
             CALL acc1d (leafc_storage      , a_leafc_storage       )
@@ -2175,6 +2388,34 @@ ENDIF
             CALL acc1d (gpp_c3arcgrass     , a_gpp_c3arcgrass      )
             CALL acc1d (gpp_c3grass        , a_gpp_c3grass         )
             CALL acc1d (gpp_c4grass        , a_gpp_c4grass         )
+            CALL acc1d (npp_enftemp        , a_npp_enftemp         )
+            CALL acc1d (npp_enfboreal      , a_npp_enfboreal       )
+            CALL acc1d (npp_dnfboreal      , a_npp_dnfboreal       )
+            CALL acc1d (npp_ebftrop        , a_npp_ebftrop         )
+            CALL acc1d (npp_ebftemp        , a_npp_ebftemp         )
+            CALL acc1d (npp_dbftrop        , a_npp_dbftrop         )
+            CALL acc1d (npp_dbftemp        , a_npp_dbftemp         )
+            CALL acc1d (npp_dbfboreal      , a_npp_dbfboreal       )
+            CALL acc1d (npp_ebstemp        , a_npp_ebstemp         )
+            CALL acc1d (npp_dbstemp        , a_npp_dbstemp         )
+            CALL acc1d (npp_dbsboreal      , a_npp_dbsboreal       )
+            CALL acc1d (npp_c3arcgrass     , a_npp_c3arcgrass      )
+            CALL acc1d (npp_c3grass        , a_npp_c3grass         )
+            CALL acc1d (npp_c4grass        , a_npp_c4grass         )
+            CALL acc1d (npptoleafc_enftemp        , a_npptoleafc_enftemp         )
+            CALL acc1d (npptoleafc_enfboreal      , a_npptoleafc_enfboreal       )
+            CALL acc1d (npptoleafc_dnfboreal      , a_npptoleafc_dnfboreal       )
+            CALL acc1d (npptoleafc_ebftrop        , a_npptoleafc_ebftrop         )
+            CALL acc1d (npptoleafc_ebftemp        , a_npptoleafc_ebftemp         )
+            CALL acc1d (npptoleafc_dbftrop        , a_npptoleafc_dbftrop         )
+            CALL acc1d (npptoleafc_dbftemp        , a_npptoleafc_dbftemp         )
+            CALL acc1d (npptoleafc_dbfboreal      , a_npptoleafc_dbfboreal       )
+            CALL acc1d (npptoleafc_ebstemp        , a_npptoleafc_ebstemp         )
+            CALL acc1d (npptoleafc_dbstemp        , a_npptoleafc_dbstemp         )
+            CALL acc1d (npptoleafc_dbsboreal      , a_npptoleafc_dbsboreal       )
+            CALL acc1d (npptoleafc_c3arcgrass     , a_npptoleafc_c3arcgrass      )
+            CALL acc1d (npptoleafc_c3grass        , a_npptoleafc_c3grass         )
+            CALL acc1d (npptoleafc_c4grass        , a_npptoleafc_c4grass         )
             CALL acc1d (leafc_enftemp      , a_leafc_enftemp       )
             CALL acc1d (leafc_enfboreal    , a_leafc_enfboreal     )
             CALL acc1d (leafc_dnfboreal    , a_leafc_dnfboreal     )

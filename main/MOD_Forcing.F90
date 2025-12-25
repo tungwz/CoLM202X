@@ -234,6 +234,7 @@ CONTAINS
          IF (p_is_io) CALL allocate_block_data (gforc, topo_grid)
          CALL mg2p_forc%pset2grid (forc_topo, topo_grid, msk = patchmask)
 
+         IF (p_is_io) CALL allocate_block_data (gforc, areagrid)
          CALL mg2p_forc%get_sumarea(areagrid, patchmask)
          CALL block_data_division (topo_grid, areagrid)
 
@@ -1105,6 +1106,7 @@ CONTAINS
 
             ! read forcing data
             filename = trim(dir_forcing)//trim(metfilename(year, month, day, ivar))
+
             IF (trim(DEF_forcing%dataset) == 'POINT') THEN
 
                IF (forcing_read_ahead) THEN
@@ -1130,7 +1132,7 @@ CONTAINS
 #endif
                ENDIF
             ELSE
-               CALL ncio_read_block_time (filename, vname(ivar), gforc, time_i, metdata)
+               IF (year <= endyr) CALL ncio_read_block_time (filename, vname(ivar), gforc, time_i, metdata)
             ENDIF
 
             CALL block_data_copy (metdata, forcn_UB(ivar))

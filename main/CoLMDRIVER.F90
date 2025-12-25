@@ -80,7 +80,7 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
          steps_in_one_deltim = 1
          ! deltim need to be within 1800s for water body with snow in order to avoid large
          ! temperature fluctuations due to rapid snow heat conductance
-         IF(m == WATERBODY .and. snowdp(i) > 0.0) steps_in_one_deltim = ceiling(deltim/1800.)
+         IF(m == WATERBODY) steps_in_one_deltim = ceiling(deltim/1800.)
          deltim_phy = deltim/steps_in_one_deltim
 
          ! For non urban patch or slab urban
@@ -269,6 +269,7 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
             forc_frl(i)     ,forc_hgt_u(i)   ,forc_hgt_t(i)   ,forc_hgt_q(i)   ,&
             forc_rhoair(i)  ,Fhac(u)         ,Fwst(u)         ,Fach(u)         ,&
             Fahe(u)         ,Fhah(u)         ,vehc(u)         ,meta(u)         ,&
+            Fequ(u)                                                            ,&
 
           ! LAND SURFACE VARIABLES REQUIRED FOR RESTART
             z_sno_roof  (maxsnl+1:,u)        ,z_sno_gimp  (maxsnl+1:,u)        ,&

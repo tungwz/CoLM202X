@@ -91,6 +91,7 @@ MODULE MOD_Urban_Vars_TimeVariables
    real(r8), allocatable :: Fach           (:) !flux from inner and outer air exchange [W/m2]
    real(r8), allocatable :: Fahe           (:) !flux from metabolism and vehicle [W/m2]
    real(r8), allocatable :: Fhah           (:) !sensible heat flux from heating [W/m2]
+   real(r8), allocatable :: Fequ           (:) !sensible heat flux from heating [W/m2]
    real(r8), allocatable :: vehc           (:) !flux from vehicle [W/m2]
    real(r8), allocatable :: meta           (:) !flux from metabolism [W/m2]
 
@@ -198,6 +199,7 @@ CONTAINS
             allocate (Fach                          (numurban))
             allocate (Fahe                          (numurban))
             allocate (Fhah                          (numurban))
+            allocate (Fequ                          (numurban))
             allocate (vehc                          (numurban))
             allocate (meta                          (numurban))
 
@@ -485,6 +487,7 @@ CONTAINS
             deallocate (Fach         )
             deallocate (Fahe         )
             deallocate (Fhah         )
+            deallocate (Fequ         )
             deallocate (vehc         )
             deallocate (meta         )
 

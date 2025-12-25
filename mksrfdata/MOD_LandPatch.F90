@@ -96,7 +96,7 @@ CONTAINS
 #ifndef LULC_USGS
          ! add parameter input for time year
          dir_5x5= trim(DEF_dir_rawdata) // trim(DEF_rawdata%landcover%dir)
-         fname  = trim(DEF_rawdata%landcover%fname)//'.'//trim(cyear)
+         fname  = trim(DEF_rawdata%landcover%fname)//trim(cyear)
          CALL read_5x5_data (dir_5x5, fname, grid_patch, 'LC', patchdata)
 #else
          !TODO: need usgs land cover type data
@@ -143,9 +143,9 @@ CONTAINS
             allocate (types (ipxstt:ipxend))
 
 #ifdef CATCHMENT
-            CALL aggregation_request_data (landhru, iset, grid_patch, zip = .true., &
+            CALL aggregation_request_data (landhru, iset, grid_patch, zip = .false., &
 #else
-            CALL aggregation_request_data (landelm, iset, grid_patch, zip = .true., &
+            CALL aggregation_request_data (landelm, iset, grid_patch, zip = .false., &
 #endif
                data_i4_2d_in1 = patchdata, data_i4_2d_out1 = ibuff)
 
