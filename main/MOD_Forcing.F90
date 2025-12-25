@@ -1106,6 +1106,7 @@ CONTAINS
 
             ! read forcing data
             filename = trim(dir_forcing)//trim(metfilename(year, month, day, ivar))
+
             IF (trim(DEF_forcing%dataset) == 'POINT') THEN
 
                IF (forcing_read_ahead) THEN
@@ -1131,7 +1132,7 @@ CONTAINS
 #endif
                ENDIF
             ELSE
-               CALL ncio_read_block_time (filename, vname(ivar), gforc, time_i, metdata)
+               IF (year <= endyr) CALL ncio_read_block_time (filename, vname(ivar), gforc, time_i, metdata)
             ENDIF
 
             CALL block_data_copy (metdata, forcn_UB(ivar))

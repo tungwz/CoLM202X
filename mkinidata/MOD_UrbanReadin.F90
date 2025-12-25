@@ -294,6 +294,15 @@ CONTAINS
             IF (DEF_URBAN_LUCY) THEN
                IF (lucy_id > 0) THEN
                   vehicle      (:,u) = lvehicle      (lucy_id,:)
+                  IF (lc_year == 2020) vehicle      (1,u) = 194
+                  IF (lc_year == 2019) vehicle      (1,u) = 180
+                  IF (lc_YEAR == 2015) vehicle      (1,u) = 118
+                  IF (lc_YEAR == 2010) vehicle      (1,u) = 58
+                  IF (lc_YEAR == 2005) vehicle      (1,u) = 24
+                  IF (lc_YEAR == 2000) vehicle      (1,u) = 13
+                  IF (lc_YEAR == 1995) vehicle      (1,u) = 9
+                  vehicle      (2,u) = 0.
+                  vehicle      (3,u) = 0.
                   week_holiday (:,u) = lweek_holiday (lucy_id,:)
                   weh_prof     (:,u) = lweh_prof     (lucy_id,:)
                   wdh_prof     (:,u) = lwdh_prof     (lucy_id,:)

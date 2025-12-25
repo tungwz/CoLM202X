@@ -34,6 +34,7 @@ CONTAINS
         sabgimp        ,sabgper        ,sablake        ,sabv           ,&
         par            ,Fhac           ,Fwst           ,Fach           ,&
         Fahe           ,Fhah           ,vehc           ,meta           ,&
+        Fequ                                                           ,&
         ! LUCY model input parameters
         fix_holiday    ,week_holiday   ,hum_prof       ,pop_den        ,&
         vehicle        ,weh_prof       ,wdh_prof       ,idate          ,&
@@ -342,6 +343,7 @@ CONTAINS
         tafu                           ,&! temperature of outer building
         Fahe                           ,&! flux from metabolic and vehicle
         Fhah                           ,&! flux from heating
+        Fequ                           ,&
         Fhac                           ,&! flux from heat or cool AC
         Fwst                           ,&! waste heat from cool or heat
         Fach                           ,&! flux from air exchange
@@ -1376,7 +1378,7 @@ CONTAINS
                        t_roofsno(nl_roof), t_wallsun(nl_wall), t_wallsha(nl_wall), &
                        tkdz_roof, tkdz_wsun, tkdz_wsha, tafu, troom, &
                        troof_inner, twsun_inner, twsha_inner, &
-                       Fhac, Fwst, Fach, Fhah )
+                       Fhac, Fwst, Fach, Fhah, Fequ )
 
       ! Anthropogenic heat flux for the rest (vehicle heat flux and metabolic heat flux)
       CALL LUCY ( idate       , deltim  , patchlonr, fix_holiday, &
@@ -1393,6 +1395,7 @@ CONTAINS
       Fwst = Fwst * (1-flake)
       Fach = Fach * (1-flake)
       Fhah = Fhah * (1-flake)
+      Fequ = Fequ * (1-flake)
 
       deallocate ( fcover )
 

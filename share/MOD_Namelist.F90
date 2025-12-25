@@ -596,6 +596,7 @@ MODULE MOD_Namelist
       logical :: fwst                             = .true.
       logical :: fach                             = .true.
       logical :: fhah                             = .true.
+      logical :: fequ                             = .true.
       logical :: meta                             = .true.
       logical :: vehc                             = .true.
       logical :: t_room                           = .true.
@@ -2088,6 +2089,7 @@ ENDIF
       CALL sync_hist_vars_one (DEF_hist_vars%fwst        , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%fach        , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%fhah        , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%fequ        , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%meta        , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%vehc        , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%t_room      , set_defaults)

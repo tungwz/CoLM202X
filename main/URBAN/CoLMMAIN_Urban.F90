@@ -103,6 +103,7 @@
            forc_frl     ,forc_hgt_u   ,forc_hgt_t   ,forc_hgt_q   ,&
            forc_rhoair  ,Fhac         ,Fwst         ,Fach         ,&
            Fahe         ,Fhah         ,vehc         ,meta         ,&
+           Fequ                                                   ,&
 
          ! land surface variables required for restart
            z_sno_roof   ,z_sno_gimp   ,z_sno_gper   ,z_sno_lake   ,&
@@ -474,6 +475,7 @@
         Fach                  ,&! flux from inner and outer air exchange [W/m2]
         Fahe                  ,&! flux from metabolism and vehicle [W/m2]
         Fhah                  ,&! sensible heat flux from heating [W/m2]
+        Fequ                  ,&
         vehc                  ,&! flux from vehicle [W/m2]
         meta                  ,&! flux from metabolism [W/m2]
 
@@ -982,6 +984,7 @@
          sabgimp            ,sabgper            ,sablake            ,sabv               ,&
          par                ,Fhac               ,Fwst               ,Fach               ,&
          Fahe               ,Fhah               ,vehc               ,meta               ,&
+         Fequ                                                                           ,&
          ! LUCY INPUT PARAMETERS
          fix_holiday        ,week_holiday       ,hum_prof           ,pop_den            ,&
          vehicle            ,weh_prof           ,wdh_prof           ,idate              ,&
@@ -1100,7 +1103,7 @@
          mss_bcpho(lbsn:0)  ,mss_bcphi(lbsn:0)  ,mss_ocpho(lbsn:0)  ,mss_ocphi(lbsn:0)  ,&
          mss_dst1 (lbsn:0)  ,mss_dst2 (lbsn:0)  ,mss_dst3 (lbsn:0)  ,mss_dst4 (lbsn:0)  ,&
 ! END SNICAR model variables
-!  irrigaiton 
+!  irrigaiton
          qflx_irrig_drip    ,qflx_irrig_flood   ,qflx_irrig_paddy                       ,&
 !  end irrigation
          ! output

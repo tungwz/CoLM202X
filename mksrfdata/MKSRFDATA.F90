@@ -395,7 +395,7 @@ PROGRAM MKSRFDATA
 #ifndef LULC_USGS
          write(cyear,'(i4.4)') lc_year
          dir_5x5 = trim(DEF_dir_rawdata) // trim(DEF_rawdata%landcover%dir)
-         lndname = trim(DEF_rawdata%landcover%fname) // '.' // trim(cyear)
+         lndname = trim(DEF_rawdata%landcover%fname) // trim(cyear)
          CALL mesh_filter_5x5 (grid_patch, dir_5x5, lndname, 'LC')
 
          !lndname = trim(DEF_dir_rawdata)//'/landtypes/landtype-igbp-modis-'//trim(cyear)//'.nc'
@@ -492,21 +492,21 @@ IF (.not. (skip_rest)) THEN
       CALL Aggregation_PercentagesPFT  (grid_pft , dir_rawdata, dir_landdata, lc_year)
 #endif
 
-      CALL Aggregation_LakeDepth       (grid_500m, dir_rawdata, dir_landdata, lc_year)
+!      CALL Aggregation_LakeDepth       (grid_500m, dir_rawdata, dir_landdata, lc_year)
 
-      CALL Aggregation_SoilParameters  (grid_soil, dir_rawdata, dir_landdata, lc_year)
+!      CALL Aggregation_SoilParameters  (grid_soil, dir_rawdata, dir_landdata, lc_year)
 
-      CALL Aggregation_SoilBrightness  (grid_500m, dir_rawdata, dir_landdata, lc_year)
+!      CALL Aggregation_SoilBrightness  (grid_500m, dir_rawdata, dir_landdata, lc_year)
 
       IF (DEF_USE_BEDROCK) THEN
          CALL Aggregation_DBedrock     (grid_500m, dir_rawdata, dir_landdata, lc_year)
       ENDIF
 
-      CALL Aggregation_LAI             (grid_lai,  dir_rawdata, dir_landdata, lc_year)
+!      CALL Aggregation_LAI             (grid_lai,  dir_rawdata, dir_landdata, lc_year)
 
-      CALL Aggregation_ForestHeight    (grid_htop, dir_rawdata, dir_landdata, lc_year)
+!      CALL Aggregation_ForestHeight    (grid_htop, dir_rawdata, dir_landdata, lc_year)
 
-      CALL Aggregation_Topography      (grid_topo, dir_rawdata, dir_landdata, lc_year)
+!      CALL Aggregation_Topography      (grid_topo, dir_rawdata, dir_landdata, lc_year)
 
       IF (DEF_Runoff_SCHEME == 0) THEN
          CALL Aggregation_TopoWetness  (grid_twi,  dir_rawdata, dir_landdata, lc_year)

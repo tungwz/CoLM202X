@@ -127,6 +127,7 @@ MODULE MOD_Vars_1DAccFluxes
    real(r8), allocatable :: a_fach      (:) !flux from inner and outer air exchange [W/m2]
    real(r8), allocatable :: a_fahe      (:) !flux from metabolic and vehicle [W/m2]
    real(r8), allocatable :: a_fhah      (:) !sensible flux from heating [W/m2]
+   real(r8), allocatable :: a_fequ      (:) !sensible flux from heating [W/m2]
    real(r8), allocatable :: a_vehc      (:) !flux from vehicle [W/m2]
    real(r8), allocatable :: a_meta      (:) !flux from metabolic [W/m2]
 
@@ -603,6 +604,7 @@ CONTAINS
                allocate (a_fach      (numurban))
                allocate (a_fahe      (numurban))
                allocate (a_fhah      (numurban))
+               allocate (a_fequ      (numurban))
                allocate (a_vehc      (numurban))
                allocate (a_meta      (numurban))
 
@@ -1085,6 +1087,7 @@ CONTAINS
                deallocate (a_fach      )
                deallocate (a_fahe      )
                deallocate (a_fhah      )
+               deallocate (a_fequ      )
                deallocate (a_vehc      )
                deallocate (a_meta      )
 
@@ -1569,6 +1572,7 @@ CONTAINS
                a_fach     (:) = spval
                a_fahe     (:) = spval
                a_fhah     (:) = spval
+               a_fequ     (:) = spval
                a_vehc     (:) = spval
                a_meta     (:) = spval
 
@@ -2177,6 +2181,7 @@ CONTAINS
                CALL acc1d(fach       , a_fach      )
                CALL acc1d(fahe       , a_fahe      )
                CALL acc1d(fhah       , a_fhah      )
+               CALL acc1d(fequ       , a_fequ      )
                CALL acc1d(vehc       , a_vehc      )
                CALL acc1d(meta       , a_meta      )
 

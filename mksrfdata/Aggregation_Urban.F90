@@ -434,7 +434,11 @@ ENDIF
       IF (p_is_io) THEN
 
          landdir= trim(DEF_dir_rawdata) // trim(DEF_rawdata%urban_fveg%dir)
-         fname  = trim(DEF_rawdata%urban_fveg%fname) // '.' // trim(c5year)
+         IF (lc_year > 2015) THEN
+            fname  = trim(DEF_rawdata%urban_fveg%fname) // '.' // '2015'
+         ELSE
+            fname  = trim(DEF_rawdata%urban_fveg%fname) // '.' // trim(c5year)
+         ENDIF
 
          CALL allocate_block_data (grid_pctt, fvegu)
          CALL read_5x5_data (landdir, fname, grid_pctt, "PCT_Tree", fvegu)

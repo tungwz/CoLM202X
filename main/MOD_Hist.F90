@@ -924,6 +924,10 @@ ENDIF
             a_fhah, file_hist, 'f_fhah', itime_in_file, sumarea_urb, filter_urb, &
             'flux from heating/cooling [W/m2]','W/m2')
 
+         CALL write_history_variable_urb_2d ( DEF_hist_vars%fequ, &
+            a_fequ, file_hist, 'f_fequ', itime_in_file, sumarea_urb, filter_urb, &
+            'flux from baseloading [W/m2]','W/m2')
+
          ! flux from metabolism [W/m2]
          CALL write_history_variable_urb_2d ( DEF_hist_vars%meta, &
             a_meta, file_hist, 'f_fmeta', itime_in_file, sumarea_urb, filter_urb, &

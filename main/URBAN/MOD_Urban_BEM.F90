@@ -5,7 +5,7 @@ MODULE MOD_Urban_BEM
    USE MOD_Precision
    USE MOD_Vars_Global
    USE MOD_Const_Physical
-   USE MOD_Namelist, only: DEF_simulation_time
+   USE MOD_Namelist, only: DEF_LC_YEAR, DEF_simulation_time
    USE MOD_TimeManager
    USE MOD_Urban_Const_LCZ
    USE MOD_Urban_Shortwave, only: MatrixInverse
@@ -26,7 +26,7 @@ CONTAINS
                          troof_nl, twsun_nl, twsha_nl, &
                          tkdz_roof, tkdz_wsun, tkdz_wsha, taf, &
                          troom, troof_inner, twsun_inner, twsha_inner, &
-                         Fhac, Fwst, Fach, Fhah)
+                         Fhac, Fwst, Fach, Fhah, Fequ)
 
 !-----------------------------------------------------------------------
 !
@@ -114,6 +114,7 @@ CONTAINS
 
    real(r8), intent(out) :: &
         Fhah,            &! flux from heating
+        Fequ,            &
         Fhac,            &! flux from heat or cool AC
         Fwst,            &! waste heat from cool or heat
         Fach              ! flux from air exchange
@@ -172,9 +173,11 @@ CONTAINS
       f_wsha = fcover(2)/fcover(0) !weight factor for shaded wall
 
       ! initialization
-      Fhac = 0.; Fwst = 0.; Fach = 0.; Fhah = 0.
+      Fhac = 0.; Fwst = 0.; Fach = 0.; Fhah = 0.; Fequ = 0.;
 
       ! Heat From Equip (in development)
+
+      Fequ = 0 !H*1
 
       ! greenwich to local time
       IF (DEF_simulation_time%greenwich) THEN
@@ -204,7 +207,7 @@ CONTAINS
       B(3) = -0.5*hcv_wall*(twsha_inner-troom) + 0.5*tkdz_wsha*(twsha_nl_bef-twsha_inner) &
                                                + 0.5*tkdz_wsha*twsha_nl
 
-      B(4) = H*rhoair*cpair*troom/deltim + (ACH/3600.)*H*rhoair*cpair*taf &
+      B(4) = H*rhoair*cpair*troom/deltim + (ACH/3600.)*H*rhoair*cpair*taf + Fequ &
            + 0.5*hcv_roof*(troof_inner-troom) &
            + 0.5*hcv_wall*(twsun_inner-troom)*f_wsun &
            + 0.5*hcv_wall*(twsha_inner-troom)*f_wsha
@@ -272,7 +275,7 @@ CONTAINS
 
          IF ( Effective_AC ) THEN
 
-            Uac  = weekend(tloc)/maxval(weekend)
+            Uac  = weekend(tloc)/maxval(weekend)*0.5*gdp_scal(DEF_LC_YEAR-2000+1)
 
             Fhac = Fhac*Uac
 
@@ -298,10 +301,22 @@ CONTAINS
          ENDIF
 
          IF ( heating ) THEN
-            IF (Fach > 0) THEN
-               Fhac = abs(Fhac) + Fach
+            IF ( isleapyear(int(ldate(1))) ) THEN
+               s_heating = 320
+               e_heating = 75
             ELSE
-               Fhac = abs(Fhac)
+               s_heating = 319
+               e_heating = 74
+            ENDIF
+
+            IF ( ldate(2)>=s_heating .or. ldate(2)<=e_heating ) THEN
+               IF (Fach > 0) THEN
+                  Fhac = abs(Fhac) + Fach
+               ELSE
+                  Fhac = abs(Fhac)
+               ENDIF
+            ELSE
+               Fhac = 0
             ENDIF
 
             Fhah = Fhac
@@ -324,6 +339,7 @@ CONTAINS
       Fach = Fach*fcover(0)
       Fwst = Fwst*fcover(0)
       Fhac = Fhac*fcover(0)
+      Fequ = Fequ*fcover(0)
 
    END SUBROUTINE SimpleBEM
 

@@ -256,6 +256,7 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
             forc_frl(i)     ,forc_hgt_u(i)   ,forc_hgt_t(i)   ,forc_hgt_q(i)   ,&
             forc_rhoair(i)  ,Fhac(u)         ,Fwst(u)         ,Fach(u)         ,&
             Fahe(u)         ,Fhah(u)         ,vehc(u)         ,meta(u)         ,&
+            Fequ(u)                                                            ,&
 
           ! LAND SURFACE VARIABLES REQUIRED FOR RESTART
             z_sno_roof  (maxsnl+1:,u)        ,z_sno_gimp  (maxsnl+1:,u)        ,&
