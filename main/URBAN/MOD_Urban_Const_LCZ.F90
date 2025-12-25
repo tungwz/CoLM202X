@@ -120,8 +120,6 @@ MODULE MOD_Urban_Const_LCZ
    ! minimum temperature of inner room [K]
    real(r8), parameter, dimension(10)  :: tbldmin_lcz &
       = (/290.65, 290.65, 290.65, 290.65, 290.65, 290.65, 290.65, 290.65, 290.65, 290.65/)
-   !real(r8), parameter, dimension(10)  :: hequip &
-   !   = (/9.2, 9.2, 6.84, 9.2, 9.2, 6.27, 6.27, 6.27, 6.27, 6.27/)/3
 
    real(r8), parameter, dimension(21)  :: gdp_scal &
       = (/0.41218280, 0.44571636, 0.45103396, 0.42811278, 0.43161228, &
