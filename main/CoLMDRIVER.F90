@@ -12,19 +12,24 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
 !            2014-2024
 !
 !=======================================================================
+   USE, INTRINSIC :: iso_fortran_env, ONLY: sp=>real32
 
    USE MOD_Precision
    USE MOD_Const_Physical, only: tfrz, rgas, vonkar
    USE MOD_Const_LC
    USE MOD_Vars_Global
+   USE MOD_Timemanager
    USE MOD_Vars_TimeInvariants
    USE MOD_Vars_TimeVariables
+   USE MOD_Urban_Vars_TimeVariables
    USE MOD_Vars_1DForcing
    USE MOD_Vars_1DFluxes
-   USE MOD_LandPatch, only: numpatch,landpatch
+   USE MOD_Urban_Vars_1DFluxes
+   USE MOD_LandPatch, only: numpatch, landpatch, elm_patch
    USE MOD_LandUrban, only: patch2urban
    USE MOD_Namelist, only: DEF_forcing, DEF_URBAN_RUN
    USE MOD_Forcing, only: forcmask_pch
+   USE MOD_FTorch
    USE omp_lib
 #ifdef CaMa_Flood
    ! get flood variables: inundation depth[mm], inundation fraction [0-1],
@@ -44,8 +49,9 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
    real(r8), intent(inout) :: oro(numpatch)  ! ocean(0)/seaice(2)/ flag
 
    real(r8) :: deltim_phy
+   real(r8) :: ldate(3)
    integer  :: steps_in_one_deltim
-   integer  :: i, m, u, k
+   integer  :: i, m, u, k, ihour
 
 ! ======================================================================
 
@@ -205,6 +211,13 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
          IF (DEF_URBAN_RUN .and. m.eq.URBAN) THEN
 
             u = patch2urban(i)
+
+            ! update AHE
+            !IF (Fhah(u) > 0) Fhah(u) = foutput(u,1)*Fhah(u)/Fahe(u)
+            !IF (Fhac(u) > 0) Fach(u) = foutput(u,1)*Fhac(u)/Fahe(u)
+            !IF (Fwst(u) > 0) Fwst(u) = foutput(u,1)*Fwst(u)/Fahe(u)
+            !IF (vehc(u) > 0) vehc(u) = foutput(u,1)*vehc(u)/Fahe(u)
+            !IF (meta(u) > 0) meta(u) = foutput(u,1)*meta(u)/Fahe(u)
             !
             !              ***** Call CoLM urban model *****
             !
@@ -336,13 +349,72 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
             emis(i)         ,z0m(i)          ,zol(i)          ,rib(i)          ,&
             ustar(i)        ,qstar(i)        ,tstar(i)        ,fm(i)           ,&
             fh(i)           ,fq(i)           ,forc_hpbl(i)                      )
-         ENDIF
 
+IF (DEF_USE_FTorch) THEN
+           CALL gmt2local(idate, patchlonr(i)*180/PI, ldate)
+           ihour = ceiling(ldate(3)*1./3600)
+
+           finput(u,1) = pop_den(u)
+           finput(u,2) = hroof  (u)
+           finput(u,3) = froof  (u)
+           finput(u,4) = tafu   (u)
+           ! finput(u,4) = forc_t (i)
+#ifndef SinglePoint
+           ! finput(u,5) = Fahe   (u)*elm_patch%subfrc(i)
+#else
+           ! finput(u,5) = Fahe   (u)
+#endif
+           finput(u,5) = Fahe   (u)
+           finput(u,6) = ihour
+           ! finput(u,7) = patchlatr(i)*180/PI
+ENDIF
+
+         ENDIF
 #endif
       ENDDO
 #ifdef OPENMP
 !$OMP END PARALLEL DO
 #endif
+
+IF (DEF_USE_FTorch) THEN
+
+      !write(*,'(A)') 'WT_ROOF'
+      !write(*,'(3(1X,F12.6))') froof
+
+      !write(*,'(A)') 'HT_ROOF'
+      !write(*,'(3(1X,F12.6))') hroof
+
+      !write(*,'(A)') 'POP'
+      !write(*,'(3(1X,F12.6))') pop_den
+
+      !write(*,'(A)') 'before AI Fahe ='
+      !write(*,'(3(1X,F12.6))') Fahe
+      !write(*,'(F12.6)') Fahe*elm_patch%subfrc
+
+      CALL FTorch_routine(finput, foutput)
+      !write(*,'(A)') 'after AI Fahe ='
+      !write(*,'(3(1X,F12.6))') foutput
+      !write(*,'(F12.6)') foutput(:,1)*elm_patch%subfrc
+
+      ! update AHE
+      WHERE (Fhah>0._sp .and. Fahe>0._sp)
+         Fhah = foutput(:,1)*Fhah/Fahe
+         Fwst = foutput(:,1)*Fwst/Fahe
+      END WHERE
+
+      WHERE (Fhac>0._sp .and. Fahe>0._sp)
+         Fhac = foutput(:,1)*Fhac/Fahe
+         Fwst = foutput(:,1)*Fwst/Fahe
+      END WHERE
+
+      WHERE (vehc>0._sp .and. Fahe>0._sp)
+         vehc = foutput(:,1)*vehc/Fahe
+      END WHERE
+
+      WHERE (meta>0._sp .and. Fahe>0._sp)
+         meta = foutput(:,1)*meta/Fahe
+      END WHERE
+ENDIF
 
 END SUBROUTINE CoLMDRIVER
 ! ---------- EOP ------------

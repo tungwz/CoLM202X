@@ -89,7 +89,7 @@
 
          ! vegetation information
            htop         ,hbot         ,sqrtdi       ,chil         ,&
-           effcon       ,vmax25       ,c3c4         ,slti         ,hlti,&
+           effcon       ,vmax25       ,slti         ,hlti         ,&
            shti         ,hhti         ,trda         ,trdm         ,&
            trop         ,g1           ,g0           ,gradm        ,&
            binter       ,extkn        ,rho          ,tau          ,&
@@ -103,7 +103,6 @@
            forc_frl     ,forc_hgt_u   ,forc_hgt_t   ,forc_hgt_q   ,&
            forc_rhoair  ,Fhac         ,Fwst         ,Fach         ,&
            Fahe         ,Fhah         ,vehc         ,meta         ,&
-           Fequ                                                   ,&
 
          ! land surface variables required for restart
            z_sno_roof   ,z_sno_gimp   ,z_sno_gper   ,z_sno_lake   ,&
@@ -131,7 +130,7 @@
            dfwsun       ,t_room       ,troof_inner  ,twsun_inner  ,&
            twsha_inner  ,t_roommax    ,t_roommin    ,tafu         ,&
 
-           zwt          ,wdsrf         ,wa                        ,&
+           zwt          ,wa                                       ,&
            t_lake       ,lake_icefrac ,savedtke1                  ,&
 
          ! SNICAR snow model related
@@ -325,8 +324,6 @@
         trsmx0                ,&! max transpiration for moist soil+100% veg.  [mm/s]
         tcrit                   ! critical temp. to determine rain or snow
 
-   integer,  intent(in) :: c3c4 ! 1 for C3, 0 for C4
-
    real(r8), intent(in) :: hpbl ! atmospheric boundary layer height [m]
 
    ! Forcing
@@ -432,7 +429,6 @@
         snowdp_gper           ,&! snow depth (m)
         snowdp_lake           ,&! snow depth (m)
         zwt                   ,&! the depth to water table [m]
-        wdsrf                 ,&! depth of surface water [mm]
         wa                    ,&! water storage in aquifer [mm]
 
         snw_rds   ( maxsnl+1:0 ) ,&! effective grain radius (col,lyr) [microns, m-6]
@@ -478,7 +474,6 @@
         Fach                  ,&! flux from inner and outer air exchange [W/m2]
         Fahe                  ,&! flux from metabolism and vehicle [W/m2]
         Fhah                  ,&! sensible heat flux from heating [W/m2]
-        Fequ                  ,&
         vehc                  ,&! flux from vehicle [W/m2]
         meta                  ,&! flux from metabolism [W/m2]
 
@@ -705,13 +700,6 @@
    real(r8) snofrz    (maxsnl+1:0)  !snow freezing rate (col,lyr) [kg m-2 s-1]
    real(r8) sabg_lyr  (maxsnl+1:1)  !snow layer absorption [W/m-2]
 
-   !irrigation
-   real(r8) :: &
-         qflx_irrig_drip      ,&! drip irrigation rate [mm/s]
-         qflx_irrig_sprinkler ,&! sprinkler irrigation rate [mm/s]
-         qflx_irrig_flood     ,&! flood irrigation rate [mm/s]
-         qflx_irrig_paddy       ! paddy irrigation rate [mm/s]
-
    ! A simple urban irrigation scheme accounts for soil water stress of trees
    ! a factor represents irrigation efficiency, '1' represents a 50% direct irrigation efficiency.
    real(r8), parameter :: wst_irrig = 1.0
@@ -726,9 +714,6 @@
    real(wp), dimension(1, 1), target :: out_data
    real(wp), dimension(1   ), target :: sum_data
 
-   integer :: c0, c1, cr, cm
-   real(8) :: elapsed
-
    ! Initialise data
    in_data(1,:) = [0.1257_wp, -0.1321_wp,  0.6404_wp,  0.1049_wp, -0.5357_wp,  &
               0.3616_wp,  1.3040_wp,  0.9471_wp, -0.7037_wp, -1.2654_wp]
@@ -737,15 +722,8 @@
 
    ! CALL FTorch_init()
 
-   ! call system_clock(count_rate=cr, count_max=cm)  ! 每秒“滴答”数
-   ! call system_clock(c0)
-
-   ! CALL FTorch_routine(in_data, out_data)
+   CALL FTorch_routine(in_data, out_data)
    sum_data(:) = sum_data(:) + out_data(1,1)
-
-   call system_clock(c1)
-   ! elapsed = real(c1 - c0, 8) / real(cr, 8)       ! 秒
-   ! print '(A,F10.6,A)', 'FTorch_routine wall time = ', elapsed, ' s'
 
    in_data(1, :) = in_data(1, :) + 1.0_wp
 
@@ -913,14 +891,10 @@
 !----------------------------------------------------------------------
 ! [2] Canopy interception and precipitation onto ground surface
 !----------------------------------------------------------------------
-      qflx_irrig_drip = 0._r8
-      qflx_irrig_sprinkler = 0._r8
-      qflx_irrig_flood = 0._r8
-      qflx_irrig_paddy = 0._r8
 
       ! with vegetation canopy
       CALL LEAF_interception_CoLM2014 (deltim,dewmx,forc_us,forc_vs,chil,sigf,lai,sai,tref,tleaf,&
-                              prc_rain,prc_snow,prl_rain,prl_snow,qflx_irrig_sprinkler,bifall,&
+                              prc_rain,prc_snow,prl_rain,prl_snow,bifall,&
                               ldew,ldew_rain,ldew_snow,z0m,forc_hgt_u,pgper_rain,pgper_snow,&
                               qintr,qintr_rain,qintr_snow)
 
@@ -1008,8 +982,6 @@
       lbl = snll + 1           !lower bound of array
       lbsn= min(lbp,0)
 
-      ! call system_clock(count_rate=cr, count_max=cm)  ! 每秒“滴答”数
-      ! call system_clock(c0)
       ! Thermal process
       CALL UrbanTHERMAL ( &
          ! model running information
@@ -1024,7 +996,6 @@
          sabgimp            ,sabgper            ,sablake            ,sabv               ,&
          par                ,Fhac               ,Fwst               ,Fach               ,&
          Fahe               ,Fhah               ,vehc               ,meta               ,&
-         Fequ                                                                           ,&
          ! LUCY INPUT PARAMETERS
          fix_holiday        ,week_holiday       ,hum_prof           ,pop_den            ,&
          vehicle            ,weh_prof           ,wdh_prof           ,idate              ,&
@@ -1052,7 +1023,7 @@
          z_wall(:)          ,zi_roofsno(lbr-1:) ,zi_gimpsno(lbi-1:) ,zi_gpersno(lbp-1:) ,&
          zi_lakesno(:)      ,zi_wall(0:)        ,dz_lake(1:)        ,lakedepth          ,&
          dewmx              ,sqrtdi             ,rootfr(:)          ,effcon             ,&
-         vmax25             ,c3c4               ,slti               ,hlti               ,shti,&
+         vmax25             ,slti               ,hlti               ,shti               ,&
          hhti               ,trda               ,trdm               ,trop               ,&
          g1                 ,g0                 ,gradm              ,binter             ,&
          extkn              ,lambda                                                     ,&
@@ -1096,9 +1067,6 @@
          qstar              ,tstar              ,fm                 ,fh                 ,&
          fq                 ,hpbl                                                        )
 
-      ! call system_clock(c1)
-      ! elapsed = real(c1 - c0, 8) / real(cr, 8)       ! 秒
-      ! print '(A,F10.6,A)', 'THERMAL routine wall time = ', elapsed, ' s'
 !----------------------------------------------------------------------
 ! [5] Urban hydrology
 !----------------------------------------------------------------------
@@ -1146,12 +1114,10 @@
          mss_bcpho(lbsn:0)  ,mss_bcphi(lbsn:0)  ,mss_ocpho(lbsn:0)  ,mss_ocphi(lbsn:0)  ,&
          mss_dst1 (lbsn:0)  ,mss_dst2 (lbsn:0)  ,mss_dst3 (lbsn:0)  ,mss_dst4 (lbsn:0)  ,&
 ! END SNICAR model variables
-!  irrigaiton
-         qflx_irrig_drip    ,qflx_irrig_flood   ,qflx_irrig_paddy                       ,&
-!  end irrigation
+
          ! output
          rsur               ,rnof               ,qinfl              ,zwt                ,&
-         wdsrf              ,wa                 ,qcharge            ,smp                ,hk                 )
+         wa                 ,qcharge            ,smp                ,hk                 )
 
       ! roof
       !============================================================

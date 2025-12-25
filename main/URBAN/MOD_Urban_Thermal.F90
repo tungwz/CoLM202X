@@ -111,8 +111,10 @@ CONTAINS
    USE MOD_Precision
    USE MOD_SPMD_Task
    USE MOD_Vars_Global
+   USE MOD_LandUrban
    USE MOD_Const_Physical, only: denh2o,roverg,hvap,hsub,rgas,cpair,&
                                  stefnc,denice,tfrz,vonkar,grav
+   USE MOD_Urban_Const_LCZ, only: hequip
    USE MOD_Urban_Shortwave
    USE MOD_Urban_Longwave
    USE MOD_Urban_GroundFlux
@@ -1396,7 +1398,9 @@ CONTAINS
       Fach = Fach * (1-flake)
       Fhah = Fhah * (1-flake)
       Fequ = Fequ * (1-flake)
-
+      
+      Fahe = Fhac + Fhah + Fwst + Fequ + vehc
+      
       deallocate ( fcover )
 
    END SUBROUTINE UrbanTHERMAL

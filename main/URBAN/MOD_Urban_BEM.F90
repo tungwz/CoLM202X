@@ -152,6 +152,7 @@ CONTAINS
    integer :: nl_floor, tloc, s_heating, e_heating
    logical :: cooling, heating
 
+   real(r8), parameter :: ht_floor = 3.0
    ! Option for continuous AC
    logical, parameter :: Constant_AC  = .true.
 

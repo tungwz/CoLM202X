@@ -214,7 +214,7 @@ CONTAINS
          CALL FLUSH_acc_fluxes ()
          RETURN
       ELSE
-         CALL accumulate_fluxes ()
+         CALL accumulate_fluxes (idate)
       ENDIF
 
       select CASE (trim(adjustl(DEF_HIST_FREQ)))
@@ -957,6 +957,46 @@ ENDIF
          CALL write_history_variable_urb_2d ( DEF_hist_vars%t_wall, &
             a_twall, file_hist, 'f_t_wall', itime_in_file, sumarea_urb, filter_urb, &
             'temperature of urban wall [K]','kelvin')
+
+         CALL write_history_variable_urb_3d ( DEF_hist_vars%fahe_lcz, &
+            a_fahe_lcz, file_hist, 'f_fahe_lcz', itime_in_file, 'lcz', 1, 10, &
+            sumarea_urb, filter_urb, 'AHE for LCZ','W m-2')
+
+         CALL write_history_variable_urb_3d ( DEF_hist_vars%vehc_lcz, &
+            a_vehc_lcz, file_hist, 'f_vehc_lcz', itime_in_file, 'lcz', 1, 10, &
+            sumarea_urb, filter_urb, 'AHE for LCZ','W m-2')
+
+         CALL write_history_variable_urb_3d_24( DEF_hist_vars%fahe_24, &
+            a_fahe_24, file_hist, 'f_fahe_24', itime_in_file, 'hour', 1, 24, &
+            sumarea_urb, filter_urb, 'AHE diurnal cycle','W m-2')
+
+         CALL write_history_variable_urb_3d_24( DEF_hist_vars%fhah_24, &
+            a_fhah_24, file_hist, 'f_fhah_24', itime_in_file, 'hour', 1, 24, &
+            sumarea_urb, filter_urb, 'AHE diurnal cycle','W m-2')
+
+         CALL write_history_variable_urb_3d_24( DEF_hist_vars%fhac_24, &
+            a_fhac_24, file_hist, 'f_fhac_24', itime_in_file, 'hour', 1, 24, &
+            sumarea_urb, filter_urb, 'AHE diurnal cycle','W m-2')
+
+         CALL write_history_variable_urb_3d_24( DEF_hist_vars%fwst_24, &
+            a_fwst_24, file_hist, 'f_fwst_24', itime_in_file, 'hour', 1, 24, &
+            sumarea_urb, filter_urb, 'AHE diurnal cycle','W m-2')
+
+         CALL write_history_variable_urb_3d_24( DEF_hist_vars%vehc_24, &
+            a_vehc_24, file_hist, 'f_vehc_24', itime_in_file, 'hour', 1, 24, &
+            sumarea_urb, filter_urb, 'AHE diurnal cycle','W m-2')
+
+         CALL write_history_variable_urb_3d_24( DEF_hist_vars%meta_24, &
+            a_meta_24, file_hist, 'f_meta_24', itime_in_file, 'hour', 1, 24, &
+            sumarea_urb, filter_urb, 'AHE diurnal cycle','W m-2')
+
+         CALL write_history_variable_urb_3d_24( DEF_hist_vars%tref_24, &
+            a_tref_24, file_hist, 'f_tref_24', itime_in_file, 'hour', 1, 24, &
+            sumarea_urb, filter_urb, 'diurnal cycle 2m temperature [K]','kelvin')
+
+         CALL write_history_variable_urb_3d_24( DEF_hist_vars%tforc_24, &
+            a_tforc_24, file_hist, 'f_tforc_24', itime_in_file, 'hour', 1, 24, &
+            sumarea_urb, filter_urb, 'diurnal cycle forcing temperature [K]','kelvin')
 #endif
 
          ! ------------------------------------------------------------------
@@ -4869,8 +4909,99 @@ ENDIF
       END select
 
    END SUBROUTINE write_history_variable_urb_2d
-#endif
 
+   SUBROUTINE write_history_variable_urb_3d ( is_hist, &
+         acc_vec, file_hist, varname, itime_in_file, dim1name, lb1, ndim1, &
+         sumarea, filter, longname, units)
+
+   IMPLICIT NONE
+
+   logical, intent(in) :: is_hist
+
+   real(r8), intent(inout) :: acc_vec(:,:)
+   character(len=*), intent(in) :: file_hist
+   character(len=*), intent(in) :: varname
+   integer, intent(in) :: itime_in_file
+   character(len=*), intent(in) :: dim1name
+   integer, intent(in) :: lb1, ndim1
+
+   type(block_data_real8_2d), intent(in) :: sumarea
+   logical, intent(in) :: filter(:)
+   character (len=*), intent(in) :: longname
+   character (len=*), intent(in) :: units
+
+   ! Local variables
+   integer :: iblkme, xblk, yblk, xloc, yloc, i1
+   integer :: compress
+
+      IF (.not. is_hist) RETURN
+
+      select CASE (HistForm)
+      CASE ('Gridded')
+         CALL flux_map_and_write_urb_3d ( &
+            acc_vec, file_hist, varname, itime_in_file, dim1name, lb1, ndim1, &
+            sumarea, filter, longname, units)
+#if (defined UNSTRUCTURED || defined CATCHMENT)
+      CASE ('Vector')
+         CALL aggregate_to_vector_and_write_3d ( &
+            acc_vec, file_hist, varname, itime_in_file, dim1name, lb1, ndim1, &
+            filter, longname, units)
+#endif
+#ifdef SinglePoint
+      CASE ('Single')
+         CALL single_write_urb_3d (acc_vec, file_hist, varname, itime_in_file, &
+            dim1name, ndim1, longname, units)
+#endif
+      END select
+
+   END SUBROUTINE write_history_variable_urb_3d
+
+   SUBROUTINE write_history_variable_urb_3d_24 ( is_hist, &
+         acc_vec, file_hist, varname, itime_in_file, dim1name, lb1, ndim1, &
+         sumarea, filter, longname, units)
+
+   IMPLICIT NONE
+
+   logical, intent(in) :: is_hist
+
+   real(r8), intent(inout) :: acc_vec(:,:)
+   character(len=*), intent(in) :: file_hist
+   character(len=*), intent(in) :: varname
+   integer, intent(in) :: itime_in_file
+   character(len=*), intent(in) :: dim1name
+   integer, intent(in) :: lb1, ndim1
+
+   type(block_data_real8_2d), intent(in) :: sumarea
+   logical, intent(in) :: filter(:)
+   character (len=*), intent(in) :: longname
+   character (len=*), intent(in) :: units
+
+   ! Local variables
+   integer :: iblkme, xblk, yblk, xloc, yloc, i1
+   integer :: compress
+
+      IF (.not. is_hist) RETURN
+
+      select CASE (HistForm)
+      CASE ('Gridded')
+         CALL flux_map_and_write_urb_3d_24 ( &
+            acc_vec, file_hist, varname, itime_in_file, dim1name, lb1, ndim1, &
+            sumarea, filter, longname, units)
+#if (defined UNSTRUCTURED || defined CATCHMENT)
+      CASE ('Vector')
+         CALL aggregate_to_vector_and_write_3d ( &
+            acc_vec, file_hist, varname, itime_in_file, dim1name, lb1, ndim1, &
+            filter, longname, units)
+#endif
+#ifdef SinglePoint
+      CASE ('Single')
+         CALL single_write_urb_3d_24 (acc_vec, file_hist, varname, itime_in_file, &
+            dim1name, ndim1, longname, units)
+#endif
+      END select
+
+   END SUBROUTINE write_history_variable_urb_3d_24
+#endif
 
    SUBROUTINE write_history_variable_3d ( is_hist, &
          acc_vec, file_hist, varname, itime_in_file, dim1name, lb1, ndim1, &
