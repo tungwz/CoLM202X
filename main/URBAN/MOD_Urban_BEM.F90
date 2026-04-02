@@ -132,7 +132,6 @@ CONTAINS
         f_wsha            ! weight factor for shaded wall
 
    real(r8) :: &
-        ldate(3),        &! local time (year, julian day, seconds)
         A(4,4),          &! Heat transfer matrix
         Ainv(4,4),       &! Inverse of Heat transfer matrix
         B(4),            &! B for Ax=B
@@ -148,6 +147,7 @@ CONTAINS
         twsun_inner_bef, &! temperature of inner sunlit wall
         twsha_inner_bef   ! temperature of inner shaded wall
 
+   integer :: sdate(3), ldate(3)
    integer :: nl_floor, tloc, s_heating, e_heating
    logical :: cooling, heating
 
@@ -178,12 +178,15 @@ CONTAINS
 
       ! greenwich to local time
       IF (DEF_simulation_time%greenwich) THEN
+         sdate    = idate
+         sdate(3) = idate(3) - deltim
+         londeg   = patchlonr*180/PI
          ! convert GMT time to local time
-         londeg = patchlonr*180/PI
-         CALL gmt2local(idate, londeg, ldate)
+         CALL gmt2local(sdate, londeg, ldate)
       ENDIF
 
-      tloc = ceiling(ldate(3)*1./3600)
+      tloc = int(ldate(3)/3600) + 1
+!      print*, 'BEM ', tloc, ldate(3), sdate(3), idate(3)
 
       ! Ax = B
       ! set values for heat transfer matrix

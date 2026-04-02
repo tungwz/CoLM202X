@@ -163,6 +163,7 @@
            srni         ,solvdln      ,solviln      ,solndln      ,&
            solniln      ,srvdln       ,srviln       ,srndln       ,&
            srniln       ,qcharge      ,xerr         ,zerr         ,&
+           urb_irrig                                              ,&
 
          ! TUNABLE model constants
            zlnd         ,zsno         ,csoilc       ,dewmx        ,&
@@ -525,6 +526,8 @@
         qdrip                 ,&! throughfall (mm h2o/s)
         qcharge               ,&! groundwater recharge [mm/s]
 
+        urb_irrig             ,&! named urban tree irrigation [mm/s]
+
         rst                   ,&! canopy stomatal resistance
         assim                 ,&! canopy assimilation
         respc                 ,&! canopy respiration
@@ -635,7 +638,6 @@
         rootr    (1:nl_soil)  ,&! root resistance of a layer, all layers add to 1.0
         rootflux (1:nl_soil)  ,&! root resistance of a layer, all layers add to 1.0
         etr_deficit           ,&! urban tree etr deficit [mm/s]
-        urb_irrig             ,&! named urban tree irrigation [mm/s]
 
         zi_wall    (       0:nl_wall) ,&! interface level below a "z" level [m]
         z_roofsno  (maxsnl+1:nl_roof) ,&! layer depth [m]
@@ -709,7 +711,7 @@
 
    ! A simple urban irrigation scheme accounts for soil water stress of trees
    ! a factor represents irrigation efficiency, '1' represents a 50% direct irrigation efficiency.
-   real(r8), parameter :: wst_irrig = 1.0
+   real(r8), parameter :: wst_irrig = 2.0
 
 !-----------------------------------------------------------------------
 
@@ -1051,7 +1053,7 @@
          assim              ,respc              ,errore             ,emis               ,&
          z0m                ,zol                ,rib                ,ustar              ,&
          qstar              ,tstar              ,fm                 ,fh                 ,&
-         fq                 ,hpbl                                                        )
+         fq                 ,hpbl               ,rss                                     )
 
 !----------------------------------------------------------------------
 ! [5] Urban hydrology
@@ -1064,12 +1066,13 @@
       ENDIF
 
       pgper_rain = pgper_rain  + wst_irrig*etr_deficit/(1-froof)/fgper
-      urb_irrig  = etr_deficit + wst_irrig*etr_deficit
 
       CALL UrbanHydrology ( &
          ! model running information
          ipatch             ,patchtype          ,lbr                ,lbi                ,&
          lbp                ,lbl                ,snll               ,deltim             ,&
+         idate              ,fveg               ,lai                ,patchlatr          ,&
+         patchlonr                                                                      ,&
          ! forcing
          pg_rain            ,pgper_rain         ,pgimp_rain         ,pg_snow            ,&
          pg_rain_lake       ,pg_snow_lake                                               ,&
@@ -1100,12 +1103,13 @@
          mss_bcpho(lbsn:0)  ,mss_bcphi(lbsn:0)  ,mss_ocpho(lbsn:0)  ,mss_ocphi(lbsn:0)  ,&
          mss_dst1 (lbsn:0)  ,mss_dst2 (lbsn:0)  ,mss_dst3 (lbsn:0)  ,mss_dst4 (lbsn:0)  ,&
 ! END SNICAR model variables
-!  irrigaiton 
+!  irrigaiton
          qflx_irrig_drip    ,qflx_irrig_flood   ,qflx_irrig_paddy                       ,&
 !  end irrigation
          ! output
          rsur               ,rnof               ,qinfl              ,zwt                ,&
-         wdsrf              ,wa                 ,qcharge            ,smp                ,hk                 )
+         wdsrf              ,wa                 ,qcharge            ,smp                ,&
+         hk                 ,urb_irrig                                                   )
 
       ! roof
       !============================================================
@@ -1258,6 +1262,12 @@
       scv = scv_roof*froof + scv_gper*(1-froof)*fgper + scv_gimp*(1-froof)*(1-fgper)
       !scv = scv*(1-flake) + scv_lake*flake
 
+IF (DEF_URBAN_Irrigation == 1) THEN
+      urb_irrig = etr_deficit + wst_irrig*etr_deficit
+ELSE
+      urb_irrig = urb_irrig*(1-froof)*fgper
+ENDIF
+
       endwb  = sum(wice_soisno(1:) + wliq_soisno(1:))
       endwb  = endwb + scv + ldew*fveg + wa*(1-froof)*fgper
       errorw = (endwb - totwb) - (forc_prc + forc_prl + urb_irrig - fevpa - rnof)*deltim
@@ -1266,7 +1276,7 @@
 #if (defined CoLMDEBUG)
       IF(abs(errorw)>1.e-3) THEN
          write(6,*) 'Warning: water balance violation', errorw, ipatch, patchclass
-         !STOP
+         STOP
       ENDIF
 #endif
 

@@ -36,6 +36,8 @@ MODULE MOD_Urban_Vars_1DFluxes
    real(r8), allocatable :: lfevp_gper  (:) !latent heat flux from pervious road [W/m2]
    real(r8), allocatable :: lfevp_urbl  (:) !latent heat flux from urban vegetation [W/m2]
 
+   real(r8), allocatable :: urb_irrig   (:)
+
 ! PUBLIC MEMBER FUNCTIONS:
    PUBLIC :: allocate_1D_UrbanFluxes
    PUBLIC :: deallocate_1D_UrbanFluxes
@@ -78,6 +80,7 @@ CONTAINS
             allocate (lfevp_gimp     (numurban)) ; lfevp_gimp     (:) = spval
             allocate (lfevp_gper     (numurban)) ; lfevp_gper     (:) = spval
             allocate (lfevp_urbl     (numurban)) ; lfevp_urbl     (:) = spval
+            allocate (urb_irrig      (numurban)) ; urb_irrig      (:) = spval
          ENDIF
       ENDIF
 
@@ -109,6 +112,8 @@ CONTAINS
             deallocate (lfevp_gimp   )
             deallocate (lfevp_gper   )
             deallocate (lfevp_urbl   )
+
+            deallocate (urb_irrig    )
 
          ENDIF
       ENDIF
@@ -145,6 +150,8 @@ CONTAINS
             lfevp_gimp     (:) = Values
             lfevp_gper     (:) = Values
             lfevp_urbl     (:) = Values
+
+            urb_irrig      (:) = Values
          ENDIF
       ENDIF
 

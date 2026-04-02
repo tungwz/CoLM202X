@@ -140,7 +140,7 @@ MODULE MOD_Namelist
 
    ! ----- rawdata definition -----
 
-   character(len=256) :: DEF_rawdata_namelist  = 'path/to/rawdata/namelist'
+   character(len=256) :: DEF_rawdata_namelist  = '/tera12/yuanhua/dongwz/github/master/CoLM-FTorch/CoLM202X/run/rawdata/colm500m.nml'
 
    type :: datainfo
       character(len=256) :: dir   = 'dir related to rawdata dir'
@@ -263,6 +263,7 @@ MODULE MOD_Namelist
    ! 1: NCAR Urban Classification, 3 urban type with Tall Building, High Density and Medium Density
    ! 2: LCZ Classification, 10 urban type with LCZ 1-10
    integer :: DEF_URBAN_type_scheme = 2
+   integer :: DEF_URBAN_IRRIGATION  = 1
    logical :: DEF_URBAN_ONLY        = .false.
    logical :: DEF_URBAN_RUN         = .false.
    logical :: DEF_URBAN_BEM         = .true.
@@ -592,6 +593,7 @@ MODULE MOD_Namelist
       logical :: lfevp_gimp                       = .true.
       logical :: lfevp_gper                       = .true.
       logical :: lfevp_urbl                       = .true.
+      logical :: urb_irrig                        = .true.
       logical :: fhac                             = .true.
       logical :: fwst                             = .true.
       logical :: fach                             = .true.
@@ -1085,6 +1087,7 @@ CONTAINS
       DEF_LULCC_SCHEME,                       &
 
       DEF_URBAN_type_scheme,                  &
+      DEF_URBAN_IRRIGATION,                   &
       DEF_URBAN_ONLY,                         &
       DEF_URBAN_RUN,                          & !add by hua yuan, open urban model or not
       DEF_URBAN_BEM,                          & !add by hua yuan, open urban BEM model or not
@@ -1747,6 +1750,7 @@ ENDIF
       CALL mpi_bcast (DEF_LULCC_SCHEME                       ,1   ,mpi_integer   ,p_address_master ,p_comm_glb ,p_err)
 
       CALL mpi_bcast (DEF_URBAN_type_scheme                  ,1   ,mpi_integer   ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_URBAN_IRRIGATION                   ,1   ,mpi_integer   ,p_address_master ,p_comm_glb ,p_err)
       ! 05/2023, added by yuan
       CALL mpi_bcast (DEF_URBAN_ONLY                         ,1   ,mpi_logical   ,p_address_master ,p_comm_glb ,p_err)
       CALL mpi_bcast (DEF_URBAN_RUN                          ,1   ,mpi_logical   ,p_address_master ,p_comm_glb ,p_err)
@@ -2084,6 +2088,7 @@ ENDIF
       CALL sync_hist_vars_one (DEF_hist_vars%lfevp_gimp  , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%lfevp_gper  , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%lfevp_urbl  , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%urb_irrig   , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%fhac        , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%fwst        , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%fach        , set_defaults)

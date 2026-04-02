@@ -323,6 +323,7 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
             srni(i)         ,solvdln(i)      ,solviln(i)      ,solndln(i)      ,&
             solniln(i)      ,srvdln(i)       ,srviln(i)       ,srndln(i)       ,&
             srniln(i)       ,qcharge(i)      ,xerr(i)         ,zerr(i)         ,&
+            urb_irrig(u)                                                       ,&
 
           ! TUNABLE model constants
             zlnd            ,zsno            ,csoilc          ,dewmx           ,&
