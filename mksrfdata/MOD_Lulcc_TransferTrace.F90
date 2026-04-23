@@ -252,6 +252,7 @@ CONTAINS
 
                IF (allocated(lcdatafr_one)) deallocate (lcdatafr_one)
                allocate ( lcdatafr_one (size(ibuff_veg)) )
+               lcdatafr_one = 0
 
                WHERE(ibuff_veg > 0) lcdatafr_one =  1
                WHERE(ibuff_wet > 0) lcdatafr_one = 11
