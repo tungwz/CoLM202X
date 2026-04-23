@@ -134,7 +134,7 @@ CONTAINS
 
 #ifdef USEMPI
          CALL aggregation_data_daemon (grid_patch, data_r8_2d_in1 = luh_veg, data_r8_2d_in2 = luh_urb, &
-              data_r8_2d_in3 = luh_wet, data_r8_2d_in4 = luh_lake, data_r8_2d_in5 = luh_glai, data_r8_2d_in6=luh_crop)
+              data_r8_2d_in3 = luh_wet, data_r8_2d_in4 = luh_lake, data_r8_2d_in5 = luh_gla, data_r8_2d_in6=luh_crop)
 #endif
 
 #endif
@@ -198,11 +198,11 @@ CONTAINS
             types(:) = 0
 
             WHERE(ibuff_veg > 0) types =  1
-            WHERE(ibuff_crop> 0) types = 12
             WHERE(ibuff_wet > 0) types = 11
+            WHERE(ibuff_crop> 0) types = 12
             WHERE(ibuff_urb > 0) types = 13
-            WHERE(ibuff_lake> 0) types = 17
             WHERE(ibuff_gla > 0) types = 15
+            WHERE(ibuff_lake> 0) types = 17
 
 #endif
 
@@ -310,7 +310,6 @@ CONTAINS
 #ifdef USEMPI
          CALL aggregation_worker_done ()
 #endif
-         print*, numpatch
       ENDIF
 
       landpatch%nset = numpatch

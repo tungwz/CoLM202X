@@ -94,16 +94,28 @@ CONTAINS
    integer, intent(in) :: lc_year
 
 !-------------------------- Local Variables ----------------------------
+   type (block_data_real8_2d) :: luh_veg
+   type (block_data_real8_2d) :: luh_urb
+   type (block_data_real8_2d) :: luh_lake
+   type (block_data_real8_2d) :: luh_wet
+   type (block_data_real8_2d) :: luh_gla
+   type (block_data_real8_2d) :: luh_crop
+
+
    character(len=256) :: dir_5x5, suffix, lastyr, thisyr, dir_landdata, lndname
    character(len=4)   :: c2
+
    integer :: i,ipatch,ipxl,ipxstt,ipxend,numpxl,ilc
    integer, allocatable, dimension(:) :: locpxl
    type (block_data_int32_2d)         :: lcdatafr !land cover data of last year
    integer, allocatable, dimension(:) :: lcdatafr_one(:), lcfrbuff(:)
    real(r8),allocatable, dimension(:) :: area_one(:)    , areabuff(:)
    real(r8) :: sum_areabuff, gridarea
+   real(r8) , allocatable :: ibuff_veg(:), ibuff_urb(:), ibuff_lake(:), ibuff_wet(:), ibuff_gla(:), ibuff_crop(:)
+
    integer, allocatable, dimension(:) :: grid_patch_s, grid_patch_e
    logical :: first_call
+
 ! for surface data diag
 #ifdef SrfdataDiag
    integer  :: ityp
@@ -111,6 +123,7 @@ CONTAINS
 #endif
 !-----------------------------------------------------------------------
 
+#ifndef LUH2
       IF ( (lc_year < 1990) .or. (lc_year < 2000 .and. MOD(lc_year, 5) /= 0) ) RETURN
 
       write(thisyr,'(i4.4)') lc_year
@@ -119,6 +132,10 @@ CONTAINS
       ELSE
          write(lastyr,'(i4.4)') MAX(1985, lc_year-1)
       ENDIF
+#else
+      write(thisyr,'(i4.4)') lc_year
+      write(lastyr,'(i4.4)') lc_year-1
+#endif
 
       first_call = .true.
 
@@ -137,6 +154,7 @@ CONTAINS
       CALL pixel%map_to_grid (grid_patch)
 
       IF (p_is_io) THEN
+#ifndef LUH2
          CALL allocate_block_data (grid_patch, lcdatafr)
          dir_5x5 = trim(DEF_dir_rawdata) // '/plant_15s'
          suffix  = 'MOD'//trim(lastyr)
@@ -150,6 +168,31 @@ CONTAINS
 
 #ifdef USEMPI
          CALL aggregation_data_daemon (grid_patch, data_i4_2d_in1 = lcdatafr)
+#endif
+
+#else
+         CALL allocate_block_data (grid_patch, luh_veg )
+         CALL allocate_block_data (grid_patch, luh_urb )
+         CALL allocate_block_data (grid_patch, luh_lake)
+         CALL allocate_block_data (grid_patch, luh_wet )
+         CALL allocate_block_data (grid_patch, luh_gla )
+         CALL allocate_block_data (grid_patch, luh_crop)
+
+         dir_5x5 = '/tera12/yuanhua/dongwz/github/master/LUH2/landdata/'
+         suffix  = 'LUH'//trim(lastyr)
+
+         CALL read_5x5_data (dir_5x5, suffix, grid_patch, "PCT_VEG"    , luh_veg )
+         CALL read_5x5_data (dir_5x5, suffix, grid_patch, "PCT_URBAN"  , luh_urb )
+         CALL read_5x5_data (dir_5x5, suffix, grid_patch, "PCT_WETLAND", luh_wet )
+         CALL read_5x5_data (dir_5x5, suffix, grid_patch, "PCT_LAKE"   , luh_lake)
+         CALL read_5x5_data (dir_5x5, suffix, grid_patch, "PCT_GLACIER", luh_gla )
+         CALL read_5x5_data (dir_5x5, suffix, grid_patch, "PCT_CROP"   , luh_crop)
+
+#ifdef USEMPI
+         CALL aggregation_data_daemon (grid_patch, data_r8_2d_in1 = luh_veg, data_r8_2d_in2 = luh_urb, &
+              data_r8_2d_in3 = luh_wet, data_r8_2d_in4 = luh_lake, data_r8_2d_in5 = luh_gla, data_r8_2d_in6=luh_crop)
+#endif
+
 #endif
       ENDIF
 
@@ -194,10 +237,30 @@ CONTAINS
                   CYCLE
                ENDIF
 
+#ifndef LUH2
                ! using this year patch mapping to aggregate the previous year land cover data
                CALL aggregation_request_data (landpatch, ipatch, grid_patch, zip = .true., &
                   area = area_one, data_i4_2d_in1 = lcdatafr, data_i4_2d_out1 = lcdatafr_one)
+#else
+               CALL aggregation_request_data (landpatch, ipatch, grid_patch, zip = .false., area = area_one, &
+                  data_r8_2d_in1 = luh_veg , data_r8_2d_out1 = ibuff_veg , &
+                  data_r8_2d_in2 = luh_urb , data_r8_2d_out2 = ibuff_urb , &
+                  data_r8_2d_in3 = luh_wet , data_r8_2d_out3 = ibuff_wet , &
+                  data_r8_2d_in4 = luh_lake, data_r8_2d_out4 = ibuff_lake, &
+                  data_r8_2d_in5 = luh_gla , data_r8_2d_out5 = ibuff_gla , &
+                  data_r8_2d_in6 = luh_crop, data_r8_2d_out6 = ibuff_crop  )
 
+               IF (allocated(lcdatafr_one)) deallocate (lcdatafr_one)
+               allocate ( lcdatafr_one (size(ibuff_veg)) )
+
+               WHERE(ibuff_veg > 0) lcdatafr_one =  1
+               WHERE(ibuff_wet > 0) lcdatafr_one = 11
+               WHERE(ibuff_crop> 0) lcdatafr_one = 12
+               WHERE(ibuff_urb > 0) lcdatafr_one = 13
+               WHERE(ibuff_gla > 0) lcdatafr_one = 15
+               WHERE(ibuff_lake> 0) lcdatafr_one = 17
+
+#endif
                ipxstt = landpatch%ipxstt(ipatch)
                ipxend = landpatch%ipxend(ipatch)
 

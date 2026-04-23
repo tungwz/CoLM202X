@@ -116,8 +116,13 @@ CONTAINS
 
       cropfilter = (/ CROPLAND /)
 
+#ifndef LUH2
       CALL pixelsetshared_build (landpatch, grid_crop, cropdata, N_CFT, cropfilter, &
          cropfrac, cropclass, fracin = pctshared)
+#else
+      CALL pixelsetshared_build (landpatch, grid_patch, cropdata, N_CFT, cropfilter, &
+         cropfrac, cropclass, fracin = pctshared)
+#endif
 
       numpatch = landpatch%nset
 
