@@ -265,7 +265,6 @@ CONTAINS
 
                inquire(file=file_5x5, exist=fexists)
                IF (fexists) THEN
-                  print*, file_5x5
                   allocate (dcache (i1-i0+1,j1-j0+1))
 
                   CALL nccheck( nf90_open(trim(file_5x5), NF90_NOWRITE, ncid) )
