@@ -25,6 +25,7 @@ MODULE MOD_LandPatch
    USE MOD_Grid
    USE MOD_Pixelset
    USE MOD_Vars_Global
+   USE MOD_5x5DataReadin
    USE MOD_Const_LC
    IMPLICIT NONE
 
@@ -66,12 +67,20 @@ CONTAINS
 
    integer, intent(in) :: lc_year
    ! Local Variables
-   character(len=256) :: file_patch
+   character(len=256) :: landdir, suffix
    character(len=255) :: cyear
    type (block_data_int32_2d) :: patchdata
+   type (block_data_real8_2d) :: luh_veg
+   type (block_data_real8_2d) :: luh_urb
+   type (block_data_real8_2d) :: luh_lake
+   type (block_data_real8_2d) :: luh_wet
+   type (block_data_real8_2d) :: luh_gla
+   type (block_data_real8_2d) :: luh_crop
+
    integer :: iloc, npxl, ipxl, numset
    integer :: ie, iset, ipxstt, ipxend
    integer,   allocatable :: types(:), order(:), ibuff(:)
+   real(r8) , allocatable :: ibuff_veg(:), ibuff_urb(:), ibuff_lake(:), ibuff_wet(:), ibuff_gla(:), ibuff_crop(:)
    integer*8, allocatable :: eindex_tmp(:)
    integer,   allocatable :: settyp_tmp(:), ipxstt_tmp(:), ipxend_tmp(:), ielm_tmp(:)
    logical,   allocatable :: msk(:)
@@ -91,19 +100,45 @@ CONTAINS
       IF (p_is_io) THEN
 
          CALL allocate_block_data (grid_patch, patchdata)
-
+#ifndef LUH2
 #ifndef LULC_USGS
          ! add parameter input for time year
-         file_patch = trim(DEF_dir_rawdata)//'landtypes/landtype-igbp-modis-'//trim(cyear)//'.nc'
+         landdir = trim(DEF_dir_rawdata)//'landtypes/landtype-igbp-modis-'//trim(cyear)//'.nc'
 #else
          !TODO: need usgs land cover type data
-         file_patch = trim(DEF_dir_rawdata) //'/landtypes/landtype-usgs-update.nc'
+         landdir = trim(DEF_dir_rawdata) //'/landtypes/landtype-usgs-update.nc'
 #endif
-         CALL ncio_read_block (file_patch, 'landtype', grid_patch, patchdata)
+         CALL ncio_read_block (landdir, 'landtype', grid_patch, patchdata)
 
 #ifdef USEMPI
          CALL aggregation_data_daemon (grid_patch, data_i4_2d_in1 = patchdata)
 #endif
+
+#else
+         CALL allocate_block_data (grid_patch, luh_veg )
+         CALL allocate_block_data (grid_patch, luh_urb )
+         CALL allocate_block_data (grid_patch, luh_lake)
+         CALL allocate_block_data (grid_patch, luh_wet )
+         CALL allocate_block_data (grid_patch, luh_gla )
+         CALL allocate_block_data (grid_patch, luh_crop)
+
+         landdir = '/tera12/yuanhua/dongwz/github/master/LUH2/landdata/'
+         suffix  = 'LUH'//trim(cyear)
+
+         CALL read_5x5_data (landdir, suffix, grid_patch, "PCT_VEG"    , luh_veg )
+         CALL read_5x5_data (landdir, suffix, grid_patch, "PCT_URBAN"  , luh_urb )
+         CALL read_5x5_data (landdir, suffix, grid_patch, "PCT_WETLAND", luh_wet )
+         CALL read_5x5_data (landdir, suffix, grid_patch, "PCT_LAKE"   , luh_lake)
+         CALL read_5x5_data (landdir, suffix, grid_patch, "PCT_GLACIER", luh_gla )
+         CALL read_5x5_data (landdir, suffix, grid_patch, "PCT_CROP"   , luh_crop)
+
+#ifdef USEMPI
+         CALL aggregation_data_daemon (grid_patch, data_r8_2d_in1 = luh_veg, data_r8_2d_in2 = luh_urb, &
+              data_r8_2d_in3 = luh_wet, data_r8_2d_in4 = luh_lake, data_r8_2d_in5 = luh_glai, data_r8_2d_in6=luh_crop)
+#endif
+
+#endif
+
       ENDIF
 
       IF (p_is_worker) THEN
@@ -139,6 +174,7 @@ CONTAINS
 
             allocate (types (ipxstt:ipxend))
 
+#ifndef LUH2
 #ifdef CATCHMENT
             CALL aggregation_request_data (landhru, iset, grid_patch, zip = .false., &
 #else
@@ -146,9 +182,29 @@ CONTAINS
 #endif
                data_i4_2d_in1 = patchdata, data_i4_2d_out1 = ibuff)
 
-
             types(:) = ibuff
             deallocate (ibuff)
+
+#else
+
+            CALL aggregation_request_data (landelm, iset, grid_patch, zip = .false., &
+               data_r8_2d_in1 = luh_veg , data_r8_2d_out1 = ibuff_veg , &
+               data_r8_2d_in2 = luh_urb , data_r8_2d_out2 = ibuff_urb , &
+               data_r8_2d_in3 = luh_wet , data_r8_2d_out3 = ibuff_wet , &
+               data_r8_2d_in4 = luh_lake, data_r8_2d_out4 = ibuff_lake, &
+               data_r8_2d_in5 = luh_gla , data_r8_2d_out5 = ibuff_gla , &
+               data_r8_2d_in6 = luh_crop, data_r8_2d_out6 = ibuff_crop  )
+
+            types(:) = 0
+
+            WHERE(ibuff_veg > 0) types =  1
+            WHERE(ibuff_crop> 0) types = 12
+            WHERE(ibuff_wet > 0) types = 11
+            WHERE(ibuff_urb > 0) types = 13
+            WHERE(ibuff_lake> 0) types = 17
+            WHERE(ibuff_gla > 0) types = 15
+
+#endif
 
 #ifdef CATCHMENT
             IF (landhru%settyp(iset) <= 0) THEN
@@ -254,11 +310,10 @@ CONTAINS
 #ifdef USEMPI
          CALL aggregation_worker_done ()
 #endif
-
+         print*, numpatch
       ENDIF
 
       landpatch%nset = numpatch
-
       CALL landpatch%set_vecgs
 
 

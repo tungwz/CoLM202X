@@ -88,6 +88,7 @@ SUBROUTINE Aggregation_PercentagesPFT (gland, dir_rawdata, dir_model_landdata, l
 
 #if (defined LULC_IGBP_PFT || defined LULC_IGBP_PC)
 
+#ifndef LUH2
       dir_5x5 = trim(dir_rawdata) // '/plant_15s'
       ! add parameter input for time year
       !write(cyear,'(i4.4)') lc_year
@@ -96,6 +97,18 @@ SUBROUTINE Aggregation_PercentagesPFT (gland, dir_rawdata, dir_model_landdata, l
       IF (p_is_io) THEN
          CALL allocate_block_data (gland, pftPCT, N_PFT_modis, lb1 = 0)
          CALL read_5x5_data_pft   (dir_5x5, suffix, gland, 'PCT_PFT', pftPCT)
+#else
+      dir_5x5 = '/tera12/yuanhua/dongwz/github/master/LUH2/landdata'
+      ! add parameter input for time year
+      !write(cyear,'(i4.4)') lc_year
+      suffix  = 'LUH'//trim(cyear)
+
+      IF (p_is_io) THEN
+         CALL allocate_block_data (gland, pftPCT, N_PFT_modis, lb1 = 0)
+         CALL read_5x5_data_pft   (dir_5x5, suffix, gland, 'PCT_NAT_PFT', pftPCT)
+
+#endif
+
 #ifdef USEMPI
          CALL aggregation_data_daemon (gland, data_r8_3d_in1 = pftPCT, n1_r8_3d_in1 = N_PFT_modis)
 #endif

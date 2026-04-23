@@ -217,12 +217,32 @@ SUBROUTINE Aggregation_ForestHeight ( &
          CALL allocate_block_data (gland, pftPCT, N_PFT_modis, lb1 = 0)
       ENDIF
 
+#ifndef LUH2
       dir_5x5 = trim(dir_rawdata) // '/plant_15s'
       suffix  = 'MOD'//trim(cyear)
 
       IF (p_is_io) THEN
          CALL read_5x5_data     (dir_5x5, suffix, gland, 'HTOP',    htop  )
          CALL read_5x5_data_pft (dir_5x5, suffix, gland, 'PCT_PFT', pftPCT)
+#else
+      dir_5x5 = trim(dir_rawdata) // '/plant_15s'
+      suffix  = 'MOD'//trim(cyear)
+
+      IF (p_is_io) THEN
+         dir_5x5 = '/tera06/zhangsl/isimip3/isimip3a/surface_data/pft_lai_avg'
+         suffix = 'mean_2000_2015'
+
+         CALL read_5x5_data     (dir_5x5, suffix, gland, 'HTOP',    htop  )
+
+
+         dir_5x5 = '/tera12/yuanhua/dongwz/github/master/LUH2/landdata'
+         ! add parameter input for time year
+         suffix  = 'LUH'//trim(cyear)
+
+         CALL read_5x5_data_pft (dir_5x5, suffix, gland, 'PCT_NAT_PFT', pftPCT)
+
+#endif
+
 #ifdef USEMPI
          CALL aggregation_data_daemon (gland, &
             data_r8_2d_in1 = htop, data_r8_3d_in1 = pftPCT, n1_r8_3d_in1 = 16)

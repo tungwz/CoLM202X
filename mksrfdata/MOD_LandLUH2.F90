@@ -1,12 +1,12 @@
 #include <define.h>
 
 #ifdef CROP
-MODULE MOD_LandCrop
+MODULE MOD_LandLUH2
 
 !-----------------------------------------------------------------------
 ! !DESCRIPTION:
 !
-!    Build crop patches.
+!    Build LUH2 patches.
 !
 !  Created by Shupeng Zhang, Sep 2023
 !    porting codes from Hua Yuan's OpenMP version to MPI parallel version.
@@ -17,14 +17,14 @@ MODULE MOD_LandCrop
    IMPLICIT NONE
 
    ! ---- Instance ----
-   type(grid_type) :: grid_crop
+   type(grid_type) :: grid_luh2
    integer,  allocatable :: cropclass (:)
    real(r8), allocatable :: cropfrac  (:)
 
 CONTAINS
 
    ! -------------------------------
-   SUBROUTINE landcrop_build (lc_year)
+   SUBROUTINE landluh2_build (lc_year)
 
    USE MOD_SPMD_Task
    USE MOD_Namelist
@@ -64,13 +64,10 @@ CONTAINS
 #endif
 
       IF (p_is_io) THEN
-#ifndef LUH2
+
          dir_5x5 = trim(DEF_dir_rawdata) // '/plant_15s'
          suffix  = 'MOD'//trim(cyear)
-#else
-         dir_5x5 = '/tera12/yuanhua/dongwz/github/master/LUH2/landdata'
-         suffix  = 'LUH'//trim(cyear)
-#endif
+
          CALL allocate_block_data (grid_patch, pctcrop_xy)
          CALL read_5x5_data (dir_5x5, suffix, grid_patch, 'PCT_CROP', pctcrop_xy)
 
@@ -100,18 +97,9 @@ CONTAINS
       ENDIF
 
       IF (p_is_io) THEN
-#ifndef LUH2
          file_patch = trim(DEF_dir_rawdata) // '/global_CFT_surface_data.nc'
          CALL allocate_block_data (grid_crop, cropdata, N_CFT)
          CALL ncio_read_block (file_patch, 'PCT_CFT', grid_crop, N_CFT, cropdata)
-#else
-         dir_5x5 = '/tera12/yuanhua/dongwz/github/master/LUH2/landdata'
-         suffix  = 'LUH'//trim(cyear)
-
-         CALL allocate_block_data (grid_patch, cropdata, N_CFT)
-         CALL read_5x5_data_cft (dir_5x5, suffix, grid_patch, 'PCT_CFT', cropdata)
-
-#endif
       ENDIF
 
       cropfilter = (/ CROPLAND /)
@@ -158,7 +146,7 @@ IF ( .not. DEF_Output_2mWMO ) THEN
       CALL write_patchfrac (DEF_dir_landdata, lc_year)
 ENDIF
 
-   END SUBROUTINE landcrop_build
+   END SUBROUTINE landluh2_build
 
-END MODULE MOD_LandCrop
+END MODULE MOD_LandLUH2
 #endif

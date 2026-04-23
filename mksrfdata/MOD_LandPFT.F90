@@ -87,12 +87,21 @@ CONTAINS
          CALL allocate_block_data (grid_patch, pctpft, N_PFT_modis, lb1 = 0)
          CALL flush_block_data (pctpft, 1.0)
 
+#ifndef LUH2
          dir_5x5 = trim(DEF_dir_rawdata) // '/plant_15s'
          ! add parameter input for time year
          write(cyear,'(i4.4)') lc_year
          suffix  = 'MOD'//trim(cyear)
          CALL read_5x5_data_pft (dir_5x5, suffix, grid_patch, 'PCT_PFT', pctpft)
+#else
+         dir_5x5 = '/tera12/yuanhua/dongwz/github/master/LUH2/landdata'
+         ! add parameter input for time year
+         write(cyear,'(i4.4)') lc_year
+         suffix  = 'LUH'//trim(cyear)
 
+         CALL read_5x5_data_pft (dir_5x5, suffix, grid_patch, 'PCT_NAT_PFT', pctpft)
+
+#endif
 #ifdef USEMPI
          CALL aggregation_data_daemon (grid_patch, data_r8_3d_in1 = pctpft, n1_r8_3d_in1 = N_PFT_modis)
 #endif

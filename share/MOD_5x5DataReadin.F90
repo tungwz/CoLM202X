@@ -29,6 +29,7 @@ MODULE MOD_5x5DataReadin
    IMPLICIT NONE
 
    integer, parameter :: N_PFT_modis = 16
+   integer, parameter :: N_CFT_LUH2  = 64
 
    INTERFACE read_5x5_data
       MODULE procedure read_5x5_data_int32
@@ -36,6 +37,7 @@ MODULE MOD_5x5DataReadin
    END INTERFACE read_5x5_data
 
    PUBLIC :: read_5x5_data_pft
+   PUBLIC :: read_5x5_data_cft
    PUBLIC :: read_5x5_data_time
    PUBLIC :: read_5x5_data_pft_time
 
@@ -263,6 +265,7 @@ CONTAINS
 
                inquire(file=file_5x5, exist=fexists)
                IF (fexists) THEN
+                  print*, file_5x5
                   allocate (dcache (i1-i0+1,j1-j0+1))
 
                   CALL nccheck( nf90_open(trim(file_5x5), NF90_NOWRITE, ncid) )
@@ -373,6 +376,95 @@ CONTAINS
       ENDIF
 
    END SUBROUTINE read_5x5_data_pft
+
+   ! -----
+   SUBROUTINE read_5x5_data_cft (dir_5x5, sfx, grid, dataname, rdata)
+
+   USE MOD_Precision
+   USE MOD_SPMD_Task
+   USE MOD_Block
+   USE MOD_Grid
+   USE MOD_DataType
+   USE netcdf
+   IMPLICIT NONE
+
+   character (len=*), intent(in) :: dir_5x5
+   character (len=*), intent(in) :: sfx
+   type (grid_type),  intent(in) :: grid
+
+   character (len=*), intent(in) :: dataname
+   type (block_data_real8_3d), intent(inout) :: rdata
+
+   ! Local variables
+   integer :: nxbox, nybox, nxglb, nyglb
+   integer :: iblkme, iblk, jblk, isouth, inorth, iwest, ieast, ibox, jbox, ibox0
+   integer :: i0, i1, j0, j1, il0, il1, jl0, jl1
+   character(len=256) :: file_5x5
+   integer :: ncid, varid
+   real(r8), allocatable :: dcache(:,:,:)
+   logical :: fexists
+   integer :: ipft
+
+      nxglb = grid%nlon
+      nyglb = grid%nlat
+
+      nxbox = nxglb / 360 * 5
+      nybox = nyglb / 180 * 5
+
+      IF (p_is_io) THEN
+
+         DO iblkme = 1, gblock%nblkme
+            iblk = gblock%xblkme(iblkme)
+            jblk = gblock%yblkme(iblkme)
+            IF (grid%xcnt(iblk) == 0) CYCLE
+            IF (grid%ycnt(jblk) == 0) CYCLE
+
+            rdata%blk(iblk,jblk)%val(:,:,:) = 0
+
+            inorth = grid%ydsp(jblk) + 1
+            isouth = grid%ydsp(jblk) + grid%ycnt(jblk)
+
+            iwest = grid%xdsp(iblk) + 1
+            ieast = grid%xdsp(iblk) + grid%xcnt(iblk)
+            IF (ieast > nxglb) ieast = ieast - nxglb
+
+            ibox = grid%xdsp(iblk)/nxbox + 1
+            jbox = grid%ydsp(jblk)/nybox + 1
+            ibox0 = ibox
+
+            DO WHILE (.true.)
+
+               CALL this_block_and_move_to_next ( &
+                  dir_5x5, sfx, nxbox, nybox, nxglb, isouth, inorth, iwest, ieast, &
+                  ibox, jbox, ibox0, i0, i1, j0, j1, il0, il1, jl0, jl1, &
+                  file_5x5)
+
+               inquire(file=file_5x5, exist=fexists)
+               IF (fexists) THEN
+                  allocate (dcache (i1-i0+1,j1-j0+1,1:N_CFT_LUH2))
+
+                  CALL nccheck( nf90_open(trim(file_5x5), NF90_NOWRITE, ncid) )
+                  CALL nccheck( nf90_inq_varid(ncid, trim(dataname), varid) )
+                  CALL nccheck( nf90_get_var(ncid, varid, dcache, &
+                     (/i0,j0,1/), (/i1-i0+1,j1-j0+1,N_CFT_LUH2/)) )
+                  CALL nccheck( nf90_close(ncid) )
+
+                  DO ipft = 1, N_CFT_LUH2
+                     rdata%blk(iblk,jblk)%val(ipft,il0:il1,jl0:jl1) = dcache(:,:,ipft)
+                  ENDDO
+
+                  deallocate (dcache)
+               ENDIF
+
+               IF (jbox == -1) EXIT
+
+            ENDDO
+
+         ENDDO
+
+      ENDIF
+
+   END SUBROUTINE read_5x5_data_cft
 
    ! -----
    SUBROUTINE read_5x5_data_time (dir_5x5, sfx, grid, dataname, time, rdata)

@@ -425,6 +425,11 @@ SUBROUTINE Aggregation_LAI (gridlai, dir_rawdata, dir_model_landdata, lc_year)
          write(cyear,'(i4.4)') iy
          CALL system('mkdir -p ' // trim(landdir) // trim(cyear))
 
+         IF (p_is_master) THEN
+            write(*,'(A,I4)') 'Aggregate LAI : ', iy
+         ENDIF
+
+#ifndef LUH2
          IF (iy < 2000) THEN
             write(cyear_bk,'(i4.4)') (iy / 5) * 5
             suffix = 'MOD'//trim(cyear_bk)
@@ -432,13 +437,21 @@ SUBROUTINE Aggregation_LAI (gridlai, dir_rawdata, dir_model_landdata, lc_year)
             suffix = 'MOD'//trim(cyear)
          ENDIF
 
-         IF (p_is_master) THEN
-            write(*,'(A,I4)') 'Aggregate LAI : ', iy
-         ENDIF
-
          IF (p_is_io) THEN
             CALL read_5x5_data_pft (dir_5x5, suffix, gridlai, 'PCT_PFT', pftPCT)
          ENDIF
+
+#else
+         IF (p_is_io) THEN
+            dir_5x5 = '/tera12/yuanhua/dongwz/github/master/LUH2/landdata'
+            suffix  = 'LUH'//trim(cyear)
+
+            CALL read_5x5_data_pft (dir_5x5, suffix, gridlai, 'PCT_NAT_PFT', pftPCT)
+         ENDIF
+
+         dir_5x5 = '/tera06/zhangsl/isimip3/isimip3a/surface_data/pft_lai_avg'
+         suffix = 'mean_2000_2015'
+#endif
 
          IF(.not. DEF_USE_LAIFEEDBACK)THEN
             DO month = 1, 12
