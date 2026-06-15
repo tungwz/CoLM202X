@@ -82,8 +82,8 @@ CONTAINS
 
 !-------------------------- Local Variables ----------------------------
    integer :: &
-      sdate(3)         ,&! calendar of begin style (year, julian day, seconds)
-      ldate(3)           ! local time (year, julian day, seconds)
+      ldate(3)         ,&! local time (year, julian day, seconds)
+      sdate(3)           ! calendar of begin style (year, julian day, seconds)
 
    integer :: &
       iweek            ,&! day of week
@@ -115,6 +115,7 @@ CONTAINS
          sdate    = idate
          sdate(3) = idate(3) - deltim
          londeg   = patchlonr*180/PI
+
          ! convert GMT time to local time
          CALL gmt2local(sdate, londeg, ldate)
       ENDIF

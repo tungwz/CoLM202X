@@ -637,7 +637,7 @@ CONTAINS
          ldate(3) = ldate(3) - 86400
          ldate(2) = idate(2) + 1
 
-         IF ( isleapyear(int(idate(1))) ) THEN
+         IF ( isleapyear(idate(1)) ) THEN
             maxday = 366
          ELSE
             maxday = 365

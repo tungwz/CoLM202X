@@ -147,7 +147,10 @@ CONTAINS
         twsun_inner_bef, &! temperature of inner sunlit wall
         twsha_inner_bef   ! temperature of inner shaded wall
 
-   integer :: sdate(3), ldate(3)
+   integer :: &
+      ldate(3),          &! local time (year, julian day, seconds)
+      sdate(3)            ! calendar of begin style (year, julian day, seconds)
+
    integer :: nl_floor, tloc, s_heating, e_heating
    logical :: cooling, heating
 
@@ -180,13 +183,13 @@ CONTAINS
       IF (DEF_simulation_time%greenwich) THEN
          sdate    = idate
          sdate(3) = idate(3) - deltim
-         londeg   = patchlonr*180/PI
+         londeg = patchlonr*180/PI
+
          ! convert GMT time to local time
          CALL gmt2local(sdate, londeg, ldate)
       ENDIF
 
       tloc = int(ldate(3)/3600) + 1
-!      print*, 'BEM ', tloc, ldate(3), sdate(3), idate(3)
 
       ! Ax = B
       ! set values for heat transfer matrix
