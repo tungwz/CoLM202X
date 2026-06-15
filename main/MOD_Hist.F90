@@ -953,6 +953,11 @@ ENDIF
          CALL write_history_variable_urb_2d ( DEF_hist_vars%t_wall, &
             a_twall, file_hist, 'f_t_wall', itime_in_file, sumarea_urb, filter_urb, &
             'temperature of urban wall [K]','kelvin')
+
+         CALL write_history_variable_urb_2d ( DEF_hist_vars%urb_irrig, &
+            a_urb_irrig, file_hist, 'f_urb_irrig_ratio', itime_in_file, sumarea_urb, filter_urb, &
+            'urban irrigation ratio [mm/s]','mm/ms')
+
 #endif
 
          ! ------------------------------------------------------------------

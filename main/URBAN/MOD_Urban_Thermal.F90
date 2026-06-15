@@ -104,7 +104,7 @@ CONTAINS
         assim          ,respc          ,errore         ,emis           ,&
         z0m            ,zol            ,rib            ,ustar          ,&
         qstar          ,tstar          ,fm             ,fh             ,&
-        fq             ,hpbl                                            )
+        fq             ,hpbl           ,rss                             )
 
 
    USE MOD_Precision
@@ -416,6 +416,7 @@ CONTAINS
         assim                          ,&! assimilation
         respc                          ,&! respiration
         errore                         ,&! energy balance error [w/m2]
+        rss                            ,&! soil resistance
 
         ! additional variables required by coupling with WRF or RSM model
         emis                           ,&! averaged bulk surface emissivity
@@ -485,7 +486,6 @@ CONTAINS
         olrb               ,&! olrg assuming black body emission [W/m2]
         psit               ,&! negative potential of soil
 
-        rss                ,&! soil resistance
         qroof              ,&! roof specific humidity [kg/kg]
         qgimp              ,&! ground impervious road specific humidity [kg/kg]
         qgper              ,&! ground pervious specific humidity [kg/kg]

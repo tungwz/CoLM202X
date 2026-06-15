@@ -41,6 +41,8 @@ CONTAINS
         ! model running information
         ipatch         ,patchtype      ,lbr            ,lbi            ,&
         lbp            ,lbl            ,snll           ,deltim         ,&
+        idate          ,fveg           ,lai            ,patchlatr      ,&
+        patchlonr                                                      ,&
         ! forcing
         pg_rain        ,pgper_rain     ,pgimp_rain     ,pg_snow        ,&
         pg_rain_lake   ,pg_snow_lake                                   ,&
@@ -71,11 +73,12 @@ CONTAINS
         mss_bcpho      ,mss_bcphi      ,mss_ocpho      ,mss_ocphi      ,&
         mss_dst1       ,mss_dst2       ,mss_dst3       ,mss_dst4       ,&
 ! END SNICAR model variables
-!  irrigaiton 
+!  irrigaiton
         qflx_irrig_drip,qflx_irrig_flood,qflx_irrig_paddy              ,&
         ! output
         rsur           ,rnof           ,qinfl          ,zwt            ,&
-        wdsrf          ,wa             ,qcharge        ,smp            ,hk)
+        wdsrf          ,wa             ,qcharge        ,smp            ,&
+        hk             ,qflx_irrig                                      )
 
 !=======================================================================
 ! this is the main SUBROUTINE to execute the calculation of URBAN
@@ -85,7 +88,9 @@ CONTAINS
 
    USE MOD_Precision
    USE MOD_Vars_Global
+   USE MOD_Namelist, only: DEF_URBAN_IRRIGATION
    USE MOD_Const_Physical, only: denice, denh2o, tfrz
+   USE MOD_Urban_Irrigation, only: UrbanIrrigationFluxes
    USE MOD_SoilSnowHydrology
    USE MOD_Lake
 
@@ -101,8 +106,17 @@ CONTAINS
         lbp                ,&! lower bound of array
         lbl                  ! lower bound of array
 
+   integer, intent(in) :: &
+        idate(3)
+
    integer, intent(inout) :: &
         snll                 ! number of snow layers
+
+   real(r8), intent(in) :: &
+        fveg               ,&
+        lai                ,&
+        patchlatr          ,&
+        patchlonr
 
    real(r8), intent(in) :: &
         deltim             ,&! time step (s)
@@ -184,7 +198,7 @@ CONTAINS
 ! Aerosol Fluxes (Jan. 07, 2023)
 ! END SNICAR model variables
 
-!  For irrigation 
+!  For irrigation
    real(r8), intent(in) :: &
         qflx_irrig_drip               ,&! drip irrigation rate [mm/s]
         qflx_irrig_flood              ,&! flood irrigation rate [mm/s]
@@ -229,6 +243,7 @@ CONTAINS
         wa                 ! water storage in aquifer [mm]
 
    real(r8), intent(out) :: &
+        qflx_irrig       ,&!
         rsur             ,&! surface runoff (mm h2o/s)
         rnof             ,&! total runoff (mm h2o/s)
         qinfl            ,&! infiltration rate (mm h2o/s)
@@ -243,6 +258,7 @@ CONTAINS
    real(r8) :: &
         fg               ,&! ground fractional cover [-]
         gwat             ,&! net water input from top (mm/s)
+        rain_irrig       ,&!
         rnof_roof        ,&! total runoff (mm h2o/s)
         rnof_gimp        ,&! total runoff (mm h2o/s)
         rnof_gper        ,&! total runoff (mm h2o/s)
@@ -266,13 +282,28 @@ CONTAINS
 ! [1] for pervious road, the same as soil
 !=======================================================================
 
+      rain_irrig = 0.
+      qflx_irrig = 0.
+
+IF (DEF_URBAN_IRRIGATION /= 1) THEN
+      CALL UrbanIrrigationFluxes( lbp, idate  , deltim   , fveg, lai, patchlatr, patchlonr ,&
+                                  dz_gpersno  , z_gpersno, t_gpersno, porsl    , psi0, bsw ,&
+                                  wliq_gpersno, qflx_irrig )
+ENDIF
+
+      IF (qflx_irrig>0. .and. DEF_URBAN_IRRIGATION/=4) THEN
+          rain_irrig  = pgper_rain +  qflx_irrig
+      ELSE
+          rain_irrig  = pgper_rain
+      ENDIF
+
       rootflux(:) = rootr(:)*etr
 
       CALL WATER_2014 (ipatch,patchtype,lbp        ,nl_soil     ,deltim      ,&
              z_gpersno   ,dz_gpersno  ,zi_gpersno  ,bsw         ,porsl       ,&
              psi0        ,hksati      ,theta_r     ,fsatmax     ,fsatdcf     ,&
              elvstd      ,BVIC        ,rootr       ,rootflux    ,t_gpersno   ,&
-             wliq_gpersno,wice_gpersno,smp         ,hk          ,pgper_rain  ,&
+             wliq_gpersno,wice_gpersno,smp         ,hk          ,rain_irrig  ,&
              sm_gper     ,etr         ,qseva_gper  ,qsdew_gper  ,qsubl_gper  ,&
              qfros_gper                                                      ,&
              !NOTE: temporal input, as urban mode doesn't support split soil&snow
