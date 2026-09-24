@@ -164,6 +164,8 @@ MODULE MOD_Namelist
       type(datainfo) :: landcover
       type(datainfo) :: pft
       type(datainfo) :: htop
+      type(datainfo) :: cdepth
+      type(datainfo) :: cratio
       type(datainfo) :: lai_sai
       type(datainfo) :: soil_property
       type(datainfo) :: soil_th
@@ -201,6 +203,8 @@ MODULE MOD_Namelist
       type(rawdata_nml_entry) :: landcover
       type(rawdata_nml_entry) :: pft
       type(rawdata_nml_entry) :: htop
+      type(rawdata_nml_entry) :: cdepth
+      type(rawdata_nml_entry) :: cratio
       type(rawdata_nml_entry) :: lai_sai
       type(rawdata_nml_entry) :: soil_property
       type(rawdata_nml_entry) :: soil_th
@@ -245,6 +249,8 @@ MODULE MOD_Namelist
    logical :: DEF_SOLO_PFT = .false.
    logical :: DEF_FAST_PC  = .true.
    logical :: DEF_PC_CROP_SPLIT = .true.
+   ! Use remotely sensed crown depth and crown aspect ratio data.
+   logical :: DEF_RS_CROWN_STRUCTURE = .false.
    character(len=256) :: DEF_SUBGRID_SCHEME = 'LCT'
 
    logical :: DEF_LANDONLY                  = .true.
@@ -352,6 +358,7 @@ MODULE MOD_Namelist
    ! 3: TR13, Tang and Riley (2013)
    ! 4: LP92, Lee and Pielke (1992)
    ! 5: S92,  Sellers et al (1992)
+   ! 6: S92_sand, Liu et al (2026)
    integer :: DEF_RSS_SCHEME = 1
 
    ! ----- Options for runoff parameterization schemes -----
@@ -383,8 +390,8 @@ MODULE MOD_Namelist
    logical :: DEF_USE_BEDROCK               = .false.
 
    ! ----- Ozone stress -----
-   logical :: DEF_USE_OZONESTRESS = .true.
-   logical :: DEF_USE_OZONEDATA   = .true.
+   logical :: DEF_USE_OZONESTRESS = .false.
+   logical :: DEF_USE_OZONEDATA   = .false.
 
    ! ----- SNICAR model related -----
    logical :: DEF_USE_SNICAR                  = .false.
@@ -1181,6 +1188,7 @@ CONTAINS
       DEF_USE_PC,                             &
       DEF_FAST_PC,                            &
       DEF_PC_CROP_SPLIT,                      &
+      DEF_RS_CROWN_STRUCTURE,                 &
       DEF_SOLO_PFT,                           &
       DEF_SUBGRID_SCHEME,                     &
 
@@ -1355,7 +1363,6 @@ CONTAINS
 
       ! ----- open the namelist file -----
       IF (p_is_master) THEN
-
          open(10, status='OLD', file=nlfile, form="FORMATTED")
          read(10, nml=nl_colm, iostat=ierr, iomsg=iomesg)
          IF (ierr /= 0) THEN
@@ -1364,7 +1371,7 @@ CONTAINS
          ENDIF
          close(10)
 
-         CALL set_rawdata_default()
+         ! CALL set_rawdata_default()
          open(10, status='OLD', file=trim(DEF_rawdata_namelist), form="FORMATTED")
          read(10, nml=nl_colm_rawdata, iostat=ierr)
          IF (ierr /= 0) THEN
@@ -1475,6 +1482,12 @@ CONTAINS
          DEF_USE_PC   = .true.
          DEF_SOLO_PFT = .false.
 #endif
+
+         IF (DEF_RS_CROWN_STRUCTURE .and. .not. (DEF_USE_PFT .or. DEF_USE_PC)) THEN
+            write(*,*) 'WARNING: DEF_RS_CROWN_STRUCTURE is only available for the PFT or PC subgrid scheme.'
+            write(*,*) '         The default crown structure parameterization will be used instead.'
+            DEF_RS_CROWN_STRUCTURE = .false.
+         ENDIF
 
 #if (defined LULC_IGBP_PFT || defined LULC_IGBP_PC)
          IF (.not.DEF_LAI_MONTHLY) THEN
@@ -1811,6 +1824,7 @@ ENDIF
       CALL mpi_bcast (DEF_Srfdata_CompressLevel              ,1   ,mpi_integer   ,p_address_master ,p_comm_glb ,p_err)
 
       CALL mpi_bcast (DEF_rawdata_namelist                   ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_RS_CROWN_STRUCTURE                 ,1   ,mpi_logical   ,p_address_master ,p_comm_glb ,p_err)
 
       ! 09/2025, added by yuan: rawdata info
       CALL mpi_bcast (DEF_rawdata%landcover%dir              ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
@@ -1857,6 +1871,16 @@ ENDIF
       CALL mpi_bcast (DEF_rawdata%htop%gname                 ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
       CALL mpi_bcast (DEF_rawdata%htop%fname                 ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
       CALL mpi_bcast (DEF_rawdata%htop%vname                 ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+
+      CALL mpi_bcast (DEF_rawdata%cdepth%dir                   ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%cdepth%gname                 ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%cdepth%fname                 ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%cdepth%vname                 ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+
+      CALL mpi_bcast (DEF_rawdata%cratio%dir                   ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%cratio%gname                 ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%cratio%fname                 ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
+      CALL mpi_bcast (DEF_rawdata%cratio%vname                 ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
 
       CALL mpi_bcast (DEF_rawdata%urban_type%dir             ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
       CALL mpi_bcast (DEF_rawdata%urban_type%gname           ,256 ,mpi_character ,p_address_master ,p_comm_glb ,p_err)
@@ -2212,6 +2236,8 @@ ENDIF
    IMPLICIT NONE
 
       DEF_rawdata_nml%htop%opt(:)%vname          = 'HTOP'
+      DEF_rawdata_nml%cdepth%opt(:)%vname        = 'CROWN_DEPTH'
+      DEF_rawdata_nml%cratio%opt(:)%vname        = 'ASPECT_RATIO'
       DEF_rawdata_nml%urban_htop%opt(:)%vname    = 'HTOP'
 
    END SUBROUTINE set_rawdata_default
@@ -2225,6 +2251,8 @@ ENDIF
       DEF_rawdata%landcover     = DEF_rawdata_nml%landcover%opt     ( DEF_rawdata_nml%landcover%idx     )
       DEF_rawdata%pft           = DEF_rawdata_nml%pft%opt           ( DEF_rawdata_nml%pft%idx           )
       DEF_rawdata%htop          = DEF_rawdata_nml%htop%opt          ( DEF_rawdata_nml%htop%idx          )
+      DEF_rawdata%cdepth        = DEF_rawdata_nml%cdepth%opt        ( DEF_rawdata_nml%cdepth%idx          )
+      DEF_rawdata%cratio        = DEF_rawdata_nml%cratio%opt        ( DEF_rawdata_nml%cratio%idx          )
       DEF_rawdata%lai_sai       = DEF_rawdata_nml%lai_sai%opt       ( DEF_rawdata_nml%lai_sai%idx       )
       DEF_rawdata%soil_property = DEF_rawdata_nml%soil_property%opt ( DEF_rawdata_nml%soil_property%idx )
       DEF_rawdata%soil_th       = DEF_rawdata_nml%soil_th%opt       ( DEF_rawdata_nml%soil_th%idx       )
