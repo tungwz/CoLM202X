@@ -45,7 +45,7 @@ MODULE MOD_Urban_Flux
 !-----------------------------------------------------------------------
    USE MOD_Precision
    USE MOD_SPMD_Task
-   USE MOD_Namelist, only: DEF_RSS_SCHEME, DEF_VEG_SNOW
+   USE MOD_Namelist, only: DEF_RSS_SCHEME, DEF_VEG_SNOW, DEF_URBAN_Irrigation
    USE MOD_Vars_Global
    USE MOD_Qsadv, only: qsadv
    IMPLICIT NONE
@@ -70,7 +70,7 @@ MODULE MOD_Urban_Flux
    real(r8), parameter :: flh = 0.15
 
    ! A simple urban irrigation scheme accounts for soil water stress of trees
-   logical,  parameter :: DEF_URBAN_Irrigation = .true.
+!   logical,  parameter :: DEF_URBAN_Irrigation = .false.
    real(r8), parameter :: rstfac_irrig = 1.
 
 !-----------------------------------------------------------------------
@@ -1932,7 +1932,7 @@ ENDIF
                            - fc(3)*aQ*aQ/(rv*cQ*(1-aQ*fg/(cQ*rd(2))-bQ*fg/(cQ*rd(3)))) )
          ENDIF
 
-IF ( DEF_URBAN_Irrigation ) THEN
+IF ( DEF_URBAN_IRRIGATION == 1 ) THEN
          IF (etr.ge.trsmx0*rstfac_irrig) THEN
             etr = trsmx0*rstfac_irrig
             etr_dtl = 0.
@@ -1973,7 +1973,7 @@ ENDIF
             fevpl =  0.1*fevpl
          ENDIF
 
-IF ( DEF_URBAN_Irrigation ) THEN
+IF ( DEF_URBAN_IRRIGATION == 1 ) THEN
          etr_= rhoair * (1.-fwet) * delta * lai/(rb(i)+rs_) &
              * (qsatl(i) - qaf(botlay))
 
@@ -2271,7 +2271,7 @@ ENDIF
       ENDIF
       respc = respc + rsoil
 
-IF ( DEF_URBAN_Irrigation ) THEN
+IF ( DEF_URBAN_IRRIGATION == 1 ) THEN
       etr_deficit = max(0., etr - etr_)
 ENDIF
 

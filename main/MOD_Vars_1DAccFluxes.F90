@@ -146,6 +146,8 @@ MODULE MOD_Vars_1DAccFluxes
    real(r8), allocatable :: a_lfevpgper (:) !latent heat flux from pervious road [W/m2]
    real(r8), allocatable :: a_lfevpurbl (:) !latent heat flux from urban vegetation [W/m2]
 
+   real(r8), allocatable :: a_urb_irrig (:)
+
    real(r8), allocatable :: a_troof     (:) !temperature of roof [K]
    real(r8), allocatable :: a_twall     (:) !temperature of wall [K]
 #endif
@@ -632,6 +634,8 @@ CONTAINS
                allocate (a_lfevpgimp (numurban))
                allocate (a_lfevpgper (numurban))
                allocate (a_lfevpurbl (numurban))
+
+               allocate (a_urb_irrig (numurban))
 
                allocate (a_troof     (numurban))
                allocate (a_twall     (numurban))
@@ -1127,6 +1131,8 @@ CONTAINS
                deallocate (a_lfevpgper )
                deallocate (a_lfevpurbl )
 
+               deallocate (a_urb_irrig )
+
                deallocate (a_troof     )
                deallocate (a_twall     )
             ENDIF
@@ -1621,6 +1627,8 @@ CONTAINS
                a_lfevpgimp(:) = spval
                a_lfevpgper(:) = spval
                a_lfevpurbl(:) = spval
+
+               a_urb_irrig(:) = spval
 
                a_troof    (:) = spval
                a_twall    (:) = spval
@@ -2233,6 +2241,8 @@ CONTAINS
                CALL acc1d(lfevp_gimp , a_lfevpgimp )
                CALL acc1d(lfevp_gper , a_lfevpgper )
                CALL acc1d(lfevp_urbl , a_lfevpurbl )
+
+               CALL acc1d(urb_irrig  , a_urb_irrig )
 
                CALL acc1d(t_roof     , a_troof     )
                CALL acc1d(t_wall     , a_twall     )
