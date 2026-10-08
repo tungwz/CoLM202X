@@ -711,7 +711,7 @@
 
    ! A simple urban irrigation scheme accounts for soil water stress of trees
    ! a factor represents irrigation efficiency, '1' represents a 50% direct irrigation efficiency.
-   real(r8), parameter :: wst_irrig = 2.0
+   real(r8), parameter :: wst_irrig = 1.0
 
 !-----------------------------------------------------------------------
 
@@ -1333,7 +1333,8 @@ ENDIF
       laisha = 0.0
       green  = 1.
 
-      h2osoi = wliq_soisno(1:)/(dz_soi(1:)*denh2o) + wice_soisno(1:)/(dz_soi(1:)*denice)
+      ! h2osoi = wliq_soisno(1:)/(dz_soi(1:)*denh2o) + wice_soisno(1:)/(dz_soi(1:)*denice)
+      h2osoi = (wliq_gpersno(1:)*(1-froof)*fgper)/(dz_soi(1:)*denh2o) + (wice_gpersno(1:)*(1-froof)*fgper)/(dz_soi(1:)*denice)
       wat = sum(wice_soisno(1:)+wliq_soisno(1:))
       wat = wat + scv + ldew*fveg + wa*(1-froof)*fgper
 

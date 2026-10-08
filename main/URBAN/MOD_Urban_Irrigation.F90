@@ -83,9 +83,19 @@ IF (DEF_URBAN_IRRIGATION == 4) THEN
 ENDIF
 
       irrig_period = .False.
+!hour
+      IF (DEF_simulation_time%greenwich) THEN
+         ! convert GMT time to local time
+         londeg = patchlonr*180/PI
+         sdate  = idate
+
+         sdate(3) = sdate(3) - deltim
+         CALL gmt2local(sdate, londeg, ldate)
+      ENDIF
+
 !Identify fveg > 0 and lai > 0
       IF (fveg > 1.e-5 .and. lai > 1.e-5) THEN
-         CALL julian2monthday(idate(1), idate(2), month, day)
+         CALL julian2monthday(ldate(1), ldate(2), month, day)
 !month
          IF (patchlatr>=0. .and. month>=urb_irr_start_month .and. month<=urb_irr_end_month) THEN
             irrig_period = .TRUE.
@@ -96,16 +106,6 @@ ENDIF
          ENDIF
 
          IF (irrig_period) THEN
-!hour
-            IF (DEF_simulation_time%greenwich) THEN
-              ! convert GMT time to local time
-               londeg = patchlonr*180/PI
-               sdate  = idate
-
-               sdate(3) = sdate(3) - deltim
-               CALL gmt2local(sdate, londeg, ldate)
-            ENDIF
-
             IF (DEF_simulation_time%greenwich) THEN
                seconds_start_time = ldate(3) - urb_irr_start_time*3600.
             ELSE
@@ -168,7 +168,7 @@ ENDIF
       urb_threshold_irrig                  = 0._r8
       urb_deficit_irrig                    = 0._r8
       ! set irrigation depth and threshold fraction
-      urb_irrig_max_depth                  = 0.6 !4
+      urb_irrig_max_depth                  = 0.5 !4
       urb_irrig_threshold_fraction         = 0.75_r8
 
       ! calculate total irrigation needed in all soil layers
@@ -233,7 +233,7 @@ ENDIF
       urb_threshold_irrig                  = 0._r8
       urb_deficit_irrig                    = 0._r8
       ! set irrigation depth and threshold fraction
-      urb_irrig_max_depth                  = 0.6
+      urb_irrig_max_depth                  = 0.5
       urb_irrig_threshold_fraction         = 1._r8
 
       ! calculate wilting point and field capacity
@@ -382,9 +382,9 @@ ENDIF
 
 IF (DEF_URBAN_IRRIGATION == 4) THEN
    DO i = 1,6
-      IF ((check_urban_irrig) .and. wliq_gpersno(i)/dz_gpersno(i)/denh2o < 0.329) THEN
-         urb_qflx_irrig = urb_qflx_irrig + (0.329*dz_gpersno(i)*denh2o - wliq_gpersno(i))/deltim
-         wliq_gpersno(i)= 0.329*dz_gpersno(i)*denh2o
+      IF ((check_urban_irrig) .and. wliq_gpersno(i)/dz_gpersno(i)/denh2o < 0.33) THEN
+         urb_qflx_irrig = urb_qflx_irrig + (0.33*dz_gpersno(i)*denh2o - wliq_gpersno(i))/deltim
+         wliq_gpersno(i)= 0.33*dz_gpersno(i)*denh2o
       ENDIF
    ENDDO
 ENDIF
