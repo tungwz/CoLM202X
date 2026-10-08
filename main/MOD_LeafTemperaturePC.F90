@@ -318,7 +318,7 @@ CONTAINS
         extkn           ! coefficient of leaf nitrogen allocation
 
    integer, dimension(ps:pe)  :: &
-        c3c4 ! C3/C4 plant type
+        c3c4            ! C3/C4 plant type
 
    real(r8), dimension(ps:pe) :: &
         kmax_sun,      &! Plant Hydraulics Parameters
@@ -541,6 +541,20 @@ CONTAINS
 
       dtl(:,:) = 0.
       fevpl_bef(:) = 0.
+
+! ==== FIX 2026-08-16 #4 BEGIN: when ozone stress is OFF, the ozone coefficients
+! were left as spval (never read from restart, and the ELSE branch below that sets
+! them to 1.0 runs only AFTER the stability iteration). They are USED inside the
+! iteration (gs0sun at line ~1200), so initialize them to 1.0 BEFORE the loop. ====
+      IF (.not. DEF_USE_OZONESTRESS) THEN
+         DO i = ps, pe
+            o3coefv_sun(i) = 1.0_r8
+            o3coefg_sun(i) = 1.0_r8
+            o3coefv_sha(i) = 1.0_r8
+            o3coefg_sha(i) = 1.0_r8
+         ENDDO
+      ENDIF
+! ==== FIX 2026-08-16 #4 END ====
 
       d_opt  = 2
       rd_opt = 3
@@ -1164,7 +1178,7 @@ CONTAINS
 
 ! note: calculate resistance for sunlit/shaded leaves
 !-----------------------------------------------------------------------
-               CALL stomata ( vmax25(i)    ,effcon(i) ,c3c4(i)   ,slti(i)   ,hlti(i)   ,&
+               CALL stomata ( vmax25(i)    ,effcon(i) ,slti(i)   ,hlti(i)   ,&
                     shti(i)    ,hhti(i)    ,trda(i)   ,trdm(i)   ,trop(i)   ,&
                     g1(i)      ,g0(i)      ,gradm(i)  ,binter(i) ,thm       ,&
                     psrf       ,po2m       ,pco2m     ,pco2a     ,eah       ,&
@@ -1174,26 +1188,26 @@ CONTAINS
 !End ozone stress variables
                     lambda(i),                         &
                     rbsun      ,raw        ,rstfacsun(i),cintsun(:,i),&
-                    assimsun(i),respcsun(i),rssun(i)   )
+                    assimsun(i),respcsun(i),rssun(i)   ,c3c4=c3c4(i))
 
-               CALL stomata ( vmax25(i)    ,effcon(i) ,c3c4(i)   ,slti(i)   ,hlti(i)   ,&
+               CALL stomata ( vmax25(i)    ,effcon(i) ,slti(i)   ,hlti(i)   ,&
                     shti(i)    ,hhti(i)    ,trda(i)   ,trdm(i)   ,trop(i)   ,&
                     g1(i)      ,g0(i)      ,gradm(i)  ,binter(i) ,thm       ,&
                     psrf       ,po2m       ,pco2m     ,pco2a     ,eah       ,&
                     ei(i)      ,tl(i)      ,parsha(i) ,&
 !Ozone stress variables
-                    o3coefv_sun(i),     o3coefg_sun(i),&
+                    o3coefv_sha(i),     o3coefg_sha(i),&
 !End ozone stress variables
 !WUE stomata model parameter
                     lambda(i)                                               ,&
 !WUE stomata model parameter
                     rbsha      ,raw        ,rstfacsha(i),cintsha(:,i),&
-                    assimsha(i),respcsha(i),rssha(i)   )
+                    assimsha(i),respcsha(i),rssha(i)   ,c3c4=c3c4(i))
 
                IF (DEF_USE_PLANTHYDRAULICS) THEN
 
-                  gs0sun(i) = min( 1.e6, 1./(rssun(i)*tl(i)/tprcor) )/ laisun(i) * 1.e6
-                  gs0sha(i) = min( 1.e6, 1./(rssha(i)*tl(i)/tprcor) )/ laisha(i) * 1.e6
+                  gs0sun(i) = min( 1.e6, 1./(rssun(i)*tl(i)/tprcor) )/ laisun(i) * 1.e6 * o3coefg_sun(i)
+                  gs0sha(i) = min( 1.e6, 1./(rssha(i)*tl(i)/tprcor) )/ laisha(i) * 1.e6 * o3coefg_sha(i)
 
                   CALL PlantHydraulicStress_twoleaf (nl_soil     ,nvegwcs      ,z_soi        ,&
                         dz_soi       ,rootfr(:,i)  ,psrf         ,qsatl(i)     ,qaf(clev)    ,&
@@ -1211,12 +1225,14 @@ CONTAINS
                   gssha(i) = gssha(i) * laisha(i) * 1.e-6
 
                   CALL update_photosyn(tl(i), po2m, pco2m, pco2a, parsun(i), psrf, rstfacsun(i), &
-                     rb(i), gssun(i), effcon(i), vmax25(i), c3c4(i), gradm(i), trop(i), slti(i), hlti(i), &
-                     shti(i), hhti(i), trda(i), trdm(i), cintsun(:,i), assimsun(i), respcsun(i))
+                     rb(i), gssun(i), effcon(i), vmax25(i), gradm(i), trop(i), slti(i), hlti(i), &
+                     shti(i), hhti(i), trda(i), trdm(i), cintsun(:,i), assimsun(i), respcsun(i), &
+                     c3c4=c3c4(i))
 
                   CALL update_photosyn(tl(i), po2m, pco2m, pco2a, parsha(i), psrf, rstfacsha(i), &
-                     rb(i), gssha(i), effcon(i), vmax25(i), c3c4(i), gradm(i), trop(i), slti(i), hlti(i), &
-                     shti(i), hhti(i), trda(i), trdm(i), cintsha(:,i), assimsha(i), respcsha(i))
+                     rb(i), gssha(i), effcon(i), vmax25(i), gradm(i), trop(i), slti(i), hlti(i), &
+                     shti(i), hhti(i), trda(i), trdm(i), cintsha(:,i), assimsha(i), respcsha(i), &
+                     c3c4=c3c4(i))
 
                   ! leaf scale stomata resistance
                   rssun(i) = tprcor / tl(i) / gssun(i)
@@ -1744,14 +1760,21 @@ ENDIF
          DO i = ps, pe
             p = pftclass(i)
             CALL CalcOzoneStress(o3coefv_sun(i),o3coefg_sun(i),forc_ozone,psrf,th,ram,&
-                                 rssun(i),rbsun,lai(i),lai_old(i),p,o3uptakesun(i),sabv(i),deltim)
+                                 rssun(i),rb(i),lai(i),lai_old(i),p,o3uptakesun(i),sabv(i),deltim)
             CALL CalcOzoneStress(o3coefv_sha(i),o3coefg_sha(i),forc_ozone,psrf,th,ram,&
-                                 rssha(i),rbsha,lai(i),lai_old(i),p,o3uptakesha(i),sabv(i),deltim)
+                                 rssha(i),rb(i),lai(i),lai_old(i),p,o3uptakesha(i),sabv(i),deltim)
             lai_old(i) = lai(i)
             assimsun(i) = assimsun(i) * o3coefv_sun(i)
             assimsha(i) = assimsha(i) * o3coefv_sha(i)
-            rssun   (i) = rssun   (i) / o3coefg_sun(i)
-            rssha   (i) = rssha   (i) / o3coefg_sha(i)
+!            rssun   (i) = rssun   (i) / o3coefg_sun(i)
+!            rssha   (i) = rssha   (i) / o3coefg_sha(i)
+         ENDDO
+      ELSE
+         DO i = ps, pe
+            o3coefv_sun(i) = 1.0_r8
+            o3coefg_sun(i) = 1.0_r8
+            o3coefv_sha(i) = 1.0_r8
+            o3coefg_sha(i) = 1.0_r8
          ENDDO
       ENDIF
 
@@ -1898,6 +1921,26 @@ ENDIF
                   ldew (i)     = ldew_snow(i)
                ENDIF
             ELSEIF (DEF_Interception_scheme .eq. 6) THEN !VIC
+               IF (ldew_rain(i) .gt. evplwet(i)*deltim) THEN
+                  ldew_rain(i) = ldew_rain(i)-evplwet(i)*deltim
+                  ldew_snow(i) = ldew_snow(i)
+                  ldew(i)=ldew_rain(i)+ldew_snow(i)
+               ELSE
+                  ldew_rain(i) = 0.0
+                  ldew_snow(i) = max(0., ldew(i)-evplwet(i)*deltim)
+                  ldew (i)     = ldew_snow(i)
+               ENDIF
+            ELSEIF (DEF_Interception_scheme .eq. 7) THEN !JULES
+               IF (ldew_rain(i) .gt. evplwet(i)*deltim) THEN
+                  ldew_rain(i) = ldew_rain(i)-evplwet(i)*deltim
+                  ldew_snow(i) = ldew_snow(i)
+                  ldew(i)=ldew_rain(i)+ldew_snow(i)
+               ELSE
+                  ldew_rain(i) = 0.0
+                  ldew_snow(i) = max(0., ldew(i)-evplwet(i)*deltim)
+                  ldew (i)     = ldew_snow(i)
+               ENDIF
+            ELSEIF (DEF_Interception_scheme .eq. 8) THEN !CoLM202x
                IF (ldew_rain(i) .gt. evplwet(i)*deltim) THEN
                   ldew_rain(i) = ldew_rain(i)-evplwet(i)*deltim
                   ldew_snow(i) = ldew_snow(i)

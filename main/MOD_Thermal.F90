@@ -37,11 +37,13 @@ CONTAINS
                        rss           ,gssun_out     ,gssha_out     ,assimsun_out  ,&
                        etrsun_out    ,assimsha_out  ,etrsha_out    ,&
 !photosynthesis and plant hydraulic variables
-                       effcon        ,vmax25        ,c3c4          ,hksati        ,smp     ,hk   ,&
+                       effcon        ,vmax25        ,c3c4          ,hksati        ,&
+                       smp           ,hk            ,&
                        kmax_sun      ,kmax_sha      ,kmax_xyl      ,kmax_root     ,&
                        psi50_sun     ,psi50_sha     ,psi50_xyl     ,psi50_root    ,&
                        ck            ,vegwp         ,gs0sun        ,gs0sha        ,&
 !Ozone stress variables
+                       o3coefv_sun   ,o3coefv_sha   ,o3coefg_sun   ,o3coefg_sha   ,&
                        lai_old       ,o3uptakesun   ,o3uptakesha   ,forc_ozone    ,&
 !end ozone stress variables
 !Ozone WUE stomata model parameter
@@ -256,7 +258,7 @@ CONTAINS
        zi_soisno(lb-1:nl_soil)    ! interface depth [m]
 
    integer , intent(in) :: &
-       c3c4 ! C3/C4 plant type
+       c3c4                       ! C3/C4 plant type
 
    real(r8), intent(in) :: &
        sabg_snow_lyr(lb:1)        ! snow layer absorption
@@ -365,6 +367,15 @@ CONTAINS
        fh,                       &! integral of profile function for heat
        fq                         ! integral of profile function for moisture
 
+!Ozone stress variables
+   real(r8),intent(inout) ::     &
+        o3coefv_sun,&! Ozone stress factor for photosynthesis on sunlit leaf
+        o3coefv_sha,&! Ozone stress factor for photosynthesis on sunlit leaf
+        o3coefg_sun,&! Ozone stress factor for stomata on shaded leaf
+        o3coefg_sha  ! Ozone stress factor for stomata on shaded leaf
+!end ozone stress variables
+
+
 !-------------------------- Local Variables ----------------------------
 
    integer i,j
@@ -425,9 +436,6 @@ CONTAINS
 
    real(r8) :: z0m_g,z0h_g,zol_g,obu_g,rib_g,ustar_g,qstar_g,tstar_g
    real(r8) :: fm10m,fm_g,fh_g,fq_g,fh2m,fq2m,um,obu
-!Ozone stress variables
-   real(r8) :: o3coefv_sun, o3coefv_sha, o3coefg_sun, o3coefg_sha
-!end ozone stress variables
 
    integer p, ps, pe, pn
 
@@ -536,7 +544,8 @@ ENDIF
       qred = 1.
       hr   = 1.
 
-      IF ((patchtype<=1) .or. is_dry_lake) THEN            !soil ground
+      IF ((patchtype<=1) .or. is_dry_lake &
+         .or. (DEF_USE_Dynamic_Wetland .and. (patchtype==2))) THEN  !soil ground
          wx   = (wliq_soisno(1)/denh2o + wice_soisno(1)/denice)/dz_soisno(1)
          IF (porsl(1) < 1.e-6) THEN     !bed rock
             fac  = 0.001
@@ -598,7 +607,7 @@ ENDIF
 
          !NOTE: If the beta scheme is used, the rss is not soil resistance,
          !but soil beta factor (soil wetness relative to field capacity [0-1]).
-         CALL SoilSurfaceResistance (nl_soil,forc_rhoair,hksati,porsl,psi0, &
+         CALL SoilSurfaceResistance (nl_soil,forc_rhoair,hksati,porsl,psi0,vf_sand, &
 #ifdef Campbell_SOIL_MODEL
                             bsw, &
 #endif
@@ -977,6 +986,28 @@ IF ( DEF_USE_PC .and. pn.ge.ps ) THEN
       etrsha_p   (ps:pe) = 0.
       gssun_p    (ps:pe) = 0.
       gssha_p    (ps:pe) = 0.
+
+! ==== FIX 2026-08-16 BEGIN: initialize pft-loop arrays that the PC path skips ====
+! For LULC_IGBP_PC cases, the pft loop above is skipped by CYCLE, so rootflux_p,
+! rootr_p, etrc_p, rstfac_p (and their sun/sha copies) were NEVER assigned before
+! being passed into LeafTemperaturePC -> uninitialized heap memory entered the
+! plant-hydraulics solver, causing run-dependent (case-dependent) tiny differences
+! in canopy fluxes (ulrad/olrg ~1e-5 W/m2). Initialize them explicitly.
+      rootflux_p (:,ps:pe) = 0.
+      rootr_p    (:,ps:pe) = 0.
+      etrc_p       (ps:pe) = 0.
+      rstfac_p     (ps:pe) = 1.
+      rstfacsun_p  (ps:pe) = 1.
+      rstfacsha_p  (ps:pe) = 1.
+      ! fsun_p is normally set in the pft loop (skipped by CYCLE for PC cases);
+      ! without this it enters LeafTemperaturePC as uninitialized heap memory.
+      fsun_p(ps:pe) = (1. - exp(-min(extkb_p(ps:pe)*lai_p(ps:pe),40.))) &
+                    / max(min(extkb_p(ps:pe)*lai_p(ps:pe),40.), 1.e-6)
+      DO i = ps, pe
+         IF (coszen<=0.0 .or. sabv_p(i)<1.) fsun_p(i) = 0.5
+      ENDDO
+! ==== FIX 2026-08-16 END ====
+
       fcover     (ps:pe) = pftfrac(ps:pe) / sum(pftfrac(ps:pe))
       z0m_p      (ps:pe) = (1.-fsno)*zlnd + fsno*zsno
       z0m                = sum( z0m_p (ps:pe)*pftfrac(ps:pe) )

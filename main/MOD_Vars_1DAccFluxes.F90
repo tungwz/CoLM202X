@@ -93,9 +93,13 @@ MODULE MOD_Vars_1DAccFluxes
    real(r8), allocatable :: a_laisun    (:)
    real(r8), allocatable :: a_laisha    (:)
    real(r8), allocatable :: a_sai       (:)
+   real(r8), allocatable :: a_alb       (:,:,:)
 
-   real(r8), allocatable :: a_alb   (:,:,:)
-
+#ifdef HYPERSPECTRAL
+   real(r8), allocatable :: a_alb_hires (:,:,:)
+   real(r8), allocatable :: a_reflectance_out   (:,:,:)
+   real(r8), allocatable :: a_transmittance_out (:,:,:)
+#endif
    real(r8), allocatable :: a_emis      (:)
    real(r8), allocatable :: a_z0m       (:)
    real(r8), allocatable :: a_trad      (:)
@@ -388,6 +392,8 @@ MODULE MOD_Vars_1DAccFluxes
    real(r8), allocatable :: a_wliq_soisno (:,:)
    real(r8), allocatable :: a_wice_soisno (:,:)
    real(r8), allocatable :: a_h2osoi      (:,:)
+   real(r8), allocatable :: a_qlayer      (:,:)
+   real(r8), allocatable :: a_lake_deficit  (:)
    real(r8), allocatable :: a_rootr       (:,:)
    real(r8), allocatable :: a_BD_all      (:,:)
    real(r8), allocatable :: a_wfc         (:,:)
@@ -466,7 +472,12 @@ MODULE MOD_Vars_1DAccFluxes
    real(r8), allocatable :: a_srviln  (:)
    real(r8), allocatable :: a_srndln  (:)
    real(r8), allocatable :: a_srniln  (:)
-
+#ifdef HYPERSPECTRAL
+   real(r8), allocatable :: a_sol_dir_ln_hires(:,:)
+   real(r8), allocatable :: a_sol_dif_ln_hires(:,:)
+   real(r8), allocatable :: a_sr_dir_ln_hires (:,:)
+   real(r8), allocatable :: a_sr_dif_ln_hires (:,:)
+#endif
    real(r8), allocatable :: a_sensors (:,:)
 
    PUBLIC :: allocate_acc_fluxes
@@ -571,8 +582,12 @@ CONTAINS
             allocate (a_laisha    (numpatch))
             allocate (a_sai       (numpatch))
 
-            allocate (a_alb   (2,2,numpatch))
-
+            allocate (a_alb       (2  ,2,numpatch))
+#ifdef HYPERSPECTRAL
+            allocate (a_alb_hires (211,2,numpatch))
+            allocate (a_reflectance_out  (211,16,numpatch))
+            allocate (a_transmittance_out(211,16,numpatch))
+#endif
             allocate (a_emis      (numpatch))
             allocate (a_z0m       (numpatch))
             allocate (a_trad      (numpatch))
@@ -867,6 +882,8 @@ CONTAINS
             allocate (a_wliq_soisno (maxsnl+1:nl_soil,numpatch))
             allocate (a_wice_soisno (maxsnl+1:nl_soil,numpatch))
             allocate (a_h2osoi      (1:nl_soil,       numpatch))
+            allocate (a_qlayer      (0:nl_soil,       numpatch))
+            allocate (a_lake_deficit                 (numpatch))
             allocate (a_rootr       (1:nl_soil,       numpatch))
             allocate (a_BD_all      (1:nl_soil,       numpatch))
             allocate (a_wfc         (1:nl_soil,       numpatch))
@@ -946,7 +963,12 @@ CONTAINS
             allocate (a_srviln    (numpatch))
             allocate (a_srndln    (numpatch))
             allocate (a_srniln    (numpatch))
-
+#ifdef HYPERSPECTRAL
+            allocate (a_sol_dir_ln_hires(211, numpatch))
+            allocate (a_sol_dif_ln_hires(211, numpatch))
+            allocate (a_sr_dir_ln_hires (211, numpatch))
+            allocate (a_sr_dif_ln_hires (211, numpatch))
+#endif
             allocate (a_sensors (nsensor,numpatch))
 
             allocate (nac_ln      (numpatch))
@@ -1055,7 +1077,12 @@ CONTAINS
             deallocate (a_laisha    )
             deallocate (a_sai       )
 
-            deallocate (a_alb       )
+            deallocate (a_alb  )
+#ifdef HYPERSPECTRAL
+            deallocate (a_alb_hires  )
+            deallocate (a_reflectance_out  )
+            deallocate (a_transmittance_out)
+#endif
 
             deallocate (a_emis      )
             deallocate (a_z0m       )
@@ -1354,6 +1381,8 @@ CONTAINS
             deallocate (a_wliq_soisno )
             deallocate (a_wice_soisno )
             deallocate (a_h2osoi      )
+            deallocate (a_qlayer      )
+            deallocate (a_lake_deficit)
             deallocate (a_rootr       )
             deallocate (a_BD_all      )
             deallocate (a_wfc         )
@@ -1431,7 +1460,12 @@ CONTAINS
             deallocate (a_srviln    )
             deallocate (a_srndln    )
             deallocate (a_srniln    )
-
+#ifdef HYPERSPECTRAL
+            deallocate (a_sol_dir_ln_hires)
+            deallocate (a_sol_dif_ln_hires)
+            deallocate (a_sr_dir_ln_hires )
+            deallocate (a_sr_dif_ln_hires )
+#endif
             deallocate (a_sensors   )
 
             deallocate (nac_ln      )
@@ -1542,6 +1576,10 @@ CONTAINS
             a_sai       (:) = spval
 
             a_alb   (:,:,:) = spval
+
+#ifdef HYPERSPECTRAL
+            a_alb_hires (:,:,:) = spval
+#endif
 
             a_emis      (:) = spval
             a_z0m       (:) = spval
@@ -1836,6 +1874,8 @@ CONTAINS
             a_wliq_soisno  (:,:) = spval
             a_wice_soisno  (:,:) = spval
             a_h2osoi       (:,:) = spval
+            a_qlayer       (:,:) = spval
+            a_lake_deficit   (:) = spval
             a_rootr        (:,:) = spval
             a_BD_all       (:,:) = spval
             a_wfc          (:,:) = spval
@@ -1915,7 +1955,12 @@ CONTAINS
             a_srviln   (:) = spval
             a_srndln   (:) = spval
             a_srniln   (:) = spval
-
+#ifdef HYPERSPECTRAL
+            a_sol_dir_ln_hires(:,:) = spval
+            a_sol_dif_ln_hires(:,:) = spval
+            a_sr_dir_ln_hires (:,:) = spval
+            a_sr_dif_ln_hires (:,:) = spval
+#endif
             a_sensors(:,:) = spval
 
             nac_ln     (:) = 0
@@ -2062,12 +2107,6 @@ CONTAINS
 #ifndef CatchLateralFlow
             CALL acc1d (rsur_se , a_rsur_se )
             CALL acc1d (rsur_ie , a_rsur_ie )
-
-            WHERE ((rsur /= spval) .and. (rnof /= spval))
-               rsub = rnof - rsur
-            ELSEWHERE
-               rsub = spval
-            END WHERE
 #endif
             CALL acc1d (rsub          , a_rsub           )
             CALL acc1d (rnof          , a_rnof           )
@@ -2119,6 +2158,9 @@ CONTAINS
 
             ! only acc for daytime for albedo
             CALL acc3d (alb           , a_alb, filter_dt )
+#ifdef HYPERSPECTRAL
+            CALL acc3d (alb_hires     , a_alb_hires, filter_dt )
+#endif
 
             CALL acc1d (emis          , a_emis           )
             CALL acc1d (z0m           , a_z0m            )
@@ -2443,18 +2485,23 @@ CONTAINS
             ENDIF
 #endif
             IF(DEF_USE_OZONESTRESS)THEN
-               CALL acc1d (forc_ozone      ,   a_ozone              )
+               CALL acc1d (forc_ozone  , a_ozone       )
             ENDIF
 
-            CALL acc2d (t_soisno   , a_t_soisno      )
-            CALL acc2d (wliq_soisno, a_wliq_soisno   )
-            CALL acc2d (wice_soisno, a_wice_soisno   )
+            IF (.not. DEF_USE_Dynamic_Lake) THEN
+               CALL acc1d (lake_deficit, a_lake_deficit)
+            ENDIF
 
-            CALL acc2d (h2osoi     , a_h2osoi        )
-            CALL acc2d (rootr      , a_rootr         )
-            CALL acc2d (BD_all     , a_BD_all        )
-            CALL acc2d (wfc        , a_wfc           )
-            CALL acc2d (OM_density , a_OM_density    )
+            CALL acc2d (t_soisno    , a_t_soisno     )
+            CALL acc2d (wliq_soisno , a_wliq_soisno  )
+            CALL acc2d (wice_soisno , a_wice_soisno  )
+
+            CALL acc2d (h2osoi      , a_h2osoi       )
+            CALL acc2d (qlayer      , a_qlayer       )
+            CALL acc2d (rootr       , a_rootr        )
+            CALL acc2d (BD_all      , a_BD_all       )
+            CALL acc2d (wfc         , a_wfc          )
+            CALL acc2d (OM_density  , a_OM_density   )
             IF(DEF_USE_PLANTHYDRAULICS)THEN
                CALL acc2d (vegwp    , a_vegwp        )
             ENDIF
@@ -2820,6 +2867,12 @@ CONTAINS
             CALL acc1d (srniln  , a_srniln  )
 
             CALL acc2d (sensors , a_sensors )
+#ifdef HYPERSPECTRAL
+            CALL acc2d (sol_dir_ln_hires, a_sol_dir_ln_hires)
+            CALL acc2d (sol_dif_ln_hires, a_sol_dif_ln_hires)
+            CALL acc2d (sr_dir_ln_hires , a_sr_dir_ln_hires )
+            CALL acc2d (sr_dif_ln_hires , a_sr_dif_ln_hires )
+#endif
 
          ENDIF
       ENDIF

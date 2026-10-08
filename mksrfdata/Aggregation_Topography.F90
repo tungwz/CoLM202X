@@ -7,7 +7,7 @@ SUBROUTINE Aggregation_Topography ( &
 !
 !   Yamazaki, D., Ikeshima, D., Sosa, J.,Bates, P. D., Allen, G. H.,
 !   Pavelsky, T. M. (2019).
-!   MERIT Hydro: ahigh‐resolution global hydrographymap based on
+!   MERIT Hydro: a high‐resolution global hydrographymap based on
 !   latest topography dataset.Water Resources Research, 55, 5053-5073.
 !
 !  Created by Shupeng Zhang, 05/2023
@@ -74,7 +74,7 @@ SUBROUTINE Aggregation_Topography ( &
       CALL mpi_barrier (p_comm_glb, p_err)
 #endif
 
-      lndname = trim(dir_rawdata)//'/topography.nc'
+      lndname = trim(dir_rawdata)//trim(DEF_rawdata%topo%dir)//'/topography.nc'
 
 ! ---------------------------------------------------------------------------------
 !   aggregate the elevation from the resolution of raw data to modelling resolution

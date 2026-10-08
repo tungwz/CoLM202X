@@ -23,6 +23,9 @@ MODULE MOD_Vars_PFTimeInvariants
    real(r8), allocatable :: pftfrac     (:) !PFT fractional cover
    real(r8), allocatable :: htop_p      (:) !canopy top height [m]
    real(r8), allocatable :: hbot_p      (:) !canopy bottom height [m]
+#ifdef LULC_IGBP_PC
+   real(r8), allocatable :: cratio_p    (:) !canopy depth to canopy width
+#endif
 #ifdef CROP
    real(r8), allocatable :: cropfrac    (:) !Crop fractional cover
 #endif
@@ -61,6 +64,9 @@ CONTAINS
             allocate (pftfrac       (numpft))
             allocate (htop_p        (numpft))
             allocate (hbot_p        (numpft))
+#ifdef LULC_IGBP_PC
+            allocate (cratio_p      (numpft))
+#endif
          ENDIF
 
 #ifdef CROP
@@ -85,6 +91,9 @@ CONTAINS
       CALL ncio_read_vector (file_restart, 'pftfrac ', landpft, pftfrac ) !
       CALL ncio_read_vector (file_restart, 'htop_p  ', landpft, htop_p  ) !
       CALL ncio_read_vector (file_restart, 'hbot_p  ', landpft, hbot_p  ) !
+#ifdef LULC_IGBP_PC
+      CALL ncio_read_vector (file_restart, 'cratio_p', landpft, cratio_p) !
+#endif
 #ifdef CROP
       CALL ncio_read_vector (file_restart, 'cropfrac ', landpatch, cropfrac) !
 #endif
@@ -113,6 +122,9 @@ CONTAINS
       CALL ncio_write_vector (file_restart, 'pftfrac ', 'pft', landpft, pftfrac , compress) !
       CALL ncio_write_vector (file_restart, 'htop_p  ', 'pft', landpft, htop_p  , compress) !
       CALL ncio_write_vector (file_restart, 'hbot_p  ', 'pft', landpft, hbot_p  , compress) !
+#ifdef LULC_IGBP_PC
+      CALL ncio_write_vector (file_restart, 'cratio_p', 'pft', landpft, cratio_p, compress) !
+#endif
 
 #ifdef CROP
       CALL ncio_define_dimension_vector (file_restart, landpatch, 'patch')
@@ -134,6 +146,9 @@ CONTAINS
             deallocate (pftfrac )
             deallocate (htop_p  )
             deallocate (hbot_p  )
+#ifdef LULC_IGBP_PC
+            deallocate (cratio_p)
+#endif
 #ifdef CROP
             deallocate (cropfrac)
 #endif
@@ -151,6 +166,9 @@ CONTAINS
       CALL check_vector_data ('pftfrac', pftfrac) !
       CALL check_vector_data ('htop_p ', htop_p ) !
       CALL check_vector_data ('hbot_p ', hbot_p ) !
+#ifdef LULC_IGBP_PC
+      CALL check_vector_data ('cratio_p', cratio_p) !
+#endif
 #ifdef CROP
       CALL check_vector_data ('cropfrac', cropfrac) !
 #endif
@@ -195,7 +213,9 @@ MODULE MOD_Vars_TimeInvariants
    real(r8), allocatable :: soil_d_v_alb   (:)  !albedo of visible of the dry soil
    real(r8), allocatable :: soil_s_n_alb   (:)  !albedo of near infrared of the saturated soil
    real(r8), allocatable :: soil_d_n_alb   (:)  !albedo of near infrared of the dry soil
-
+#ifdef HYPERSPECTRAL
+   real(r8), allocatable :: soil_alb     (:,:) ! hyper spectral soil albedo. (numpatch, nwl)
+#endif
    real(r8), allocatable :: vf_quartz    (:,:)  !volumetric fraction of quartz within mineral soil
    real(r8), allocatable :: vf_gravels   (:,:)  !volumetric fraction of gravels
    real(r8), allocatable :: vf_om        (:,:)  !volumetric fraction of organic matter
@@ -251,6 +271,9 @@ MODULE MOD_Vars_TimeInvariants
    real(r8), allocatable :: BA_beta      (:,:)  !beta in Balland and Arp(2005) thermal conductivity scheme
    real(r8), allocatable :: htop           (:)  !canopy top height [m]
    real(r8), allocatable :: hbot           (:)  !canopy bottom height [m]
+#ifdef LULC_IGBP_PC
+   real(r8), allocatable :: cratio         (:)  !ratio of canopy depth to width
+#endif
 
    real(r8), allocatable :: dbedrock       (:)  !depth to bedrock
    integer , allocatable :: ibedrock       (:)  !bedrock level
@@ -330,6 +353,9 @@ CONTAINS
             allocate (soil_d_v_alb         (numpatch))
             allocate (soil_s_n_alb         (numpatch))
             allocate (soil_d_n_alb         (numpatch))
+#ifdef HYPERSPECTRAL
+            allocate (soil_alb        (nwl, numpatch))
+#endif
 
             allocate (vf_quartz    (nl_soil,numpatch))
             allocate (vf_gravels   (nl_soil,numpatch))
@@ -384,6 +410,9 @@ CONTAINS
             allocate (BA_beta      (nl_soil,numpatch))
             allocate (htop                 (numpatch))
             allocate (hbot                 (numpatch))
+#ifdef LULC_IGBP_PC
+            allocate (cratio               (numpatch))
+#endif
             allocate (dbedrock             (numpatch))
             allocate (ibedrock             (numpatch))
             allocate (elvmean              (numpatch))
@@ -472,6 +501,9 @@ CONTAINS
       CALL ncio_read_vector (file_restart, 'soil_d_v_alb', landpatch, soil_d_v_alb)        ! albedo of visible of the dry soil
       CALL ncio_read_vector (file_restart, 'soil_s_n_alb', landpatch, soil_s_n_alb)        ! albedo of near infrared of the saturated soil
       CALL ncio_read_vector (file_restart, 'soil_d_n_alb', landpatch, soil_d_n_alb)        ! albedo of near infrared of the dry soil
+#ifdef HYPERSPECTRAL
+      CALL ncio_read_vector (file_restart, 'soil_alb'    , nwl, landpatch, soil_alb ) ! hyper spectral soil albedo. (numpatch, nwl)
+#endif
 
       CALL ncio_read_vector (file_restart, 'vf_quartz ',   nl_soil, landpatch, vf_quartz ) ! volumetric fraction of quartz within mineral soil
       CALL ncio_read_vector (file_restart, 'vf_gravels',   nl_soil, landpatch, vf_gravels) ! volumetric fraction of gravels
@@ -528,6 +560,9 @@ CONTAINS
       CALL ncio_read_vector (file_restart, 'BA_beta' ,     nl_soil, landpatch, BA_beta )   ! beta in Balland and Arp(2005) thermal conductivity scheme
       CALL ncio_read_vector (file_restart, 'htop'    ,     landpatch, htop)                !
       CALL ncio_read_vector (file_restart, 'hbot'    ,     landpatch, hbot)                !
+#ifdef LULC_IGBP_PC
+      CALL ncio_read_vector (file_restart, 'cratio'  ,     landpatch, cratio)              !
+#endif
 
       IF(DEF_USE_BEDROCK)THEN
          CALL ncio_read_vector (file_restart, 'debdrock' ,    landpatch, dbedrock)         !
@@ -665,6 +700,7 @@ CONTAINS
       CALL ncio_define_dimension_vector (file_restart, landpatch, 'zen',      num_zenith)
       CALL ncio_define_dimension_vector (file_restart, landpatch, 'zen_p',    num_zenith_parameter)
       CALL ncio_define_dimension_vector (file_restart, landpatch, 'type_a',    num_aspect_type)
+      CALL ncio_define_dimension_vector (file_restart, landpatch, 'wavelength', nwl)
 
       CALL ncio_write_vector (file_restart, 'patchclass', 'patch', landpatch, patchclass)                            !
       CALL ncio_write_vector (file_restart, 'patchtype' , 'patch', landpatch, patchtype )                            !
@@ -680,6 +716,9 @@ CONTAINS
       CALL ncio_write_vector (file_restart, 'soil_d_v_alb', 'patch', landpatch, soil_d_v_alb, compress)              ! albedo of visible of the dry soil
       CALL ncio_write_vector (file_restart, 'soil_s_n_alb', 'patch', landpatch, soil_s_n_alb, compress)              ! albedo of near infrared of the saturated soil
       CALL ncio_write_vector (file_restart, 'soil_d_n_alb', 'patch', landpatch, soil_d_n_alb, compress)              ! albedo of near infrared of the dry soil
+#ifdef HYPERSPECTRAL
+      CALL ncio_write_vector (file_restart, 'soil_alb'   , 'wavelength', nwl, 'patch', landpatch, soil_alb, compress) ! hyper spectral soil albedo. (numpatch, nwl)
+#endif
 
       CALL ncio_write_vector (file_restart, 'vf_quartz ', 'soil', nl_soil, 'patch', landpatch, vf_quartz , compress) ! volumetric fraction of quartz within mineral soil
       CALL ncio_write_vector (file_restart, 'vf_gravels', 'soil', nl_soil, 'patch', landpatch, vf_gravels, compress) ! volumetric fraction of gravels
@@ -733,8 +772,11 @@ CONTAINS
       CALL ncio_write_vector (file_restart, 'BA_alpha ' , 'soil', nl_soil, 'patch', landpatch, BA_alpha  , compress) ! alpha in Balland and Arp(2005) thermal conductivity scheme
       CALL ncio_write_vector (file_restart, 'BA_beta  ' , 'soil', nl_soil, 'patch', landpatch, BA_beta   , compress) ! beta in Balland and Arp(2005) thermal conductivity scheme
 
-      CALL ncio_write_vector (file_restart, 'htop' , 'patch', landpatch, htop)                                       !
-      CALL ncio_write_vector (file_restart, 'hbot' , 'patch', landpatch, hbot)                                       !
+      CALL ncio_write_vector (file_restart, 'htop'  , 'patch', landpatch, htop  )                                    !
+      CALL ncio_write_vector (file_restart, 'hbot'  , 'patch', landpatch, hbot  )                                    !
+#ifdef LULC_IGBP_PC
+      CALL ncio_write_vector (file_restart, 'cratio', 'patch', landpatch, cratio)                                    !
+#endif
 
       IF(DEF_USE_BEDROCK)THEN
          CALL ncio_write_vector (file_restart, 'debdrock' , 'patch', landpatch, dbedrock)
@@ -762,7 +804,7 @@ CONTAINS
          CALL ncio_write_vector (file_restart, 'cur_patches', 'patch', landpatch, cur_patches)
          CALL ncio_write_vector (file_restart, 'slp_type_patches',  'type_a', num_aspect_type, 'patch', landpatch, slp_type_patches)
          CALL ncio_write_vector (file_restart, 'asp_type_patches',  'type_a', num_aspect_type, 'patch', landpatch, asp_type_patches)
-      ENDIF   
+      ENDIF
 
 
 #ifdef USEMPI
@@ -846,6 +888,9 @@ CONTAINS
             deallocate (soil_d_v_alb   )
             deallocate (soil_s_n_alb   )
             deallocate (soil_d_n_alb   )
+#ifdef HYPERSPECTRAL
+            deallocate (soil_alb       )
+#endif
 
             deallocate (vf_quartz      )
             deallocate (vf_gravels     )
@@ -901,6 +946,9 @@ CONTAINS
 
             deallocate (htop           )
             deallocate (hbot           )
+#ifdef LULC_IGBP_PC
+            deallocate (cratio         )
+#endif
 
             deallocate (dbedrock       )
             deallocate (ibedrock       )
@@ -971,6 +1019,9 @@ CONTAINS
       CALL check_vector_data ('soil_d_v_alb [-]     ', soil_d_v_alb) ! albedo of visible of the dry soil
       CALL check_vector_data ('soil_s_n_alb [-]     ', soil_s_n_alb) ! albedo of near infrared of the saturated soil
       CALL check_vector_data ('soil_d_n_alb [-]     ', soil_d_n_alb) ! albedo of near infrared of the dry soil
+#ifdef HYPERSPECTRAL
+      CALL check_vector_data ('soil_alb     [-]     ', soil_alb    ) ! hyper spectral soil albedo.
+#endif
       CALL check_vector_data ('vf_quartz    [m3/m3] ', vf_quartz   ) ! volumetric fraction of quartz within mineral soil
       CALL check_vector_data ('vf_gravels   [m3/m3] ', vf_gravels  ) ! volumetric fraction of gravels
       CALL check_vector_data ('vf_sand      [m3/m3] ', vf_sand     ) ! volumetric fraction of sand
@@ -1021,6 +1072,9 @@ CONTAINS
 
       CALL check_vector_data ('htop         [m]     ', htop        )
       CALL check_vector_data ('hbot         [m]     ', hbot        )
+#ifdef LULC_IGBP_PC
+      CALL check_vector_data ('cratio       [-]     ', cratio      )
+#endif
 
       IF(DEF_USE_BEDROCK)THEN
          CALL check_vector_data ('dbedrock     [m]     ', dbedrock ) !

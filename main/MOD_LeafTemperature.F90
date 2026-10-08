@@ -154,7 +154,7 @@ CONTAINS
 !End WUE stomata model parameter
         extkn        ! coefficient of leaf nitrogen allocation
    integer , intent(in) :: &
-        c3c4 ! 1 for c3, 0 for c4
+        c3c4         ! 1 for c3, 0 for c4
    real(r8), intent(in) :: & ! for plant hydraulic scheme
         kmax_sun,   &! Plant Hydraulics Parameters
         kmax_sha,   &! Plant Hydraulics Parameters
@@ -282,12 +282,6 @@ CONTAINS
         ulrad,      &! upward longwave radiation above the canopy [W/m2]
         hprl,       &! precipitation sensible heat from canopy
         dheatl,     &! vegetation heat change [W/m2]
-!Ozone stress variables
-        o3coefv_sun,&! Ozone stress factor for photosynthesis on sunlit leaf
-        o3coefv_sha,&! Ozone stress factor for photosynthesis on sunlit leaf
-        o3coefg_sun,&! Ozone stress factor for stomata on shaded leaf
-        o3coefg_sha,&! Ozone stress factor for stomata on shaded leaf
-!End ozone stress variables
 
         z0m,        &! effective roughness [m]
         zol,        &! dimensionless height (z/L) used in Monin-Obukhov theory
@@ -298,6 +292,14 @@ CONTAINS
         fm,         &! integral of profile function for momentum
         fh,         &! integral of profile function for heat
         fq           ! integral of profile function for moisture
+
+   real(r8), intent(inout) :: &
+!Ozone stress variables
+        o3coefv_sun,&! Ozone stress factor for photosynthesis on sunlit leaf
+        o3coefv_sha,&! Ozone stress factor for photosynthesis on sunlit leaf
+        o3coefg_sun,&! Ozone stress factor for stomata on shaded leaf
+        o3coefg_sha  ! Ozone stress factor for stomata on shaded leaf
+!End ozone stress variables
 
 !-------------------------- Local Variables ----------------------------
 ! assign iteration parameters
@@ -430,6 +432,19 @@ CONTAINS
 
       dtl(0) = 0.
       fevpl_bef = 0.
+
+! ==== FIX 2026-08-16 #4b BEGIN: same ozone-off issue as in MOD_LeafTemperaturePC.
+! When DEF_USE_OZONESTRESS is off, o3coefv/o3coefg are used INSIDE the stability
+! iteration (gs0sun at line ~707) but were only set to 1.0 AFTER the iteration
+! (ELSE branch below), leaving spval at the first step after restart. Set them
+! to 1.0 BEFORE the iteration loop. ====
+      IF (.not. DEF_USE_OZONESTRESS) THEN
+         o3coefv_sun = 1.0_r8
+         o3coefg_sun = 1.0_r8
+         o3coefv_sha = 1.0_r8
+         o3coefg_sha = 1.0_r8
+      ENDIF
+! ==== FIX 2026-08-16 #4b END ====
 
       fht  = 0.     !integral of profile function for heat
       fqt  = 0.     !integral of profile function for moisture
@@ -671,7 +686,7 @@ CONTAINS
             rbsha = rb / laisha
 
             ! Sunlit leaves
-            CALL stomata  (vmax25   ,effcon   ,c3c4     ,slti     ,hlti     ,&
+            CALL stomata  (vmax25   ,effcon   ,slti     ,hlti     ,&
                  shti     ,hhti     ,trda     ,trdm     ,trop     ,&
                  g1       ,g0       ,gradm    ,binter   ,thm      ,&
                  psrf     ,po2m     ,pco2m    ,pco2a    ,eah      ,&
@@ -683,10 +698,10 @@ CONTAINS
                  lambda   ,&
             !End WUE stomata model parameter
                  rbsun    ,raw      ,rstfacsun,cintsun  ,&
-                 assimsun ,respcsun ,rssun    )
+                 assimsun ,respcsun ,rssun    ,c3c4=c3c4 )
 
             ! Shaded leaves
-            CALL stomata  (vmax25   ,effcon   ,c3c4     ,slti     ,hlti     ,&
+            CALL stomata  (vmax25   ,effcon   ,slti     ,hlti     ,&
                  shti     ,hhti     ,trda     ,trdm     ,trop     ,&
                  g1       ,g0       ,gradm    ,binter   ,thm      ,&
                  psrf     ,po2m     ,pco2m    ,pco2a    ,eah      ,&
@@ -698,12 +713,12 @@ CONTAINS
                  lambda   ,&
             ! End WUE stomata model parameter
                  rbsha    ,raw      ,rstfacsha,cintsha  ,&
-                 assimsha ,respcsha ,rssha    )
+                 assimsha ,respcsha ,rssha    ,c3c4=c3c4 )
 
             IF (DEF_USE_PLANTHYDRAULICS) THEN
 
-               gs0sun = min( 1.e6, 1./(rssun*tl/tprcor) )/ laisun * 1.e6
-               gs0sha = min( 1.e6, 1./(rssha*tl/tprcor) )/ laisha * 1.e6
+               gs0sun = min( 1.e6, 1./(rssun*tl/tprcor) )/ laisun * 1.e6 * o3coefg_sun
+               gs0sha = min( 1.e6, 1./(rssha*tl/tprcor) )/ laisha * 1.e6 * o3coefg_sha
 
                sai = amax1(sai,0.1)
                ! PHS update actual stomata conductance (resistance), assimilation rate
@@ -726,12 +741,12 @@ CONTAINS
                gssha = gssha * laisha
 
                CALL update_photosyn(tl, po2m, pco2m, pco2a, parsun, psrf, rstfacsun, rb, gssun, &
-                                    effcon, vmax25, c3c4, gradm, trop, slti, hlti, shti, hhti, trda, &
-                                    trdm, cintsun, assimsun, respcsun)
+                                    effcon, vmax25, gradm, trop, slti, hlti, shti, hhti, trda, &
+                                    trdm, cintsun, assimsun, respcsun, c3c4=c3c4)
 
                CALL update_photosyn(tl, po2m, pco2m, pco2a, parsha, psrf, rstfacsha, rb, gssha, &
-                                    effcon, vmax25, c3c4, gradm, trop, slti, hlti, shti, hhti, trda, &
-                                    trdm, cintsha, assimsha, respcsha)
+                                    effcon, vmax25, gradm, trop, slti, hlti, shti, hhti, trda, &
+                                    trdm, cintsha, assimsha, respcsha, c3c4=c3c4)
 
                rssun = tprcor/tl * 1.e6 / gssun
                rssha = tprcor/tl * 1.e6 / gssha
@@ -993,8 +1008,13 @@ ENDIF
          lai_old  = lai
          assimsun = assimsun * o3coefv_sun
          assimsha = assimsha * o3coefv_sha
-         rssun    = rssun / o3coefg_sun
-         rssha    = rssha / o3coefg_sha
+!         rssun    = rssun / o3coefg_sun
+!         rssha    = rssha / o3coefg_sha
+      ELSE
+         o3coefv_sun = 1.0_r8
+         o3coefg_sun = 1.0_r8
+         o3coefv_sha = 1.0_r8
+         o3coefg_sha = 1.0_r8
       ENDIF
 
 ! ======================================================================
@@ -1168,71 +1188,259 @@ ENDIF
       ELSEIF (DEF_Interception_scheme .eq. 2) THEN !CLM4.5
          ldew = max(0., ldew-evplwet*deltim)
 
+         ! account for vegetation snow and update ldew_rain, ldew_snow, ldew
+         IF ( DEF_VEG_SNOW ) THEN
+            IF (tl > tfrz) THEN
+               qevpl = max (evplwet, 0.)
+               qdewl = abs (min (evplwet, 0.) )
+               qsubl = 0.
+               qfrol = 0.
+
+               IF (qevpl > ldew_rain/deltim) THEN
+                  qsubl = qevpl - ldew_rain/deltim
+                  qevpl = ldew_rain/deltim
+               ENDIF
+            ELSE
+               qevpl = 0.
+               qdewl = 0.
+               qsubl = max (evplwet, 0.)
+               qfrol = abs (min (evplwet, 0.) )
+
+               IF (qsubl > ldew_snow/deltim) THEN
+                  qevpl = qsubl - ldew_snow/deltim
+                  qsubl = ldew_snow/deltim
+               ENDIF
+            ENDIF
+
+            ldew_rain = ldew_rain + (qdewl-qevpl)*deltim
+            ldew_snow = ldew_snow + (qfrol-qsubl)*deltim
+
+            ldew = ldew_rain + ldew_snow
+         ENDIF
+
       ELSEIF (DEF_Interception_scheme .eq. 3) THEN !CLM5
-         IF (ldew_rain .gt. evplwet*deltim) THEN
-            ldew_rain = ldew_rain-evplwet*deltim
-            ldew_snow = ldew_snow
-            ldew=ldew_rain+ldew_snow
-         ELSE
-            ldew_rain = 0.0
-            ldew_snow = max(0., ldew-evplwet*deltim)
-            ldew      = ldew_snow
+         ldew = max(0., ldew-evplwet*deltim)
+
+         ! account for vegetation snow and update ldew_rain, ldew_snow, ldew
+         IF ( DEF_VEG_SNOW ) THEN
+            IF (tl > tfrz) THEN
+               qevpl = max (evplwet, 0.)
+               qdewl = abs (min (evplwet, 0.) )
+               qsubl = 0.
+               qfrol = 0.
+
+               IF (qevpl > ldew_rain/deltim) THEN
+                  qsubl = qevpl - ldew_rain/deltim
+                  qevpl = ldew_rain/deltim
+               ENDIF
+            ELSE
+               qevpl = 0.
+               qdewl = 0.
+               qsubl = max (evplwet, 0.)
+               qfrol = abs (min (evplwet, 0.) )
+
+               IF (qsubl > ldew_snow/deltim) THEN
+                  qevpl = qsubl - ldew_snow/deltim
+                  qsubl = ldew_snow/deltim
+               ENDIF
+            ENDIF
+
+            ldew_rain = ldew_rain + (qdewl-qevpl)*deltim
+            ldew_snow = ldew_snow + (qfrol-qsubl)*deltim
+
+            ldew = ldew_rain + ldew_snow
          ENDIF
 
       ELSEIF (DEF_Interception_scheme .eq. 4) THEN !Noah-MP
-         IF (ldew_rain .gt. evplwet*deltim) THEN
-            ldew_rain = ldew_rain-evplwet*deltim
-            ldew_snow = ldew_snow
-            ldew=ldew_rain+ldew_snow
-         ELSE
-            ldew_rain = 0.0
-            ldew_snow = max(0., ldew-evplwet*deltim)
-            ldew      = ldew_snow
+         ldew = max(0., ldew-evplwet*deltim)
+
+         ! account for vegetation snow and update ldew_rain, ldew_snow, ldew
+         IF ( DEF_VEG_SNOW ) THEN
+            IF (tl > tfrz) THEN
+               qevpl = max (evplwet, 0.)
+               qdewl = abs (min (evplwet, 0.) )
+               qsubl = 0.
+               qfrol = 0.
+
+               IF (qevpl > ldew_rain/deltim) THEN
+                  qsubl = qevpl - ldew_rain/deltim
+                  qevpl = ldew_rain/deltim
+               ENDIF
+            ELSE
+               qevpl = 0.
+               qdewl = 0.
+               qsubl = max (evplwet, 0.)
+               qfrol = abs (min (evplwet, 0.) )
+
+               IF (qsubl > ldew_snow/deltim) THEN
+                  qevpl = qsubl - ldew_snow/deltim
+                  qsubl = ldew_snow/deltim
+               ENDIF
+            ENDIF
+
+            ldew_rain = ldew_rain + (qdewl-qevpl)*deltim
+            ldew_snow = ldew_snow + (qfrol-qsubl)*deltim
+
+            ldew = ldew_rain + ldew_snow
          ENDIF
 
       ELSEIF (DEF_Interception_scheme .eq. 5) THEN !MATSIRO
-         IF (ldew_rain .gt. evplwet*deltim) THEN
-            ldew_rain = ldew_rain-evplwet*deltim
-            ldew_snow = ldew_snow
-            ldew=ldew_rain+ldew_snow
-         ELSE
-            ldew_rain = 0.0
-            ldew_snow = max(0., ldew-evplwet*deltim)
-            ldew      = ldew_snow
+         ldew = max(0., ldew-evplwet*deltim)
+
+         ! account for vegetation snow and update ldew_rain, ldew_snow, ldew
+         IF ( DEF_VEG_SNOW ) THEN
+            IF (tl > tfrz) THEN
+               qevpl = max (evplwet, 0.)
+               qdewl = abs (min (evplwet, 0.) )
+               qsubl = 0.
+               qfrol = 0.
+
+               IF (qevpl > ldew_rain/deltim) THEN
+                  qsubl = qevpl - ldew_rain/deltim
+                  qevpl = ldew_rain/deltim
+               ENDIF
+            ELSE
+               qevpl = 0.
+               qdewl = 0.
+               qsubl = max (evplwet, 0.)
+               qfrol = abs (min (evplwet, 0.) )
+
+               IF (qsubl > ldew_snow/deltim) THEN
+                  qevpl = qsubl - ldew_snow/deltim
+                  qsubl = ldew_snow/deltim
+               ENDIF
+            ENDIF
+
+            ldew_rain = ldew_rain + (qdewl-qevpl)*deltim
+            ldew_snow = ldew_snow + (qfrol-qsubl)*deltim
+
+            ldew = ldew_rain + ldew_snow
          ENDIF
 
       ELSEIF (DEF_Interception_scheme .eq. 6) THEN !VIC
-         IF (ldew_rain .gt. evplwet*deltim) THEN
-            ldew_rain = ldew_rain-evplwet*deltim
-            ldew_snow = ldew_snow
-            ldew=ldew_rain+ldew_snow
-         ELSE
-            ldew_rain = 0.0
-            ldew_snow = max(0., ldew-evplwet*deltim)
-            ldew      = ldew_snow
+         ldew = max(0., ldew-evplwet*deltim)
+
+         ! account for vegetation snow and update ldew_rain, ldew_snow, ldew
+         IF ( DEF_VEG_SNOW ) THEN
+            IF (tl > tfrz) THEN
+               qevpl = max (evplwet, 0.)
+               qdewl = abs (min (evplwet, 0.) )
+               qsubl = 0.
+               qfrol = 0.
+
+               IF (qevpl > ldew_rain/deltim) THEN
+                  qsubl = qevpl - ldew_rain/deltim
+                  qevpl = ldew_rain/deltim
+               ENDIF
+            ELSE
+               qevpl = 0.
+               qdewl = 0.
+               qsubl = max (evplwet, 0.)
+               qfrol = abs (min (evplwet, 0.) )
+
+               IF (qsubl > ldew_snow/deltim) THEN
+                  qevpl = qsubl - ldew_snow/deltim
+                  qsubl = ldew_snow/deltim
+               ENDIF
+            ENDIF
+
+            ldew_rain = ldew_rain + (qdewl-qevpl)*deltim
+            ldew_snow = ldew_snow + (qfrol-qsubl)*deltim
+
+            ldew = ldew_rain + ldew_snow
          ENDIF
+
       ELSEIF (DEF_Interception_scheme .eq. 7) THEN !JULES
-            IF (ldew_rain .gt. evplwet*deltim) THEN
-               ldew_rain = ldew_rain-evplwet*deltim
-               ldew_snow = ldew_snow
-               ldew=ldew_rain+ldew_snow
+         ldew = max(0., ldew-evplwet*deltim)
+
+         ! account for vegetation snow and update ldew_rain, ldew_snow, ldew
+         IF ( DEF_VEG_SNOW ) THEN
+            IF (tl > tfrz) THEN
+               qevpl = max (evplwet, 0.)
+               qdewl = abs (min (evplwet, 0.) )
+               qsubl = 0.
+               qfrol = 0.
+
+               IF (qevpl > ldew_rain/deltim) THEN
+                  qsubl = qevpl - ldew_rain/deltim
+                  qevpl = ldew_rain/deltim
+               ENDIF
             ELSE
-               ldew_rain = 0.0
-               ldew_snow = max(0., ldew-evplwet*deltim)
-               ldew      = ldew_snow
+               qevpl = 0.
+               qdewl = 0.
+               qsubl = max (evplwet, 0.)
+               qfrol = abs (min (evplwet, 0.) )
+
+               IF (qsubl > ldew_snow/deltim) THEN
+                  qevpl = qsubl - ldew_snow/deltim
+                  qsubl = ldew_snow/deltim
+               ENDIF
             ENDIF
-      ELSEIF (DEF_Interception_scheme .eq. 8) THEN !JULES
-            IF (ldew_rain .gt. evplwet*deltim) THEN
-               ldew_rain = ldew_rain-evplwet*deltim
-               ldew_snow = ldew_snow
-               ldew=ldew_rain+ldew_snow
+
+            ldew_rain = ldew_rain + (qdewl-qevpl)*deltim
+            ldew_snow = ldew_snow + (qfrol-qsubl)*deltim
+
+            ldew = ldew_rain + ldew_snow
+         ENDIF
+
+      ELSEIF (DEF_Interception_scheme .eq. 8) THEN !CoLM202X
+         ldew = max(0., ldew-evplwet*deltim)
+
+         ! account for vegetation snow and update ldew_rain, ldew_snow, ldew
+         IF ( DEF_VEG_SNOW ) THEN
+            IF (tl > tfrz) THEN
+               qevpl = max (evplwet, 0.)
+               qdewl = abs (min (evplwet, 0.) )
+               qsubl = 0.
+               qfrol = 0.
+
+               IF (qevpl > ldew_rain/deltim) THEN
+                  qsubl = qevpl - ldew_rain/deltim
+                  qevpl = ldew_rain/deltim
+               ENDIF
             ELSE
-               ldew_rain = 0.0
-               ldew_snow = max(0., ldew-evplwet*deltim)
-               ldew      = ldew_snow
+               qevpl = 0.
+               qdewl = 0.
+               qsubl = max (evplwet, 0.)
+               qfrol = abs (min (evplwet, 0.) )
+
+               IF (qsubl > ldew_snow/deltim) THEN
+                  qevpl = qsubl - ldew_snow/deltim
+                  qsubl = ldew_snow/deltim
+               ENDIF
             ENDIF
+
+            ldew_rain = ldew_rain + (qdewl-qevpl)*deltim
+            ldew_snow = ldew_snow + (qfrol-qsubl)*deltim
+
+            ldew = ldew_rain + ldew_snow
+         ENDIF
       ELSE
          CALL abort
+      ENDIF
+
+      ! Bug fix: When DEF_VEG_SNOW is false, only ldew is updated above
+      ! (via ldew = max(0., ldew - evplwet*deltim)), but ldew_rain/ldew_snow
+      ! remain unchanged. Downstream interception routines (schemes 1, 3-8)
+      ! resync ldew = ldew_rain + ldew_snow at entry, which would silently
+      ! revert the evaporation adjustment. Fix by scaling components proportionally.
+      IF (.not. DEF_VEG_SNOW) THEN
+         IF (ldew_rain + ldew_snow > 1.e-10) THEN
+            ldew_rain = ldew * (ldew_rain / (ldew_rain + ldew_snow))
+            ldew_snow = ldew - ldew_rain
+         ELSEIF (ldew > 0.) THEN
+            ! Components were zero but ldew > 0 (condensation case)
+            IF (tl > tfrz) THEN
+               ldew_rain = ldew
+               ldew_snow = 0.
+            ELSE
+               ldew_rain = 0.
+               ldew_snow = ldew
+            ENDIF
+         ELSE
+            ldew_rain = 0.
+            ldew_snow = 0.
+         ENDIF
       ENDIF
 
       IF ( DEF_VEG_SNOW ) THEN
