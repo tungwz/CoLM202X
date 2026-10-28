@@ -64,7 +64,8 @@
            patchlonr    ,patchlatr    ,patchclass   ,patchtype    ,&
 
          ! urban and lake depth
-           froof        ,flake        ,hroof        ,hlr          ,&
+           froof        ,flake        ,hroof        ,hroof_max    ,&
+           hroof_eff    ,hroof_std    ,rur_b        ,hlr          ,&
            fgper        ,em_roof      ,em_wall      ,em_gimp      ,&
            em_gper      ,cv_roof      ,cv_wall      ,cv_gimp      ,&
            tk_roof      ,tk_wall      ,tk_gimp      ,z_roof       ,&
@@ -231,6 +232,10 @@
         fgper                 ,&! impervious fraction to ground area [-]
         flake                 ,&! lake fraction to ground area [-]
         hroof                 ,&! average building height [m]
+        hroof_max             ,&
+        hroof_eff             ,&
+        hroof_std             ,&
+        rur_b                 ,&
         hlr                   ,&! average building height to their side length [-]
         em_roof               ,&! emissivity of roof [-]
         em_wall               ,&! emissivity of walls [-]
@@ -977,7 +982,8 @@
          vehicle            ,weh_prof           ,wdh_prof           ,idate              ,&
          patchlonr                                                                      ,&
          ! GROUND PARAMETERS
-         froof              ,flake              ,hroof              ,hlr                ,&
+         froof              ,flake              ,hroof              ,hroof_max          ,&
+         hroof_eff          ,hroof_std          ,rur_b              ,hlr                ,&
          fgper              ,pondmx             ,em_roof            ,em_wall            ,&
          em_gimp            ,em_gper            ,trsmx0             ,zlnd               ,&
          zsno               ,capr               ,cnfac              ,vf_quartz          ,&
