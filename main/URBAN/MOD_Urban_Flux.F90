@@ -45,7 +45,7 @@ MODULE MOD_Urban_Flux
 !-----------------------------------------------------------------------
    USE MOD_Precision
    USE MOD_SPMD_Task
-   USE MOD_Namelist, only: DEF_RSS_SCHEME, DEF_VEG_SNOW
+   USE MOD_Namelist, only: DEF_RSS_SCHEME, DEF_VEG_SNOW, DEF_URBAN_Z0_SCHEME
    USE MOD_Vars_Global
    USE MOD_Qsadv, only: qsadv
    IMPLICIT NONE
@@ -61,6 +61,12 @@ MODULE MOD_Urban_Flux
    !   2. Swaid, 1993; Kusaka, 2001; Lee and Park, 2008
    !   3. Macdonald, 2000
    integer,  parameter :: alpha_opt = 3
+
+   ! Roughness scheme options:
+   !   1. Macdonald, 2000
+   !   2. Kanda, 2013
+   !   3. Liu, 2025
+   !   4. Effective Macdonald
 
    ! Layer number setting, default is false, i.e., 2 layers
    logical,  parameter :: run_three_layer = .false.
@@ -88,7 +94,8 @@ CONTAINS
          qm             ,psrf           ,rhoair         ,Fhac           ,&
          Fwst           ,Fach           ,vehc           ,meta           ,&
          ! Urban parameters
-         hroof          ,hlr            ,nurb           ,fcover         ,&
+         hroof          ,hroof_max      ,hroof_eff      ,hroof_std      ,&
+         rur_b          ,hlr            ,nurb           ,fcover         ,&
          ! Status of surface
          z0h_g          ,obug           ,ustarg         ,zlnd           ,&
          zsno           ,fsno_roof      ,fsno_gimp      ,fsno_gper      ,&
@@ -150,6 +157,10 @@ CONTAINS
 
    real(r8), intent(in) :: &
         hroof,        &! average building height [m]
+        hroof_std,    &!
+        hroof_max,    &!
+        hroof_eff,    &!
+        rur_b,        &!
         hlr,          &! average building height to their side length [-]
         fcover(0:4)    ! coverage of aboveground urban components [-]
 
@@ -347,6 +358,8 @@ CONTAINS
    real(r8) aQ, bQ, cQ, Lahe
    real(r8) fwet_roof, fwet_roof_, fwet_gimp, fwet_gimp_, rss_
    real(r8) fwetfac
+   real(r8) X_kanda, Y_kanda
+   real(r8) displa_mac, z0m_mac, displau_mac, z0mu_mac, hroof_
 
 !-----------------------------------------------------------------------
 
@@ -455,10 +468,38 @@ CONTAINS
 !-----------------------------------------------------------------------
 
       ! Macdonald et al., 1998, Eq. (23), A=4.43
-      displau = hroof * (1 + 4.43**(-fcover(0))*(fcover(0) - 1))
-      fai  = 4/PI*hlr*fcover(0)
-      z0mu = (hroof - displau) * &
-             exp( -(0.5*1.2/vonkar/vonkar*(1-displau/hroof)*fai)**(-0.5) )
+      displau_mac = hroof * (1 + 4.43**(-fcover(0))*(fcover(0) - 1))
+      fai         = 4/PI*hlr*fcover(0)
+      z0mu_mac    = (hroof - displau_mac) * &
+             exp( -(0.5*1.2/vonkar/vonkar*(1-displau_mac/hroof)*fai)**(-0.5) )
+      z0m_mac     = z0mu_mac
+
+      IF (DEF_URBAN_ROUGH_SCHEME == 1) THEN
+         displau = displau_mac
+         z0mu    = z0mu_mac
+      ELSE IF (DEF_URBAN_ROUGH_SCHEME == 2) THEN
+         Y_kanda = fcover(0)*hroof_std/hroof
+         z0mu    = z0mu_mac*(20.21*Y_kanda**2 - 0.77*Y_kanda + 0.71)
+
+         X_kanda   = (hroof_std + hroof) / hroof_max
+         IF (X_kanda > 1) X_kanda = 1
+
+         displau = hroof_max*(-0.17*X_kanda**2 + (1.29*fcover(0)**0.36 + 0.17)*X_kanda)
+         IF (taux == spval) THEN
+            print*, displau_mac, z0mu_mac
+            print*, displau, z0mu
+         ENDIF
+      ELSE IF (DEF_URBAN_ROUGH_SCHEME == 3) THEN
+         displau = hroof_eff * (1 + 4.43**(-fcover(0))*(fcover(0) - 1))
+         z0mu = (hroof_eff - displau)*exp(-RUR_B**(-0.5))
+
+         IF (taux == spval) THEN
+            print*, 'mac_B', (0.5*1.2/vonkar/vonkar*(1-displau_mac/hroof)*fai)**(-0.5)
+            print*, 'RUR_B', RUR_B
+            print*, displau_mac, z0mu_mac
+            print*, displau, z0mu
+         ENDIF
+      ENDIF
 
       ! to compare z0 of urban and only the surface
       ! maximum assumption
@@ -469,7 +510,13 @@ CONTAINS
       z0m = z0mu
 
       displa  = displau
-      displau = max(hroof/2., displau)
+      !displau = max(hroof/2., displau)
+
+      IF (DEF_URBAN_ROUGH_SCHEME /= 1) THEN
+         hroof_ = hroof_eff
+      ELSE
+         hroof_ = hroof
+      ENDIF
 
 !-----------------------------------------------------------------------
 ! calculate layer decay coefficient
@@ -515,28 +562,28 @@ CONTAINS
 
       IF (trim(HEIGHT_mode) == 'absolute') THEN
 
-         IF (hu <= hroof+1) THEN
-            hu_ = hroof + 1.
+         IF (hu <= hroof_+1) THEN
+            hu_ = hroof_ + 1.
             IF (taux == spval) & ! only print warning for the first time-step
                write(6,*) 'Warning: the obs height of u less than hroof+1, set it to hroof+1.'
          ENDIF
 
-         IF (ht <= hroof+1) THEN
-            ht_ = hroof + 1.
+         IF (ht <= hroof_+1) THEN
+            ht_ = hroof_ + 1.
             IF (taux == spval) & ! only print warning for the first time-step
                write(6,*) 'Warning: the obs height of t less than hroof+1, set it to hroof+1.'
          ENDIF
 
-         IF (hq <= hroof+1) THEN
-            hq_ = hroof + 1.
+         IF (hq <= hroof_+1) THEN
+            hq_ = hroof_ + 1.
             IF (taux == spval) & ! only print warning for the first time-step
                write(6,*) 'Warning: the obs height of q less than hroof+1, set it to hroof+1.'
          ENDIF
 
       ELSE ! relative height
-         hu_ = hroof + hu
-         ht_ = hroof + ht
-         hq_ = hroof + hq
+         hu_ = hroof_ + hu
+         ht_ = hroof_ + ht
+         hq_ = hroof_ + hq
       ENDIF
 
       zldis = hu_ - displa
@@ -564,7 +611,7 @@ CONTAINS
          !NOTE: displat=hroof, z0mt=0, are set for roof
          ! fmtop is calculated at the same height of fht, fqt
          CALL moninobukm(hu_,ht_,hq_,displa,z0m,z0h,z0q,obu,um, &
-              hroof,0.,ustar,fh2m,fq2m,hroof,fmtop,fm,fh,fq,fht,fqt,phih)
+              hroof_,0.,ustar,fh2m,fq2m,hroof_,fmtop,fm,fh,fq,fht,fqt,phih)
 
 ! Aerodynamic resistance
          ! 09/16/2017:
@@ -602,7 +649,7 @@ CONTAINS
          ! calculate canopy top wind speed (utop) and exchange coefficient (ktop)
          ! need to update each time as obu changed after each iteration
          utop = ustar/vonkar * fmtop
-         ktop = vonkar * (hroof-displa) * ustar / phih
+         ktop = vonkar * (hroof_-displa) * ustar / phih
 
          ueff_lay(3) = utop
 
@@ -614,25 +661,25 @@ CONTAINS
 
          ! real(r8) FUNCTION frd(ktop, htop, hbot, ztop, zbot, displah, z0h, &
          !                       obu, ustar, z0mg, alpha, bee, fc)
-         rd(3) = frd(ktop, hroof, 0., hroof, displau+z0mu, displa/hroof, z0h_g, &
+         rd(3) = frd(ktop, hroof_, 0., hroof_, displau+z0mu, displa/hroof_, z0h_g, &
                      obug, ustarg, z0mg, alpha, bee, 1.)
 
          ! real(r8) FUNCTION uintegralz(utop, fc, bee, alpha, z0mg, htop, hbot, ztop, zbot)
          ! ueff_lay(2) = uintegralz(utop, 1., bee, alpha, z0mg, hroof, 0., hroof, z0mg)
 
          ! real(r8) FUNCTION ueffectz(utop, htop, hbot, ztop, zbot, z0mg, alpha, bee, fc)
-         ueff_lay(2) = ueffectz(utop, hroof, 0., hroof, z0mg, z0mg, alpha, bee, 1.)
+         ueff_lay(2) = ueffectz(utop, hroof_, 0., hroof_, z0mg, z0mg, alpha, bee, 1.)
 
          ! rd(2) = kintegral(ktop, 1., bee, alpha, z0mg, displa/hroof, &
          !                   hroof, 0., obug, ustarg, displau+z0mu, z0qg)
-         rd(2) = frd(ktop, hroof, 0., displau+z0mu, z0qg, displa/hroof, z0h_g, &
+         rd(2) = frd(ktop, hroof_, 0., displau+z0mu, z0qg, displa/hroof_, z0h_g, &
                      obug, ustarg, z0mg, alpha, bee, 1.)
 
          ! calculate ra2m, rd2m. NOTE: not used now.
-         ra2m = frd(ktop, hroof, 0., displau+z0mu, 2., displa/hroof, z0h_g, &
+         ra2m = frd(ktop, hroof_, 0., displau+z0mu, 2., displa/hroof_, z0h_g, &
                     obug, ustarg, z0mg, alpha, bee, 1.)
 
-         rd2m = frd(ktop, hroof, 0., 2., z0qg, displa/hroof, z0h_g, &
+         rd2m = frd(ktop, hroof_, 0., 2., z0qg, displa/hroof_, z0h_g, &
                     obug, ustarg, z0mg, alpha, bee, 1.)
 
          ! Masson, 2000: Account for different canyon orientations
@@ -873,7 +920,8 @@ CONTAINS
          rstfac         ,Fhac           ,Fwst           ,Fach           ,&
          vehc           ,meta                                           ,&
          ! Urban and vegetation parameters
-         hroof          ,hlr            ,nurb           ,fcover         ,&
+         hroof          ,hroof_max      ,hroof_eff      ,hroof_std      ,&
+         rur_b          ,hlr            ,nurb           ,fcover         ,&
          ewall          ,egimp          ,egper          ,ev             ,&
          htop           ,hbot           ,lai            ,sai            ,&
          sqrtdi         ,effcon         ,vmax25         ,slti           ,&
@@ -961,6 +1009,10 @@ CONTAINS
 
    real(r8), intent(in) :: &
         hroof,        &! average building height [m]
+        hroof_max,    &!
+        hroof_eff,    &!
+        hroof_std,    &!
+        rur_b,        &!
         hlr,          &! average building height to their side length [-]
         fcover(0:5)    ! coverage of aboveground urban components [-]
 
@@ -1277,6 +1329,8 @@ CONTAINS
    real(r8) fwet_roof, fwet_roof_, fwet_gimp, fwet_gimp_, rss_, rs_, etr_
    real(r8) fwetfac, lambda
    real(r8) cgw_imp, cgw_per
+   real(r8) X_kanda, Y_kanda
+   real(r8) z0m_mac, z0mu_mac, displa_mac, displau_mac, hroof_
 
    ! for interface
    real(r8) o3coefv, o3coefg, assim_RuBP, assim_Rubisco, ci, vpd, gammas
@@ -1400,7 +1454,6 @@ CONTAINS
       fwetfac = fgimp*fwet_gimp + fgper
       qg = (qgimp*fgimp*fwet_gimp + qgper*fgper) / fwetfac
 
-
 !-----------------------------------------------------------------------
 ! initial for fluxes profile
 !-----------------------------------------------------------------------
@@ -1426,27 +1479,82 @@ CONTAINS
 
       ! For building only below
       ! Macdonald et al., 1998, Eq. (23), A=4.43
-      lambda  = fcover(0)
-      displau = hroof * (1 + 4.43**(-lambda)*(lambda - 1))
-      fai     = 4/PI*hlr*fcover(0)
-      z0mu    = (hroof - displau) * &
-                exp( -(0.5*1.2/vonkar/vonkar*(1-displau/hroof)*fai)**(-0.5) )
+      lambda      = fcover(0)
+      displau_mac = hroof * (1 + 4.43**(-lambda)*(lambda - 1))
+      fai         = 4/PI*hlr*fcover(0)
+      z0mu_mac    = (hroof - displau_mac) * &
+                exp( -(0.5*1.2/vonkar/vonkar*(1-displau_mac/hroof)*fai)**(-0.5) )
 
       ! account for vegetation
-      faiv    = fc(3)*(1. - exp(-0.5*lsai))
-      lambda  = fcover(0) + faiv*htop/hroof
-      displa  = hroof * (1 + 4.43**(-lambda)*(lambda - 1))
-      displa  = min(0.95*hroof, displa)
-      z0m     = (hroof - displa) * &
-                exp( -(0.5*1.2/vonkar/vonkar*(1-displa/hroof)*(fai+faiv*htop/hroof))**(-0.5) )
+      faiv        = fc(3)*(1. - exp(-0.5*lsai))
+      lambda      = fcover(0) + faiv*htop/hroof
+      displa_mac  = hroof * (1 + 4.43**(-lambda)*(lambda - 1))
+      displa_mac  = min(0.95*hroof, displa_mac)
+      z0m_mac     = (hroof - displa_mac) * &
+                    exp( -(0.5*1.2/vonkar/vonkar*(1-displa_mac/hroof)*(fai+faiv*htop/hroof))**(-0.5) )
+
+      IF (DEF_URBAN_ROUGH_SCHEME == 1) THEN
+         displau = displau_mac
+         displa  = displa_mac
+
+         z0mu = z0mu_mac
+         z0m  = z0m_mac
+
+         IF (taux == spval) THEN
+            print*, displa, z0m
+            print*, displau, z0mu
+         ENDIF
+      ELSE IF (DEF_URBAN_ROUGH_SCHEME == 2) THEN
+         Y_kanda = fcover(0)*hroof_std/hroof
+         z0mu    = z0mu_mac*(20.21*Y_kanda**2 - 0.77*Y_kanda + 0.71)
+         z0m     = z0m_mac*(20.21*Y_kanda**2 - 0.77*Y_kanda + 0.71)
+
+         X_kanda = (hroof_std + hroof) / hroof_max
+         IF (X_kanda > 1) X_kanda = 1
+
+         displau = hroof_max*(-0.17*X_kanda**2 + (1.29*fcover(0)**0.36 + 0.17)*X_kanda)
+         displa  = hroof_max*(-0.17*X_kanda**2 + (1.29*fcover(0)**0.36 + 0.17)*X_kanda)
+         displa  = min(0.95*hroof_eff, displa)
+         displau = displa
+
+         IF (taux == spval) THEN
+            print*, displa_mac, z0m_mac
+            print*, displau_mac, z0mu_mac
+            print*, displa, z0m
+            print*, displau, z0mu
+         ENDIF
+      ELSE IF (DEF_URBAN_ROUGH_SCHEME == 3) THEN
+
+         lambda = fcover(0) + faiv*htop/hroof_eff
+         displa = hroof_eff * (1 + 4.43**(-lambda)*(lambda - 1))
+         z0m    = (hroof_eff - displa)*exp(-RUR_B**(-0.5))
+
+         displau = hroof_eff * (1 + 4.43**(-fcover(0))*(fcover(0) - 1))
+         z0mu    = (hroof_eff - displau)*exp(-RUR_B**(-0.5))
+
+         IF (taux == spval) THEN
+            print*, 'mac_B', (0.5*1.2/vonkar/vonkar*(1-displau_mac/hroof)*fai)**(-0.5)
+            print*, 'RUR_B', RUR_B**(-0.5)
+            print*, displa_mac, z0m_mac
+            print*, displau_mac, z0mu_mac
+            print*, displa, z0m
+            print*, displau, z0mu
+         ENDIF
+      ENDIF
 
       ! to compare z0 of urban and only the surface
       ! maximum assumption
+      IF (DEF_URBAN_ROUGH_SCHEME /= 1) THEN
+         hroof_ = hroof_eff
+      ELSE
+         hroof_ = hroof
+      ENDIF
+
       IF (z0m < z0mg) z0m = z0mg
-      IF (displa >= hroof-z0mg) displa = hroof-z0mg
+      IF (displa >= hroof_-z0mg) displa = hroof_-z0mg
 
       ! minimum building displa limit
-      displau = max(hroof/2., displau)
+      ! displau = max(hroof/2., displau)
 
       ! Layer setting
       IF ( (.not.run_three_layer) .or. z0mv+displav > 0.5*(z0mu+displau) ) THEN
@@ -1464,7 +1572,7 @@ CONTAINS
 
       ! Kondo, 1971
       alphav = htop/(htop-displav_lay)/(vonkar/sqrtdragc)
-      alphav = alphav*htop/hroof
+      alphav = alphav*htop/hroof_
 
       ! Masson, 2000; Oleson et al., 2008 plus tree (+)
       IF (alpha_opt == 1) alpha = 0.5*hwr + alphav
@@ -1522,28 +1630,28 @@ CONTAINS
 
       IF (trim(HEIGHT_mode) == 'absolute') THEN
 
-         IF (hu <= hroof+1) THEN
-            hu_ = hroof + 1.
+         IF (hu <= hroof_+1) THEN
+            hu_ = hroof_ + 1.
             IF (taux == spval) & ! only print warning for the first time-step
                write(6,*) 'Warning: the obs height of u less than hroof+1, set it to hroof+1.'
          ENDIF
 
-         IF (ht <= hroof+1) THEN
-            ht_ = hroof + 1.
+         IF (ht <= hroof_+1) THEN
+            ht_ = hroof_ + 1.
             IF (taux == spval) & ! only print warning for the first time-step
                write(6,*) 'Warning: the obs height of t less than hroof+1, set it to hroof+1.'
          ENDIF
 
-         IF (hq <= hroof+1) THEN
-            hq_ = hroof + 1.
+         IF (hq <= hroof_+1) THEN
+            hq_ = hroof_ + 1.
             IF (taux == spval) & ! only print warning for the first time-step
                write(6,*) 'Warning: the obs height of q less than hroof+1, set it to hroof+1.'
          ENDIF
 
       ELSE ! relative height
-         hu_ = hroof + hu
-         ht_ = hroof + ht
-         hq_ = hroof + hq
+         hu_ = hroof_ + hu
+         ht_ = hroof_ + ht
+         hq_ = hroof_ + hq
       ENDIF
 
       zldis = hu_ - displa
@@ -1572,7 +1680,7 @@ CONTAINS
 ! Evaluate stability-dependent variables using moz from prior iteration
 
          CALL moninobukm(hu_,ht_,hq_,displa,z0m,z0h,z0q,obu,um, &
-              hroof,0.,ustar,fh2m,fq2m,hroof,fmtop,fm,fh,fq,fht,fqt,phih)
+              hroof_,0.,ustar,fh2m,fq2m,hroof_,fmtop,fm,fh,fq,fht,fqt,phih)
 
 ! Aerodynamic resistance
          ! 09/16/2017:
@@ -1609,7 +1717,7 @@ CONTAINS
          ! calculate canopy top wind speed (utop) and exchange coefficient (ktop)
          ! need to update each time as obu changed after each iteration
          utop = ustar/vonkar * fmtop
-         ktop = vonkar * (hroof-displa) * ustar / phih
+         ktop = vonkar * (hroof_-displa) * ustar / phih
 
          ueff_lay(3)  = utop
          ueff_lay_(3) = utop
@@ -1622,14 +1730,14 @@ CONTAINS
 
          ! real(r8) FUNCTION frd(ktop, htop, hbot, ztop, zbot, displah, z0h, &
          !                       obu, ustar, z0mg, alpha, bee, fc)
-         rd(3) = frd(ktop, hroof, 0., hroof, displau+z0mu, displa/hroof, z0h_g, &
+         rd(3) = frd(ktop, hroof_, 0., hroof_, displau+z0mu, displa/hroof_, z0h_g, &
                      obug, ustarg, z0mg, alpha, bee, 1.)
 
          ! real(r8) FUNCTION uintegralz(utop, fc, bee, alpha, z0mg, htop, hbot, ztop, zbot)
          ! ueff_lay(2) = uintegralz(utop, 1., bee, alpha, z0mg, hroof, 0., hroof, z0mg)
 
          ! real(r8) FUNCTION ueffectz(utop, htop, hbot, ztop, zbot, z0mg, alpha, bee, fc)
-         ueff_lay(2) = ueffectz(utop, hroof, 0., hroof, z0mg, z0mg, alpha, bee, 1.)
+         ueff_lay(2) = ueffectz(utop, hroof_, 0., hroof_, z0mg, z0mg, alpha, bee, 1.)
 
          IF (numlay == 3) THEN
             ! real(r8) FUNCTION kintegral(ktop, fc, bee, alpha, z0mg, displah, &
@@ -1653,14 +1761,14 @@ CONTAINS
          ELSE
             ! rd_(2) = kintegral(ktop, 1., bee, alpha, z0mg, displa/hroof, &
             !                    hroof, 0., obug, ustarg, displau+z0mu, z0qg)
-            rd(2) = frd(ktop, hroof, 0., displau+z0mu, z0qg, displa/hroof, z0h_g, &
+            rd(2) = frd(ktop, hroof_, 0., displau+z0mu, z0qg, displa/hroof_, z0h_g, &
                         obug, ustarg, z0mg, alpha, bee, 1.)
 
             ! calculate ra2m, rd2m
-            ra2m = frd(ktop, hroof, 0., displau+z0mu, 2., displa/hroof, z0h_g, &
+            ra2m = frd(ktop, hroof_, 0., displau+z0mu, 2., displa/hroof_, z0h_g, &
                        obug, ustarg, z0mg, alpha, bee, 1.)
 
-            rd2m = frd(ktop, hroof, 0., 2., z0qg, displa/hroof, z0h_g, &
+            rd2m = frd(ktop, hroof_, 0., 2., z0qg, displa/hroof_, z0h_g, &
                        obug, ustarg, z0mg, alpha, bee, 1.)
          ENDIF
 
@@ -1668,7 +1776,7 @@ CONTAINS
          ! ueff_veg = uintegralz(utop, 1., bee, alpha, z0mg, hroof, 0., htop, hbot)
 
          ! ueff_lay_(2) = ueffectz(utop, hroof, 0., hroof, z0mg, z0mg, alpha, bee, 1.)
-         ueff_veg = ueffectz(utop, hroof, 0., htop, hbot, z0mg, alpha, bee, 1.)
+         ueff_veg = ueffectz(utop, hroof_, 0., htop, hbot, z0mg, alpha, bee, 1.)
 
          ! Masson, 2000: Account for different canyon orientations
          ! 2/PI is a factor derived from 0-360deg integration

@@ -37,6 +37,10 @@ MODULE MOD_Urban_Vars_TimeInvariants
    real(r8), allocatable :: fgper         (:) !impervious fraction to ground area [-]
    real(r8), allocatable :: flake         (:) !lake fraction to ground area [-]
    real(r8), allocatable :: hroof         (:) !average building height [m]
+   real(r8), allocatable :: hroof_max     (:)
+   real(r8), allocatable :: hroof_eff     (:)
+   real(r8), allocatable :: hroof_std     (:)
+   real(r8), allocatable :: rur_b         (:)
    real(r8), allocatable :: hlr           (:) !average building height to their side length [-]
 
    real(r8), allocatable :: z_roof      (:,:) !depth of each roof layer [m]
@@ -102,6 +106,10 @@ CONTAINS
             allocate (fgper                (numurban))
             allocate (flake                (numurban))
             allocate (hroof                (numurban))
+            allocate (hroof_max            (numurban))
+            allocate (hroof_eff            (numurban))
+            allocate (hroof_std            (numurban))
+            allocate (rur_b                (numurban))
             allocate (hlr                  (numurban))
 
             allocate (alb_roof         (2,2,numurban))
@@ -171,6 +179,10 @@ CONTAINS
       ! morphological paras
       CALL ncio_read_vector (file_restart, 'WT_ROOF'       , landurban, froof     )
       CALL ncio_read_vector (file_restart, 'HT_ROOF'       , landurban, hroof     )
+      CALL ncio_read_vector (file_restart, 'HT_MAX'        , landurban, hroof_max )
+      CALL ncio_read_vector (file_restart, 'HT_CANOPY'     , landurban, hroof_eff )
+      CALL ncio_read_vector (file_restart, 'HT_STD'        , landurban, hroof_std )
+      CALL ncio_read_vector (file_restart, 'RUR_B'         , landurban, rur_b     )
       CALL ncio_read_vector (file_restart, 'BUILDING_HLR'  , landurban, hlr       )
       CALL ncio_read_vector (file_restart, 'WTROAD_PERV'   , landurban, fgper     )
       CALL ncio_read_vector (file_restart, 'EM_ROOF'       , landurban, em_roof   )
@@ -251,6 +263,10 @@ CONTAINS
       ! morphological paras
       CALL ncio_write_vector (file_restart, 'WT_ROOF'       , 'urban', landurban, froof    , DEF_REST_CompressLevel)
       CALL ncio_write_vector (file_restart, 'HT_ROOF'       , 'urban', landurban, hroof    , DEF_REST_CompressLevel)
+      CALL ncio_write_vector (file_restart, 'HT_MAX'        , 'urban', landurban, hroof_max, DEF_REST_CompressLevel)
+      CALL ncio_write_vector (file_restart, 'HT_CANOPY'     , 'urban', landurban, hroof_eff, DEF_REST_CompressLevel)
+      CALL ncio_write_vector (file_restart, 'HT_STD'        , 'urban', landurban, hroof_std, DEF_REST_CompressLevel)
+      CALL ncio_write_vector (file_restart, 'RUR_B'         , 'urban', landurban, rur_b    , DEF_REST_CompressLevel)
       CALL ncio_write_vector (file_restart, 'BUILDING_HLR'  , 'urban', landurban, hlr      , DEF_REST_CompressLevel)
       CALL ncio_write_vector (file_restart, 'WTROAD_PERV'   , 'urban', landurban, fgper    , DEF_REST_CompressLevel)
       CALL ncio_write_vector (file_restart, 'EM_ROOF'       , 'urban', landurban, em_roof  , DEF_REST_CompressLevel)
@@ -296,6 +312,10 @@ CONTAINS
             deallocate (fgper        )
             deallocate (flake        )
             deallocate (hroof        )
+            deallocate (hroof_max    )
+            deallocate (hroof_eff    )
+            deallocate (hroof_std    )
+            deallocate (rur_b        )
             deallocate (hlr          )
 
             deallocate (alb_roof     )

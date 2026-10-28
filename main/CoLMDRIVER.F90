@@ -34,6 +34,10 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
    ! inundation evaporation [mm/s], inundation re-infiltration[mm/s]
    USE MOD_CaMa_Vars, only: flddepth_cama,fldfrc_cama,fevpg_fld,finfg_fld
 #endif
+#ifdef URBAN_MODEL
+   USE MOD_Urban_Vars_TimeInvariants
+   USE MOD_Urban_Vars_TimeVariables
+#endif
 
    IMPLICIT NONE
 
@@ -237,7 +241,8 @@ SUBROUTINE CoLMDRIVER (idate,deltim,dolai,doalb,dosst,oro)
             patchlonr(i)    ,patchlatr(i)    ,patchclass(i)   ,patchtype(i)    ,&
 
           ! URBAN PARAMETERS
-            froof(u)        ,flake(u)        ,hroof(u)        ,hlr(u)          ,&
+            froof(u)        ,flake(u)        ,hroof(u)        ,hroof_max(u)    ,&
+            hroof_eff(u)    ,hroof_std(u)    ,rur_b(u)        ,hlr(u)          ,&
             fgper(u)        ,em_roof(u)      ,em_wall(u)      ,em_gimp(u)      ,&
             em_gper(u)      ,cv_roof(:,u)    ,cv_wall(:,u)    ,cv_gimp(:,u)    ,&
             tk_roof(:,u)    ,tk_wall(:,u)    ,tk_gimp(:,u)    ,z_roof(:,u)     ,&

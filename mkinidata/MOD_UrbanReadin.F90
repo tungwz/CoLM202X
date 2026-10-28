@@ -83,6 +83,10 @@ CONTAINS
 #ifdef SinglePoint
       froof        (:) = SITE_froof
       hroof        (:) = SITE_hroof
+      hroof_max    (:) = SITE_hroof_max
+      hroof_eff    (:) = SITE_hroof_eff
+      hroof_std    (:) = SITE_hroof_std
+      rur_b        (:) = SITE_rur_b
       hlr          (:) = SITE_hlr
       fgper        (:) = SITE_fgper
 

@@ -39,7 +39,8 @@ CONTAINS
         vehicle        ,weh_prof       ,wdh_prof       ,idate          ,&
         patchlonr                                                      ,&
         ! surface parameters
-        froof          ,flake          ,hroof          ,hlr            ,&
+        froof          ,flake          ,hroof          ,hroof_max      ,&
+        hroof_eff      ,hroof_std      ,rur_b          ,hlr            ,&
         fgper          ,pondmx         ,eroof          ,ewall          ,&
         egimp          ,egper          ,trsmx0         ,zlnd           ,&
         zsno           ,capr           ,cnfac          ,vf_quartz      ,&
@@ -187,7 +188,11 @@ CONTAINS
         froof                          ,&! roof fractional cover [-]
         flake                          ,&! urban lake fractional cover [-]
         hroof                          ,&! average building height [m]
-        hlr                            ,&! average building height to their side length [-]
+        hroof_max                      ,&
+        hroof_eff                      ,&
+        hroof_std                      ,&
+        rur_b                          ,&
+         hlr                            ,&! average building height to their side length [-]
         fgper                          ,&! impervious road fractional cover [-]
         pondmx                         ,&! maximum ponding for soil [mm]
         eroof                          ,&! emissivity of roof
@@ -868,7 +873,8 @@ CONTAINS
             rstfac         ,Fhac           ,Fwst           ,Fach           ,&
             vehc           ,meta                                           ,&
             ! urban and vegetation parameters
-            hroof          ,hlr            ,nurb           ,fcover         ,&
+            hroof          ,hroof_max      ,hroof_eff      ,hroof_std      ,&
+            rur_b          ,hlr            ,nurb           ,fcover         ,&
             ewall          ,egimp          ,egper          ,ev             ,&
             htop           ,hbot           ,lai            ,sai            ,&
             sqrtdi         ,effcon         ,vmax25         ,slti           ,&
@@ -915,7 +921,8 @@ CONTAINS
             forc_q         ,forc_psrf      ,forc_rhoair    ,Fhac           ,&
             Fwst           ,Fach           ,vehc           ,meta           ,&
             ! surface parameters
-            hroof          ,hlr            ,nurb           ,fcover         ,&
+            hroof          ,hroof_max      ,hroof_eff      ,hroof_std      ,&
+            rur_b          ,hlr            ,nurb           ,fcover         ,&
             ! surface status
             z0h_g          ,obu_g          ,ustar_g        ,zlnd           ,&
             zsno           ,fsno_roof      ,fsno_gimp      ,fsno_gper      ,&
