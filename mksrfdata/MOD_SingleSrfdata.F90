@@ -131,6 +131,10 @@ MODULE MOD_SingleSrfdata
    real(r8) :: SITE_flake_urb
    real(r8) :: SITE_froof
    real(r8) :: SITE_hroof
+   real(r8) :: SITE_hroof_max
+   real(r8) :: SITE_hroof_eff
+   real(r8) :: SITE_hroof_std
+   real(r8) :: SITE_rur_b
    real(r8) :: SITE_fgimp
    real(r8) :: SITE_fgper
    real(r8) :: SITE_hlr
@@ -1814,6 +1818,28 @@ ENDIF
                SITE_lon_location, SITE_lat_location, SITE_hroof)
          ENDIF
 
+         ! ---------------------------------- For Z0 --------------------------------------
+         u_site_hroof = readflag .and. ncio_var_exist(fsrfdata,'maximum_building_height',readflag)
+         IF ( u_site_hroof ) THEN
+            CALL ncio_read_serial (fsrfdata, 'maximum_building_height', SITE_hroof_max  )
+         ENDIF
+
+         u_site_hroof = readflag .and. ncio_var_exist(fsrfdata,'effective_building_height',readflag)
+         IF ( u_site_hroof ) THEN
+            CALL ncio_read_serial (fsrfdata, 'effective_building_height', SITE_hroof_eff  )
+         ENDIF
+
+         u_site_hroof = readflag .and. ncio_var_exist(fsrfdata,'building_height_standard_deviation',readflag)
+         IF ( u_site_hroof ) THEN
+            CALL ncio_read_serial (fsrfdata, 'building_height_standard_deviation', SITE_hroof_std )
+         ENDIF
+
+         u_site_hroof = readflag .and. ncio_var_exist(fsrfdata,'RUR_B',readflag)
+         IF ( u_site_hroof ) THEN
+            CALL ncio_read_serial (fsrfdata, 'RUR_B', SITE_rur_b )
+         ENDIF
+         !-----------------------------------------------------------------------------------
+
          u_site_froof = readflag .and. ncio_var_exist(fsrfdata,'roof_area_fraction',readflag)
          IF ( u_site_froof ) THEN
             CALL ncio_read_serial (fsrfdata, 'roof_area_fraction', SITE_froof  )
@@ -2933,6 +2959,10 @@ ENDIF
          CALL ncio_read_serial (fsrfdata, 'PCT_Water'     , SITE_flake_urb  )
          CALL ncio_read_serial (fsrfdata, 'WT_ROOF'       , SITE_froof      )
          CALL ncio_read_serial (fsrfdata, 'HT_ROOF'       , SITE_hroof      )
+         CALL ncio_read_serial (fsrfdata, 'HT_MAX'        , SITE_hroof_max  )
+         CALL ncio_read_serial (fsrfdata, 'HT_EFF'        , SITE_hroof_eff  )
+         CALL ncio_read_serial (fsrfdata, 'HT_STD'        , SITE_hroof_std  )
+         CALL ncio_read_serial (fsrfdata, 'RUR_B'         , SITE_rur_b      )
          CALL ncio_read_serial (fsrfdata, 'WTROAD_PERV'   , SITE_fgper      )
          CALL ncio_read_serial (fsrfdata, 'BUILDING_HLR'  , SITE_hlr        )
          CALL ncio_read_serial (fsrfdata, 'POP_DEN'       , SITE_popden     )
@@ -3472,6 +3502,10 @@ ENDIF
       CALL ncio_write_serial (fsrfdata, 'PCT_Water'     , SITE_flake_urb  )
       CALL ncio_write_serial (fsrfdata, 'WT_ROOF'       , SITE_froof      )
       CALL ncio_write_serial (fsrfdata, 'HT_ROOF'       , SITE_hroof      )
+      CALL ncio_write_serial (fsrfdata, 'HT_MAX'        , SITE_hroof_max  )
+      CALL ncio_write_serial (fsrfdata, 'HT_EFF'        , SITE_hroof_eff  )
+      CALL ncio_write_serial (fsrfdata, 'HT_STD'        , SITE_hroof_std  )
+      CALL ncio_write_serial (fsrfdata, 'RUR_B'         , SITE_rur_b      )
       CALL ncio_write_serial (fsrfdata, 'WTROAD_PERV'   , SITE_fgper      )
       CALL ncio_write_serial (fsrfdata, 'BUILDING_HLR'  , SITE_hlr        )
       CALL ncio_write_serial (fsrfdata, 'POP_DEN'       , SITE_popden     )
@@ -3481,6 +3515,10 @@ ENDIF
       CALL ncio_put_attr     (fsrfdata, 'PCT_Water'     , 'source', trim(datasource(u_site_flake)))
       CALL ncio_put_attr     (fsrfdata, 'WT_ROOF'       , 'source', trim(datasource(u_site_froof)))
       CALL ncio_put_attr     (fsrfdata, 'HT_ROOF'       , 'source', trim(datasource(u_site_hroof)))
+      CALL ncio_put_attr     (fsrfdata, 'HT_MAX'        , 'source', trim(datasource(u_site_hroof)))
+      CALL ncio_put_attr     (fsrfdata, 'HT_EFF'        , 'source', trim(datasource(u_site_hroof)))
+      CALL ncio_put_attr     (fsrfdata, 'HT_STD'        , 'source', trim(datasource(u_site_hroof)))
+      CALL ncio_put_attr     (fsrfdata, 'RUR_B'         , 'source', trim(datasource(u_site_hroof)))
       CALL ncio_put_attr     (fsrfdata, 'WTROAD_PERV'   , 'source', trim(datasource(u_site_fgper)))
       CALL ncio_put_attr     (fsrfdata, 'BUILDING_HLR'  , 'source', trim(datasource(u_site_hlr  )))
       CALL ncio_put_attr     (fsrfdata, 'POP_DEN'       , 'source', trim(datasource(u_site_pop  )))

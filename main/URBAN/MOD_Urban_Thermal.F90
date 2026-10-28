@@ -105,7 +105,7 @@ CONTAINS
         assim          ,respc          ,errore         ,emis           ,&
         z0m            ,zol            ,rib            ,ustar          ,&
         qstar          ,tstar          ,fm             ,fh             ,&
-        fq             ,hpbl                                            )
+        fq             ,hpbl           ,displa                          )
 
 
    USE MOD_Precision
@@ -429,7 +429,8 @@ CONTAINS
         tstar                          ,&! t* in similarity theory [K]
         fm                             ,&! integral of profile function for momentum
         fh                             ,&! integral of profile function for heat
-        fq                               ! integral of profile function for moisture
+        fq                             ,&! integral of profile function for moisture
+        displa
 
 ! SNICAR model variables
    real(r8), intent(in)  :: sabg_lyr(lbp:1) !snow layer absorption
@@ -593,6 +594,7 @@ CONTAINS
       zol   = 0.;  rib   = 0.
       ustar = 0.;  qstar = 0.
       tstar = 0.;  rootr = 0.
+      displa= 0.
 
       dheatl = 0.
 
@@ -906,7 +908,8 @@ CONTAINS
             lgimp          ,lgper          ,lveg           ,lout           ,&
             tref           ,qref           ,z0m            ,zol            ,&
             rib            ,ustar          ,qstar          ,tstar          ,&
-            fm             ,fh             ,fq             ,tafu            )
+            fm             ,fh             ,fq             ,tafu           ,&
+            displa                                                          )
       ELSE
 
          nurb = 2
@@ -939,7 +942,8 @@ CONTAINS
             cgperl         ,croof          ,cgimp          ,cgper          ,&
             tref           ,qref           ,z0m            ,zol            ,&
             rib            ,ustar          ,qstar          ,tstar          ,&
-            fm             ,fh             ,fq             ,tafu            )
+            fm             ,fh             ,fq             ,tafu           ,&
+            displa                                                          )
 
          !TODO: check
          tleaf     = forc_t
@@ -1168,7 +1172,7 @@ CONTAINS
       lfevpa = lfevpa *(1-flake) + lfevpa_lake *flake
       tref   = tref   *(1-flake) + tref_lake   *flake
       qref   = qref   *(1-flake) + qref_lake   *flake
-      z0m    = z0m    *(1-flake) + z0m_lake    *flake
+      z0m    = z0m    !*(1-flake) + z0m_lake    *flake
       zol    = zol    *(1-flake) + zol_lake    *flake
       rib    = rib    *(1-flake) + rib_lake    *flake
       ustar  = ustar  *(1-flake) + ustar_lake  *flake

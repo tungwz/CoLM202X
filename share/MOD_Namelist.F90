@@ -707,6 +707,7 @@ MODULE MOD_Namelist
       logical :: transmittance_out                = .true.
       logical :: emis                             = .true.
       logical :: z0m                              = .true.
+      logical :: displa                           = .true.
       logical :: trad                             = .true.
       logical :: rss                              = .true.
       logical :: tref                             = .true.
@@ -2546,6 +2547,7 @@ ENDIF
 #endif
       CALL sync_hist_vars_one (DEF_hist_vars%emis        , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%z0m         , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%displa      , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%trad        , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%rss         , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%tref        , set_defaults)

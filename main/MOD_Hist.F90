@@ -772,6 +772,11 @@ CONTAINS
             a_z0m, file_hist, 'f_z0m', itime_in_file, sumarea, filter, &
             'effective roughness','m')
 
+         !  displacement height [m]
+         CALL write_history_variable_2d ( DEF_hist_vars%displa, &
+            a_displa, file_hist, 'f_displa', itime_in_file, sumarea, filter, &
+            'displacement height [m]','m')
+
          ! radiative temperature of surface [K]
          CALL write_history_variable_2d ( DEF_hist_vars%trad, &
             a_trad, file_hist, 'f_trad', itime_in_file, sumarea, filter, &

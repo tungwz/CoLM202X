@@ -103,7 +103,6 @@ MODULE MOD_Urban_Vars_TimeVariables
    real(r8), allocatable :: urb_lai        (:) !urban tree LAI [m2/m2]
    real(r8), allocatable :: urb_sai        (:) !urban tree SAI [m2/m2]
 
-
 ! PUBLIC MEMBER FUNCTIONS:
    PUBLIC :: allocate_UrbanTimeVariables
    PUBLIC :: deallocate_UrbanTimeVariables

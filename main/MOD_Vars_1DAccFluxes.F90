@@ -102,6 +102,7 @@ MODULE MOD_Vars_1DAccFluxes
 #endif
    real(r8), allocatable :: a_emis      (:)
    real(r8), allocatable :: a_z0m       (:)
+   real(r8), allocatable :: a_displa    (:)
    real(r8), allocatable :: a_trad      (:)
    real(r8), allocatable :: a_tref      (:)
    real(r8), allocatable :: a_t2m_wmo   (:)
@@ -693,6 +694,7 @@ CONTAINS
 #endif
             allocate (a_emis      (numpatch))
             allocate (a_z0m       (numpatch))
+            allocate (a_displa    (numpatch))
             allocate (a_trad      (numpatch))
             allocate (a_tref      (numpatch))
             allocate (a_t2m_wmo   (numpatch))
@@ -1291,6 +1293,7 @@ CONTAINS
 
             deallocate (a_emis      )
             deallocate (a_z0m       )
+            deallocate (a_displa    )
             deallocate (a_trad      )
             deallocate (a_tref      )
             deallocate (a_t2m_wmo   )
@@ -1890,6 +1893,7 @@ CONTAINS
 
             a_emis      (:) = spval
             a_z0m       (:) = spval
+            a_displa    (:) = spval
             a_trad      (:) = spval
             a_tref      (:) = spval
             a_t2m_wmo   (:) = spval
@@ -2573,6 +2577,7 @@ CONTAINS
 
             CALL acc1d (emis          , a_emis           )
             CALL acc1d (z0m           , a_z0m            )
+            CALL acc1d (displa        , a_displa         )
 
             allocate (r_trad (numpatch)) ; r_trad(:) = spval
             DO i = 1, numpatch
