@@ -174,7 +174,8 @@
          ! additional variables required by coupling with WRF model
            emis         ,z0m          ,zol          ,rib          ,&
            ustar        ,qstar        ,tstar        ,fm           ,&
-           fh           ,fq           ,hpbl         ,displa        )
+           fh           ,fq           ,hpbl         ,z0mu         ,&
+           displau      ,displa                                    )
 
    USE MOD_Precision
    USE MOD_Vars_Global
@@ -581,7 +582,9 @@
         fm                    ,&! integral of profile function for momentum
         fh                    ,&! integral of profile function for heat
         fq                    ,&! integral of profile function for moisture
-        displa
+        displa                ,&
+        z0mu                  ,&
+        displau
 
 !-------------------------- Local Variables ----------------------------
    real(r8) :: &
@@ -1048,7 +1051,8 @@
          assim              ,respc              ,errore             ,emis               ,&
          z0m                ,zol                ,rib                ,ustar              ,&
          qstar              ,tstar              ,fm                 ,fh                 ,&
-         fq                 ,hpbl               ,displa                                  )
+         fq                 ,hpbl               ,z0mu               ,displau            ,&
+         displa                                                                          )
 
 !----------------------------------------------------------------------
 ! [5] Urban hydrology

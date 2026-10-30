@@ -149,6 +149,9 @@ MODULE MOD_Vars_1DAccFluxes
 
    real(r8), allocatable :: a_troof     (:) !temperature of roof [K]
    real(r8), allocatable :: a_twall     (:) !temperature of wall [K]
+
+   real(r8), allocatable :: a_z0mu      (:) !roughness length for urban building only [m]
+   real(r8), allocatable :: a_displau   (:) !displacement height for urban building   [m]
 #endif
 
 #if (defined LULC_IGBP_PFT || defined LULC_IGBP_PC)
@@ -742,6 +745,9 @@ CONTAINS
 
                allocate (a_troof     (numurban))
                allocate (a_twall     (numurban))
+
+               allocate (a_z0mu      (numurban))
+               allocate (a_displau   (numurban))
             ENDIF
 #endif
 #if (defined LULC_IGBP_PFT || defined LULC_IGBP_PC)
@@ -1341,6 +1347,9 @@ CONTAINS
 
                deallocate (a_troof     )
                deallocate (a_twall     )
+
+               deallocate (a_z0mu      )
+               deallocate (a_displau   )
             ENDIF
 #endif
 
@@ -1941,6 +1950,9 @@ CONTAINS
 
                a_troof    (:) = spval
                a_twall    (:) = spval
+
+               a_z0mu     (:) = spval
+               a_displau  (:) = spval
             ENDIF
 #endif
 
@@ -2658,6 +2670,9 @@ CONTAINS
 
                CALL acc1d(t_roof     , a_troof     )
                CALL acc1d(t_wall     , a_twall     )
+
+               CALL acc1d(z0mu       , a_z0mu      )
+               CALL acc1d(displau    , a_displau   )
             ENDIF
 #endif
 

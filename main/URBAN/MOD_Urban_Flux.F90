@@ -113,7 +113,7 @@ CONTAINS
          tref           ,qref           ,z0m            ,zol            ,&
          rib            ,ustar          ,qstar          ,tstar          ,&
          fm             ,fh             ,fq             ,tafu           ,&
-         displa                                                          )
+         z0mu           ,displau        ,displa                          )
 
 !=======================================================================
    USE MOD_Precision
@@ -233,7 +233,9 @@ CONTAINS
         fh,           &! integral of profile function for heat
         fq,           &! integral of profile function for moisture
         tafu,         &! effective urban air temperature (2nd layer, walls)
-        displa
+        displa,       &
+        z0mu,         &
+        displau
 
 !-------------------------- Local Variables ----------------------------
    integer :: &
@@ -287,8 +289,8 @@ CONTAINS
         fmtop,        &! fm value at a specific height
         phih,         &! phi(h), similarity function for sensible heat
         !displa,       &! displacement height for urban
-        displau,      &! displacement height for urban building
-        z0mu,         &! roughness length for urban building only
+        !displau,      &! displacement height for urban building
+        !z0mu,         &! roughness length for urban building only
         z0h,          &! roughness length for sensible heat
         z0q,          &! roughness length for latent heat
         tg,           &! ground temperature
@@ -487,24 +489,13 @@ CONTAINS
          IF (X_kanda > 1) X_kanda = 1
 
          displau = hroof_max*(-0.17*X_kanda**2 + (1.29*fcover(0)**0.36 + 0.17)*X_kanda)
-         IF (taux == spval) THEN
-            print*, displau_mac, z0mu_mac
-            print*, displau, z0mu
-         ENDIF
       ELSE IF (DEF_URBAN_Z0_SCHEME == 3) THEN
          displau = hroof_eff * (1 + 4.43**(-fcover(0))*(fcover(0) - 1))
          z0mu = (hroof_eff - displau)*exp(-RUR_B**(-0.5))
-
-         IF (taux == spval) THEN
-            print*, 'mac_B', (0.5*1.2/vonkar/vonkar*(1-displau_mac/hroof)*fai)**(-0.5)
-            print*, 'RUR_B', RUR_B
-            print*, displau_mac, z0mu_mac
-            print*, displau, z0mu
-         ENDIF
       ELSE IF (DEF_URBAN_Z0_SCHEME == 4) THEN
          displau = hroof_eff * (1 + 4.43**(-fcover(0))*(fcover(0) - 1))
          z0mu    = (hroof_eff - displau) * &
-                   exp( -(0.5*1.2/vonkar/vonkar*(1-displau_mac/hroof_eff)*fai)**(-0.5) )
+                   exp( -(0.5*1.2/vonkar/vonkar*(1-displau/hroof_eff)*fai)**(-0.5) )
       ENDIF
 
       ! to compare z0 of urban and only the surface
@@ -960,7 +951,7 @@ CONTAINS
          tref           ,qref           ,z0m            ,zol            ,&
          rib            ,ustar          ,qstar          ,tstar          ,&
          fm             ,fh             ,fq             ,tafu           ,&
-         displa                                                          )
+         z0mu           ,displau        ,displa                          )
 
 !=======================================================================
 
@@ -1163,8 +1154,10 @@ CONTAINS
         fm,           &! integral of profile function for momentum
         fh,           &! integral of profile function for heat
         fq,           &! integral of profile function for moisture
-        tafu,        &! effective urban air temperature (2nd layer, walls)
-        displa
+        tafu,         &! effective urban air temperature (2nd layer, walls)
+        displa,       &
+        z0mu,         &
+        displau
 
 !-----------------------Local Variables---------------------------------
 ! assign iteration parameters
@@ -1180,7 +1173,7 @@ CONTAINS
         zldis,        &! reference height "minus" zero displacement height [m]
         zii,          &! convective boundary layer height [m]
         z0mv,         &! roughness length of vegetation only, momentum [m]
-        z0mu,         &! roughness length of building only, momentum [m]
+        !z0mu,         &! roughness length of building only, momentum [m]
         z0h,          &! roughness length, sensible heat [m]
         z0q,          &! roughness length, latent heat [m]
         zeta,         &! dimensionless height used in Monin-Obukhov theory
@@ -1251,7 +1244,7 @@ CONTAINS
         fmtop,        &! fm value at a specific height
         phih,         &! phi(h), similarity function for sensible heat
         !displa,       &! displacement height for urban
-        displau,      &! displacement height for urban building
+        !displau,      &! displacement height for urban building
         displav,      &! displacement height for urban vegetation
         displav_lay,  &! displacement height for urban vegetation layer
         z0mv_lay,     &! roughness length for vegetation
@@ -1507,11 +1500,6 @@ CONTAINS
 
          z0mu = z0mu_mac
          z0m  = z0m_mac
-
-         IF (taux == spval) THEN
-            print*, displa, z0m
-            print*, displau, z0mu
-         ENDIF
       ELSE IF (DEF_URBAN_Z0_SCHEME == 2) THEN
          Y_kanda = fcover(0)*hroof_std/hroof
          z0mu    = z0mu_mac*(20.21*Y_kanda**2 - 0.77*Y_kanda + 0.71)
@@ -1524,38 +1512,25 @@ CONTAINS
          displa  = hroof_max*(-0.17*X_kanda**2 + (1.29*fcover(0)**0.36 + 0.17)*X_kanda)
          displa  = min(0.95*hroof_eff, displa)
          displau = displa
-
-         IF (taux == spval) THEN
-            print*, displa_mac, z0m_mac
-            print*, displau_mac, z0mu_mac
-            print*, displa, z0m
-            print*, displau, z0mu
-         ENDIF
       ELSE IF (DEF_URBAN_Z0_SCHEME == 3) THEN
 
          lambda = fcover(0) + faiv*htop/hroof_eff
          displa = hroof_eff * (1 + 4.43**(-lambda)*(lambda - 1))
          z0m    = (hroof_eff - displa)*exp(-RUR_B**(-0.5))
 
-         displau = hroof_eff * (1 + 4.43**(-fcover(0))*(fcover(0) - 1))
-         z0mu    = (hroof_eff - displau)*exp(-RUR_B**(-0.5))
-
-         IF (taux == spval) THEN
-            print*, 'mac_B', (0.5*1.2/vonkar/vonkar*(1-displau_mac/hroof)*fai)**(-0.5)
-            print*, 'RUR_B', RUR_B**(-0.5)
-            print*, displa_mac, z0m_mac
-            print*, displau_mac, z0mu_mac
-            print*, displa, z0m
-            print*, displau, z0mu
-         ENDIF
+         lambda = fcover(0)
+         displau= hroof_eff * (1 + 4.43**(-lambda)*(lambda - 1))
+         z0mu   = (hroof_eff - displau)*exp(-RUR_B**(-0.5))
       ELSE IF (DEF_URBAN_Z0_SCHEME == 4) THEN
-         displau= hroof_eff * (1 + 4.43**(-fcover(0))*(fcover(0) - 1))
+         lambda = fcover(0)
+         displau= hroof_eff * (1 + 4.43**(-lambda)*(lambda - 1))
          z0mu   = (hroof_eff - displau) * &
-                   exp( -(0.5*1.2/vonkar/vonkar*(1-displau/hroof_eff)*fai)**(-0.5) )
+                  exp( -(0.5*1.2/vonkar/vonkar*(1-displau/hroof_eff)*fai)**(-0.5) )
 
+         lambda = fcover(0) + faiv*htop/hroof_eff
          displa = hroof_eff * (1 + 4.43**(-lambda)*(lambda - 1))
          z0m    = (hroof_eff - displa) * &
-                   exp( -(0.5*1.2/vonkar/vonkar*(1-displa/hroof_eff)*(fai+faiv*htop/hroof_eff))**(-0.5) )
+                  exp( -(0.5*1.2/vonkar/vonkar*(1-displa/hroof_eff)*(fai+faiv*htop/hroof_eff))**(-0.5) )
       ENDIF
 
       ! to compare z0 of urban and only the surface

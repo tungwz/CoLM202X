@@ -977,6 +977,16 @@ ENDIF
          CALL write_history_variable_urb_2d ( DEF_hist_vars%t_wall, &
             a_twall, file_hist, 'f_t_wall', itime_in_file, sumarea_urb, filter_urb, &
             'temperature of urban wall [K]','kelvin')
+
+         ! roughness length for urban building only [m]
+         CALL write_history_variable_urb_2d ( DEF_hist_vars%z0mu, &
+            a_z0mu, file_hist, 'f_z0mu', itime_in_file, sumarea_urb, filter_urb, &
+            'roughness length for urban building only [m]','m')
+
+         ! displacement height for urban building [m]
+         CALL write_history_variable_urb_2d ( DEF_hist_vars%displau, &
+            a_displau, file_hist, 'f_displau', itime_in_file, sumarea_urb, filter_urb, &
+            'displacement height for urban building [m]','m')
 #endif
 
          ! ------------------------------------------------------------------

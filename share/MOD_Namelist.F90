@@ -734,6 +734,8 @@ MODULE MOD_Namelist
       logical :: tafu                             = .true.
       logical :: t_roof                           = .true.
       logical :: t_wall                           = .true.
+      logical :: z0mu                             = .true.
+      logical :: displau                          = .true.
 
       logical :: assimsun                         = .true.
       logical :: assimsha                         = .true.
@@ -2574,6 +2576,8 @@ ENDIF
       CALL sync_hist_vars_one (DEF_hist_vars%tafu        , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%t_roof      , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%t_wall      , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%z0mu        , set_defaults)
+      CALL sync_hist_vars_one (DEF_hist_vars%displau     , set_defaults)
 #endif
       CALL sync_hist_vars_one (DEF_hist_vars%assimsun    , set_defaults)
       CALL sync_hist_vars_one (DEF_hist_vars%assimsha    , set_defaults)

@@ -103,6 +103,8 @@ MODULE MOD_Urban_Vars_TimeVariables
    real(r8), allocatable :: urb_lai        (:) !urban tree LAI [m2/m2]
    real(r8), allocatable :: urb_sai        (:) !urban tree SAI [m2/m2]
 
+   real(r8), allocatable :: z0mu           (:) !roughness length for urban building only [m]
+   real(r8), allocatable :: displau        (:) !displacement height for urban building   [m]
 ! PUBLIC MEMBER FUNCTIONS:
    PUBLIC :: allocate_UrbanTimeVariables
    PUBLIC :: deallocate_UrbanTimeVariables
@@ -208,6 +210,9 @@ CONTAINS
             allocate (urb_green                     (numurban))
             allocate (urb_lai                       (numurban))
             allocate (urb_sai                       (numurban))
+
+            allocate (z0mu                          (numurban))
+            allocate (displau                       (numurban))
          ENDIF
       ENDIF
    END SUBROUTINE allocate_UrbanTimeVariables
@@ -495,6 +500,9 @@ CONTAINS
             deallocate (urb_green    )
             deallocate (urb_lai      )
             deallocate (urb_sai      )
+
+            deallocate (z0mu         )
+            deallocate (displau      )
          ENDIF
       ENDIF
 

@@ -233,8 +233,10 @@ CONTAINS
             ENDIF
             froof(u) = min(0.9, froof(u)/(1.-flake(u)))
 
+#ifndef SinglePoint
             ! to constrain the building side length >= 10 m
             IF (hroof(u)/hlr(u) < 10) hlr(u) = hroof(u)/10
+#endif
 
             IF (DEF_URBAN_TREE) THEN
                ! set tree fractional cover (<= 1.-froof)

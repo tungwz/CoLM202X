@@ -105,7 +105,8 @@ CONTAINS
         assim          ,respc          ,errore         ,emis           ,&
         z0m            ,zol            ,rib            ,ustar          ,&
         qstar          ,tstar          ,fm             ,fh             ,&
-        fq             ,hpbl           ,displa                          )
+        fq             ,hpbl           ,z0mu           ,displau        ,&
+        displa                                                          )
 
 
    USE MOD_Precision
@@ -430,7 +431,9 @@ CONTAINS
         fm                             ,&! integral of profile function for momentum
         fh                             ,&! integral of profile function for heat
         fq                             ,&! integral of profile function for moisture
-        displa
+        displa                         ,&
+        z0mu                           ,&
+        displau
 
 ! SNICAR model variables
    real(r8), intent(in)  :: sabg_lyr(lbp:1) !snow layer absorption
@@ -586,15 +589,16 @@ CONTAINS
 !=======================================================================
 
       ! fluxes
-      fsenl = 0.;  fevpl = 0.
-      etr   = 0.;  rst   = 2.0e4
-      assim = 0.;  respc = 0.
+      fsenl  = 0.;  fevpl = 0.
+      etr    = 0.;  rst   = 2.0e4
+      assim  = 0.;  respc = 0.
 
-      emis  = 0.;  z0m   = 0.
-      zol   = 0.;  rib   = 0.
-      ustar = 0.;  qstar = 0.
-      tstar = 0.;  rootr = 0.
-      displa= 0.
+      emis   = 0.;  z0m    = 0.
+      zol    = 0.;  rib    = 0.
+      ustar  = 0.;  qstar  = 0.
+      tstar  = 0.;  rootr  = 0.
+      displa = 0.;  displau= 0.
+      displau= 0.;
 
       dheatl = 0.
 
@@ -909,7 +913,7 @@ CONTAINS
             tref           ,qref           ,z0m            ,zol            ,&
             rib            ,ustar          ,qstar          ,tstar          ,&
             fm             ,fh             ,fq             ,tafu           ,&
-            displa                                                          )
+            z0mu           ,displau        ,displa                          )
       ELSE
 
          nurb = 2
@@ -943,7 +947,7 @@ CONTAINS
             tref           ,qref           ,z0m            ,zol            ,&
             rib            ,ustar          ,qstar          ,tstar          ,&
             fm             ,fh             ,fq             ,tafu           ,&
-            displa                                                          )
+            z0mu           ,displau        ,displa                          )
 
          !TODO: check
          tleaf     = forc_t
